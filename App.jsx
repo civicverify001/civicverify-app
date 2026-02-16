@@ -295,10 +295,10 @@ function Landing({ onLogin, onSignup }) {
           <p style={{color:"#fff7",fontSize:13,maxWidth:540,margin:"0 auto 24px",lineHeight:1.6}}>CivicVerify follows rigorous data integrity standards to ensure every data point is authentic, unbiased, and representative of the American public.</p>
           <div style={{display:"grid",gridTemplateColumns:m?"1fr":"repeat(2,1fr)",gap:12}}>
             {[
-              ["Multi-Factor Identity Verification","Every participant completes a secure identity check using government-issued credentials. Verification is performed by accredited third-party providers and results are never stored on our servers."],
-              ["Demographic Accuracy Guarantee","Unlike self-reported demographics in traditional polls, CivicVerify demographics are confirmed through the verification process. Age, state, and citizenship status are validated - not assumed."],
-              ["Anti-Fraud Detection Layer","Proprietary algorithms detect and block coordinated campaigns, VPN masking, bot activity, and duplicate attempts in real time before any response enters the dataset."],
-              ["Independent Audit Framework","Our methodology is fully documented, transparent, and available for independent audit. We welcome third-party scrutiny of our processes."]
+              ["Multi-Factor Identity Verification","Every participant completes a secure identity check using government-issued credentials. Results are never stored on our servers."],
+              ["Demographic Accuracy Guarantee","Demographics are confirmed through verification, not self-reported. Age, state, and citizenship are validated - not assumed."],
+              ["Anti-Fraud Detection Layer","Proprietary algorithms detect coordinated campaigns, VPN masking, bot activity, and duplicates in real time."],
+              ["Independent Audit Framework","Our methodology is fully documented and available for independent audit."]
             ].map(function(item,i){
               return (<div key={i} style={{background:"#ffffff08",borderRadius:14,padding:20,textAlign:"left",border:"1px solid #fff1"}}>
                 <p style={{fontSize:13,fontWeight:700,color:T.gold,marginBottom:6}}>{item[0]}</p>
@@ -309,27 +309,7 @@ function Landing({ onLogin, onSignup }) {
         </div>
       </section>
 
-      {/* CIVIC VOICES */}
-      <section style={{background:"#fff",padding:sec.py}}>
-        <div style={Object.assign({},sec.mx,{textAlign:"center"})}>
-          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?20:28,color:T.navy,marginBottom:20}}>Why Citizens <span style={{color:T.gold}}>Participate</span></h2>
-          <div style={{display:"grid",gridTemplateColumns:m?"1fr":"repeat(3,1fr)",gap:16}}>
-            {[
-              ["My opinion finally counts for something real. This isn't a random internet poll - my voice is verified and goes directly to decision-makers.","Maria G., Indianapolis, IN","Parent & Healthcare Worker"],
-              ["As a veteran, I've seen how disconnected policy can be from the people it affects. CivicVerify gives us a direct, verified channel to lawmakers.","James T., Columbus, OH","U.S. Army Veteran"],
-              ["The verification process gave me confidence. If they verify everyone this thoroughly, the data has to be solid.","Aisha R., Chicago, IL","Small Business Owner"]
-            ].map(function(item,i){
-              return (<div key={i} style={{background:T.light,borderRadius:14,padding:20,textAlign:"left",border:"1px solid #f0ece8"}}>
-                <p style={{fontSize:12,color:T.gray,lineHeight:1.7,fontStyle:"italic",marginBottom:12}}>"{item[0]}"</p>
-                <p style={{fontSize:12,fontWeight:700,color:T.navy}}>{item[1]}</p>
-                <p style={{fontSize:10,color:T.gray}}>{item[2]}</p>
-              </div>);
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
+            {/* FAQ */}
       <section style={{background:"#fff",padding:sec.py}}>
         <div style={sec.mx}>
           <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?20:28,color:T.navy,marginBottom:20,textAlign:"center"}}>Frequently Asked <span style={{color:T.gold}}>Questions</span></h2>
@@ -383,338 +363,262 @@ function Landing({ onLogin, onSignup }) {
 }
 
 /* ===== AUTH ===== */
-function Auth({ mode, onOk, goBack }) {
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [error, setError] = useState("");
-
-  const submit = () => {
-    if (mode === "login") {
-      if (email === "admin@civicverify.org" && pass === "admin123") {
-        onOk({ name: "Admin", email: email, role: "admin" });
-      } else if (email === "citizen@test.com" && pass === "test123") {
-        onOk({ name: "Sarah Chen", email: email, role: "citizen" });
-      } else if (email === "org@test.com" && pass === "test123") {
-        onOk({ name: "IN Health Policy", email: email, role: "org" });
-      } else {
-        setError("Invalid credentials. Try admin@civicverify.org / admin123");
-      }
-    } else {
-      if (email && pass) {
-        onOk({ name: "New User", email: email, role: "citizen" });
-      } else {
-        setError("Please fill all fields");
-      }
-    }
+function Auth({mode,onOk,goBack}) {
+  var st=useState("");var email=st[0];var setEmail=st[1];
+  var st2=useState("");var pass=st2[0];var setPass=st2[1];
+  var st3=useState("");var error=st3[0];var setError=st3[1];
+  var submit=function(){
+    if(mode==="login"){
+      if(email==="admin@civicverify.org"&&pass==="admin123")onOk({name:"Admin",email:email,role:"admin"});
+      else if(email==="citizen@test.com"&&pass==="test123")onOk({name:"Sarah Chen",email:email,role:"citizen"});
+      else if(email==="org@test.com"&&pass==="test123")onOk({name:"IN Health Policy",email:email,role:"org"});
+      else setError("Invalid credentials. Try admin@civicverify.org / admin123");
+    }else{if(email&&pass)onOk({name:"New User",email:email,role:"citizen"});else setError("Please fill all fields");}
   };
-
-  const inputStyle = { width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid #ddd", fontSize: 14, outline: "none" };
-
-  return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(160deg," + T.navy + "," + T.dark + ")", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <Shield size={44} />
-          <h1 style={{ color: "#fff", fontFamily: "'Libre Baskerville',serif", fontSize: 22, marginTop: 10 }}>CivicVerify</h1>
-        </div>
-        <div style={{ background: "#fff", borderRadius: 16, padding: "28px 22px" }}>
-          <h2 style={{ fontSize: 18, textAlign: "center", marginBottom: 20, color: T.navy }}>{mode === "login" ? "Sign In" : "Create Account"}</h2>
-          {error && <div style={{ background: "#fde8e8", padding: "10px 14px", borderRadius: 8, marginBottom: 14, fontSize: 13, color: T.red }}>{error}</div>}
-          <div style={{ marginBottom: 14 }}>
-            <input style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" />
-          </div>
-          <div style={{ marginBottom: 18 }}>
-            <input style={inputStyle} type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Password" />
-          </div>
-          <button onClick={submit} className="btn btn-r" style={{ width: "100%", padding: "13px", fontSize: 15 }}>
-            {mode === "login" ? "SIGN IN" : "CREATE ACCOUNT"}
-          </button>
-          <button onClick={goBack} style={{ width: "100%", marginTop: 12, padding: "10px", background: "none", border: "none", color: T.gray, fontSize: 13, cursor: "pointer" }}>
-            Back to Home
-          </button>
-          <div style={{ marginTop: 16, padding: "12px", background: T.light, borderRadius: 8, fontSize: 11, color: T.gray }}>
-            <strong>Demo Accounts:</strong><br />
-            Admin: admin@civicverify.org / admin123<br />
-            Citizen: citizen@test.com / test123<br />
-            Org: org@test.com / test123
-          </div>
-        </div>
+  var iS={width:"100%",padding:"12px 14px",borderRadius:10,border:"1px solid #ddd",fontSize:14,outline:"none"};
+  return (<div style={{minHeight:"100vh",background:"linear-gradient(160deg,"+T.navy+","+T.dark+")",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{width:"100%",maxWidth:400}}>
+      <div style={{textAlign:"center",marginBottom:24}}><Shield size={44}/><h1 style={{color:"#fff",fontFamily:"'Libre Baskerville',serif",fontSize:22,marginTop:10}}>CivicVerify</h1></div>
+      <div style={{background:"#fff",borderRadius:16,padding:"28px 22px"}}>
+        <h2 style={{fontSize:18,textAlign:"center",marginBottom:20,color:T.navy}}>{mode==="login"?"Sign In":"Create Account"}</h2>
+        {error&&<div style={{background:"#fde8e8",padding:"10px 14px",borderRadius:8,marginBottom:14,fontSize:13,color:T.red}}>{error}</div>}
+        <div style={{marginBottom:14}}><input style={iS} value={email} onChange={function(e){setEmail(e.target.value);}} placeholder="Email"/></div>
+        <div style={{marginBottom:20}}><input style={iS} type="password" value={pass} onChange={function(e){setPass(e.target.value);}} placeholder="Password"/></div>
+        <button onClick={submit} className="btn btn-r" style={{width:"100%",padding:"14px",fontSize:15}}>{mode==="login"?"SIGN IN":"CREATE ACCOUNT"}</button>
+        <button onClick={goBack} style={{width:"100%",background:"none",border:"none",color:T.gray,fontSize:12,marginTop:12,cursor:"pointer"}}>Back to Home</button>
       </div>
     </div>
-  );
+  </div>);
 }
-
 /* ===== ADMIN SIDEBAR ===== */
-function AdminSidebar({ page, setPage, onOut, mobile, onClose }) {
-  const items = [
-    ["Dashboard", "dash"],
-    ["Review Queue", "rev"],
-    ["Surveys", "sv"],
-    ["Respondents", "rsp"],
-    ["Clients", "cls"],
-    ["Analytics", "an"],
-    ["Settings", "set"],
-  ];
+function AdminSidebar({page,setPage,onOut,mobile,onClose}){
+  var items=[["Dashboard","dash","grid"],["Review Queue","rev","check"],["Surveys","sv","list"],["Respondents","rsp","users"],["Clients","cls","building"],["Analytics","an","chart"],["Settings","set","gear"]];
+  var icons={grid:"\u25A6",check:"\u2713",list:"\u2630",users:"\u263A",building:"\u2302",chart:"\u2197",gear:"\u2699"};
   return (
-    <div style={{ width: mobile ? 240 : 220, flexShrink: 0, background: T.navy, position: mobile ? "fixed" : "relative", top: 0, left: 0, bottom: 0, zIndex: 60, overflow: "auto", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "16px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid #fff1" }}>
-        <Shield size={24} />
+    <div style={{width:mobile?240:220,flexShrink:0,background:T.navy,position:mobile?"fixed":"relative",top:0,left:0,bottom:0,zIndex:60,overflow:"auto",display:"flex",flexDirection:"column"}}>
+      <div style={{padding:"18px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:"1px solid #fff1"}}>
+        <Shield size={24}/>
         <div>
-          <p style={{ color: "#fff", fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700 }}>
-            Civic<span style={{ color: T.gold }}>Verify</span>
-          </p>
-          <p style={{ color: "#fff5", fontSize: 10 }}>Admin Panel</p>
+          <p style={{color:"#fff",fontFamily:"'Libre Baskerville',serif",fontSize:14,fontWeight:700}}>Civic<span style={{color:T.gold}}>Verify</span></p>
+          <p style={{color:"#fff4",fontSize:9,letterSpacing:1,textTransform:"uppercase"}}>Admin Panel</p>
         </div>
       </div>
-      <nav style={{ padding: "10px 6px", flex: 1 }}>
-        {items.map(function(item) {
-          const label = item[0];
-          const key = item[1];
-          const active = page === key;
-          return (
-            <button
-              key={key}
-              onClick={function() { setPage(key); if (onClose) onClose(); }}
-              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 12px", borderRadius: 8, background: active ? "#C5960C1F" : "transparent", border: "none", color: active ? T.gold : "#fff8", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "left", marginBottom: 2 }}
-            >
-              {label}
-            </button>
-          );
+      <nav style={{padding:"12px 8px",flex:1}}>
+        {items.map(function(item){var active=page===item[1];return (
+          <button key={item[1]} onClick={function(){setPage(item[1]);if(onClose)onClose();}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",borderRadius:8,background:active?T.gold+"1A":"transparent",border:"none",color:active?T.gold:"#fff7",fontSize:13,fontWeight:active?700:500,cursor:"pointer",textAlign:"left",marginBottom:2,transition:"all .15s"}}>
+            <span style={{fontSize:14,width:18,textAlign:"center",opacity:active?1:.5}}>{icons[item[2]]}</span>{item[0]}
+            {item[1]==="rev"&&<span style={{marginLeft:"auto",background:T.red,color:"#fff",fontSize:9,padding:"2px 6px",borderRadius:10,fontWeight:700}}>3</span>}
+          </button>);
         })}
       </nav>
-      <div style={{ padding: "10px 14px", borderTop: "1px solid #fff1" }}>
-        <button onClick={onOut} style={{ background: "#fff1", border: "none", color: "#fff6", fontSize: 11, padding: "8px", borderRadius: 6, cursor: "pointer", width: "100%" }}>
-          Sign Out
-        </button>
+      <div style={{padding:"12px 16px",borderTop:"1px solid #fff1"}}>
+        <div style={{padding:"10px 12px",background:"#ffffff08",borderRadius:8,marginBottom:8}}>
+          <p style={{color:"#fff",fontSize:11,fontWeight:600}}>Admin User</p>
+          <p style={{color:"#fff4",fontSize:10}}>admin@civicverify.org</p>
+        </div>
+        <button onClick={onOut} style={{background:"#fff1",border:"none",color:"#fff5",fontSize:11,padding:"8px",borderRadius:6,cursor:"pointer",width:"100%"}}>Sign Out</button>
       </div>
     </div>
   );
 }
 
 /* ===== ADMIN PAGES ===== */
-function DashPage({ mobile }) {
-  const rsp = DATA.respondents;
-  const sv = DATA.surveys;
-  const cls = DATA.clients;
-  const vf = rsp.filter(function(r) { return r.vf; }).length;
-  const totalR = sv.reduce(function(s, x) { return s + x.n; }, 0);
-  const rev = cls.reduce(function(s, c) { return s + c.rev; }, 0);
-
-  const stats = [
-    { label: "Verified Users", val: vf, sub: "of " + rsp.length + " total" },
-    { label: "Total Responses", val: totalR.toLocaleString(), sub: "across " + sv.length + " surveys" },
-    { label: "Revenue", val: "$" + rev.toLocaleString(), sub: "from " + cls.length + " clients" },
-    { label: "Verification Rate", val: Math.round((vf / rsp.length) * 100) + "%", sub: "identity confirmed" },
+function DashPage({mobile}) {
+  var rsp=DATA.respondents,sv=DATA.surveys,cls=DATA.clients;
+  var vf=rsp.filter(function(r){return r.vf;}).length;
+  var totalR=sv.reduce(function(s,x){return s+x.n;},0);
+  var rev=cls.reduce(function(s,c){return s+c.rev;},0);
+  var stats=[
+    {label:"Verified Users",val:vf,sub:"of "+rsp.length+" total",trend:"+12%",up:true,color:T.navy},
+    {label:"Total Responses",val:totalR.toLocaleString(),sub:"across "+sv.length+" surveys",trend:"+23%",up:true,color:T.green},
+    {label:"Revenue",val:"$"+rev.toLocaleString(),sub:"from "+cls.length+" clients",trend:"+18%",up:true,color:T.gold},
+    {label:"Verification Rate",val:Math.round((vf/rsp.length)*100)+"%",sub:"identity confirmed",trend:"+3%",up:true,color:T.green}
   ];
-
-  return (
-    <div>
-      <h2 style={{ fontSize: mobile ? 18 : 22, fontWeight: 700, color: T.navy, marginBottom: 16 }}>Dashboard</h2>
-      <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
-        {stats.map(function(s, i) {
-          return (
-            <div key={i} className="card" style={{ padding: 14, textAlign: "center" }}>
-              <p style={{ fontSize: 22, fontWeight: 700, color: T.navy }}>{s.val}</p>
-              <p style={{ fontSize: 11, color: T.gray, marginTop: 2 }}>{s.label}</p>
-              <p style={{ fontSize: 10, color: T.bone }}>{s.sub}</p>
+  var activity=[
+    {t:"New verified user",d:"Sarah Chen completed ID verification",m:"2m ago",c:T.green},
+    {t:"Survey response",d:"Healthcare Priority Index received 12 new responses",m:"8m ago",c:T.navy},
+    {t:"Client payment",d:"FairTax Coalition - $1,200 invoice paid",m:"23m ago",c:T.gold},
+    {t:"Review submitted",d:"EduFirst PAC submitted a new 10Q survey for review",m:"1h ago",c:T.red},
+    {t:"Milestone reached",d:"Infrastructure Satisfaction survey hit 1,200 responses",m:"2h ago",c:T.green},
+  ];
+  var growth=[32,45,58,72,89,95,110,134,156,187];
+  var mx=187;
+  return (<div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div><h2 style={{fontSize:mobile?18:22,fontWeight:700,color:T.navy}}>Dashboard</h2><p style={{fontSize:12,color:T.gray}}>Platform overview and key metrics</p></div>
+      <div style={{background:T.green+"14",color:T.green,padding:"6px 12px",borderRadius:20,fontSize:11,fontWeight:700}}>All Systems Operational</div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:10,marginBottom:16}}>
+      {stats.map(function(s,i){return (
+        <div key={i} className="card" style={{padding:16,borderLeft:"3px solid "+s.color}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"start"}}>
+            <p style={{fontSize:10,color:T.gray,textTransform:"uppercase",letterSpacing:.5}}>{s.label}</p>
+            <span style={{fontSize:10,color:s.up?T.green:T.red,fontWeight:700,background:s.up?T.green+"12":T.red+"12",padding:"2px 6px",borderRadius:4}}>{s.trend}</span>
+          </div>
+          <p style={{fontSize:22,fontWeight:700,color:T.navy,margin:"4px 0 2px"}}>{s.val}</p>
+          <p style={{fontSize:10,color:T.bone}}>{s.sub}</p>
+        </div>
+      );})}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"2fr 1fr",gap:12,marginBottom:16}}>
+      <div className="card" style={{padding:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <h3 style={{fontSize:14,fontWeight:700,color:T.navy}}>Active Surveys</h3>
+          <span style={{fontSize:11,color:T.gold,fontWeight:600,cursor:"pointer"}}>View All</span>
+        </div>
+        {sv.filter(function(x){return x.st==="active";}).map(function(s){
+          var pct=Math.min(100,Math.round(s.n/1000*100));
+          return (<div key={s.id} style={{marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+              <div><p style={{fontSize:13,fontWeight:600,color:T.dark}}>{s.title}</p><p style={{fontSize:10,color:T.gray}}>{s.client}</p></div>
+              <div style={{textAlign:"right"}}><p style={{fontSize:14,fontWeight:700,color:T.navy}}>{s.n}</p><p style={{fontSize:9,color:T.gray}}>responses</p></div>
             </div>
-          );
+            <div style={{height:4,background:"#eee",borderRadius:2}}><div style={{height:4,background:T.navy,borderRadius:2,width:pct+"%",transition:"width .3s"}}/></div>
+          </div>);
         })}
       </div>
-      <div className="card" style={{ padding: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 12 }}>Active Surveys</h3>
-        {sv.filter(function(x) { return x.st === "active"; }).map(function(s) {
-          return (
-            <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}>
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: T.dark }}>{s.title}</p>
-                <p style={{ fontSize: 11, color: T.gray }}>{s.client}</p>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: T.navy }}>{s.n}</p>
-                <p style={{ fontSize: 10, color: T.gray }}>responses</p>
-              </div>
-            </div>
-          );
-        })}
+      <div className="card" style={{padding:16}}>
+        <h3 style={{fontSize:14,fontWeight:700,color:T.navy,marginBottom:12}}>User Growth</h3>
+        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
+          {growth.map(function(v,i){return (<div key={i} style={{flex:1,background:i===growth.length-1?T.gold:T.navy+"30",height:Math.round(v/mx*100)+"%",borderRadius:2,minHeight:2}}/>);})}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+          <span style={{fontSize:9,color:T.gray}}>10 weeks ago</span>
+          <span style={{fontSize:9,color:T.gray}}>This week</span>
+        </div>
+        <div style={{marginTop:12,padding:"10px",background:T.light,borderRadius:8}}>
+          <p style={{fontSize:10,color:T.gray}}>This Month</p>
+          <p style={{fontSize:18,fontWeight:700,color:T.navy}}>+47 <span style={{fontSize:11,color:T.green,fontWeight:600}}>users</span></p>
+        </div>
       </div>
     </div>
-  );
+    <div className="card" style={{padding:16}}>
+      <h3 style={{fontSize:14,fontWeight:700,color:T.navy,marginBottom:12}}>Recent Activity</h3>
+      {activity.map(function(a,i){return (
+        <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<activity.length-1?"1px solid #f5f5f5":"none"}}>
+          <div style={{width:8,height:8,borderRadius:4,background:a.c,marginTop:5,flexShrink:0}}/>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between"}}><p style={{fontSize:12,fontWeight:600,color:T.dark}}>{a.t}</p><span style={{fontSize:10,color:T.bone}}>{a.m}</span></div>
+            <p style={{fontSize:11,color:T.gray}}>{a.d}</p>
+          </div>
+        </div>
+      );})}
+    </div>
+  </div>);
 }
 
 function ReviewPage() {
-  return (
-    <div>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: T.navy, marginBottom: 16 }}>Review Queue</h2>
-      <div className="card" style={{ padding: 20, textAlign: "center" }}>
-        <p style={{ color: T.gray, fontSize: 14 }}>No surveys pending review</p>
-        <p style={{ color: T.bone, fontSize: 12, marginTop: 4 }}>Submitted organization surveys will appear here for approval</p>
-      </div>
+  var pending=[
+    {id:1,org:"EduFirst PAC",title:"School Funding Priorities",type:"10Q",submitted:"Feb 12, 2025",filters:["Age 25-54","Midwest","Parents"],status:"pending"},
+    {id:2,org:"SafeStreets Org",title:"Community Policing Survey",type:"5Q",submitted:"Feb 14, 2025",filters:["Urban","Age 18+"],status:"pending"},
+    {id:3,org:"BuildAmerica",title:"Infrastructure Spending Preferences",type:"5Q",submitted:"Feb 15, 2025",filters:["Homeowners","Age 30+"],status:"pending"}
+  ];
+  var st=useState({}); var decisions=st[0]; var setD=st[1];
+  return (<div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div><h2 style={{fontSize:20,fontWeight:700,color:T.navy}}>Review Queue</h2><p style={{fontSize:12,color:T.gray}}>{pending.length} surveys pending review</p></div>
+      <span style={{background:T.red+"14",color:T.red,padding:"6px 12px",borderRadius:20,fontSize:11,fontWeight:700}}>{pending.length} Pending</span>
     </div>
-  );
+    {pending.map(function(s){var d=decisions[s.id];return (
+      <div key={s.id} className="card" style={{marginBottom:12,padding:18,borderLeft:d==="approved"?"3px solid "+T.green:d==="rejected"?"3px solid "+T.red:"3px solid "+T.gold}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:8}}>
+          <div><p style={{fontSize:15,fontWeight:700,color:T.navy}}>{s.title}</p><p style={{fontSize:12,color:T.gray}}>{s.org} - {s.type} Survey - Submitted {s.submitted}</p></div>
+          {d?<Badge text={d==="approved"?"Approved":"Rejected"} color={d==="approved"?"green":"red"}/>:<Badge text="Pending" color="gold"/>}
+        </div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
+          {s.filters.map(function(f,i){return <span key={i} style={{background:T.navy+"0A",color:T.navy,fontSize:10,padding:"3px 8px",borderRadius:12,fontWeight:600}}>{f}</span>;})}
+        </div>
+        {!d&&<div style={{display:"flex",gap:8}}>
+          <button onClick={function(){setD(function(p){var n=Object.assign({},p);n[s.id]="approved";return n;});}} className="btn" style={{background:T.green,color:"#fff",padding:"8px 20px",fontSize:12}}>Approve</button>
+          <button onClick={function(){setD(function(p){var n=Object.assign({},p);n[s.id]="rejected";return n;});}} className="btn" style={{background:"#fff",color:T.red,border:"1px solid "+T.red,padding:"8px 20px",fontSize:12}}>Reject</button>
+        </div>}
+      </div>
+    );})}
+  </div>);
 }
 
-function SurveyPage({ mobile }) {
-  const [q, setQ] = useState("");
-  const sv = DATA.surveys;
-  const filtered = sv.filter(function(s) { return s.title.toLowerCase().includes(q.toLowerCase()); });
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-        <h2 style={{ fontSize: mobile ? 18 : 20, fontWeight: 700, color: T.navy }}>Surveys</h2>
-        <input value={q} onChange={function(e) { setQ(e.target.value); }} placeholder="Search surveys..." style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 13, width: mobile ? "100%" : 220 }} />
+function SurveyPage({mobile}) {
+  var sv=DATA.surveys;
+  return (<div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div><h2 style={{fontSize:20,fontWeight:700,color:T.navy}}>Surveys</h2><p style={{fontSize:12,color:T.gray}}>{sv.length} total surveys</p></div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(3,1fr)",gap:10,marginBottom:16}}>
+      <div className="card" style={{padding:14,textAlign:"center",borderTop:"3px solid "+T.green}}><p style={{fontSize:20,fontWeight:700,color:T.green}}>{sv.filter(function(x){return x.st==="active";}).length}</p><p style={{fontSize:10,color:T.gray}}>Active</p></div>
+      <div className="card" style={{padding:14,textAlign:"center",borderTop:"3px solid "+T.gold}}><p style={{fontSize:20,fontWeight:700,color:T.gold}}>{sv.filter(function(x){return x.st==="review";}).length}</p><p style={{fontSize:10,color:T.gray}}>In Review</p></div>
+      <div className="card" style={{padding:14,textAlign:"center",borderTop:"3px solid "+T.gray}}><p style={{fontSize:20,fontWeight:700,color:T.gray}}>{sv.filter(function(x){return x.st==="closed";}).length}</p><p style={{fontSize:10,color:T.gray}}>Closed</p></div>
+    </div>
+    <div className="card" style={{padding:0,overflow:"hidden"}}>
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",padding:"10px 16px",background:T.light,borderBottom:"1px solid #eee"}}>
+        {["Survey","Type","Status","Responses"].map(function(h){return <span key={h} style={{fontSize:10,fontWeight:700,color:T.gray,textTransform:"uppercase",letterSpacing:.5}}>{h}</span>;})}
       </div>
-      <div style={{ overflowX: "auto" }}>
-        <table>
-          <thead>
-            <tr>
-              <th>Survey</th>
-              <th>Client</th>
-              <th>Status</th>
-              <th>Responses</th>
-              {!mobile && <th>Type</th>}
-              {!mobile && <th>Price</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(function(s) {
-              var statusColor = s.st === "active" ? "green" : s.st === "completed" ? "gray" : "gold";
-              return (
-                <tr key={s.id}>
-                  <td style={{ fontWeight: 600, color: T.navy }}>{s.title}</td>
-                  <td>{s.client}</td>
-                  <td><Badge text={s.st} color={statusColor} /></td>
-                  <td>{s.n}</td>
-                  {!mobile && <td>{s.type}</td>}
-                  {!mobile && <td>{"$" + s.price.toFixed(2)}</td>}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {sv.map(function(s){return (<div key={s.id} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:"1px solid #f5f5f5",alignItems:"center"}}>
+        <div><p style={{fontSize:13,fontWeight:600,color:T.dark}}>{s.title}</p><p style={{fontSize:10,color:T.gray}}>{s.client}</p></div>
+        <span style={{fontSize:11,color:T.gray}}>{s.type}</span>
+        <Badge text={s.st} color={s.st==="active"?"green":s.st==="review"?"gold":"gray"}/>
+        <span style={{fontSize:13,fontWeight:700,color:T.navy}}>{s.n}</span>
+      </div>);})}
+    </div>
+  </div>);
+}
+function RespondentPage({mobile}) {
+  var rsp=DATA.respondents;
+  var st=useState(null);var sel=st[0];var setSel=st[1];
+  var vf=rsp.filter(function(r){return r.vf;}).length;
+  if(sel){var u=rsp.find(function(r){return r.id===sel;});return (<div>
+    <button onClick={function(){setSel(null);}} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:12,fontWeight:600,marginBottom:12}}>Back to All Respondents</button>
+    <div className="card" style={{padding:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:16}}>
+        <div><h3 style={{fontSize:18,fontWeight:700,color:T.navy}}>{u.name}</h3><p style={{fontSize:12,color:T.gray}}>{u.loc}</p></div>
+        <Badge text={u.vf?"Verified":"Pending"} color={u.vf?"green":"gold"}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {[["Age",u.age],["State",u.loc],["Surveys Completed",u.sv],["Verified",u.vf?"Yes":"No"]].map(function(f,i){return (<div key={i} style={{padding:10,background:T.light,borderRadius:8}}><p style={{fontSize:10,color:T.gray}}>{f[0]}</p><p style={{fontSize:14,fontWeight:600,color:T.navy}}>{f[1]}</p></div>);})}
       </div>
     </div>
-  );
-}
-
-function RespondentPage({ mobile }) {
-  const [q, setQ] = useState("");
-  const [sel, setSel] = useState(null);
-  const rsp = DATA.respondents;
-  const filtered = rsp.filter(function(r) {
-    return r.name.toLowerCase().includes(q.toLowerCase()) || r.st.toLowerCase().includes(q.toLowerCase());
-  });
-
-  if (sel) {
-    return (
-      <div>
-        <button onClick={function() { setSel(null); }} style={{ background: "none", border: "none", color: T.red, fontSize: 13, cursor: "pointer", marginBottom: 12, fontWeight: 600 }}>
-          Back to List
-        </button>
-        <div className="card" style={{ padding: 20 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: T.navy, marginBottom: 12 }}>{sel.name}</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div><p style={{ fontSize: 11, color: T.gray }}>Email</p><p style={{ fontSize: 13 }}>{sel.email}</p></div>
-            <div><p style={{ fontSize: 11, color: T.gray }}>Status</p><Badge text={sel.vf ? "Verified" : "Pending"} color={sel.vf ? "green" : "red"} /></div>
-            <div><p style={{ fontSize: 11, color: T.gray }}>State</p><p style={{ fontSize: 13 }}>{sel.st}</p></div>
-            <div><p style={{ fontSize: 11, color: T.gray }}>Age</p><p style={{ fontSize: 13 }}>{sel.age}</p></div>
-            <div><p style={{ fontSize: 11, color: T.gray }}>Party</p><p style={{ fontSize: 13 }}>{sel.party}</p></div>
-            <div><p style={{ fontSize: 11, color: T.gray }}>Joined</p><p style={{ fontSize: 13 }}>{sel.dt}</p></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-        <h2 style={{ fontSize: mobile ? 18 : 20, fontWeight: 700, color: T.navy }}>Respondents</h2>
-        <input value={q} onChange={function(e) { setQ(e.target.value); }} placeholder="Search..." style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 13, width: mobile ? "100%" : 220 }} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 8, marginBottom: 16 }}>
-        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-          <p style={{ fontSize: 18, fontWeight: 700, color: T.navy }}>{rsp.length}</p>
-          <p style={{ fontSize: 10, color: T.gray }}>Total</p>
-        </div>
-        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-          <p style={{ fontSize: 18, fontWeight: 700, color: T.green }}>{rsp.filter(function(r){return r.vf;}).length}</p>
-          <p style={{ fontSize: 10, color: T.gray }}>Verified</p>
-        </div>
-        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-          <p style={{ fontSize: 18, fontWeight: 700, color: T.red }}>{rsp.filter(function(r){return !r.vf;}).length}</p>
-          <p style={{ fontSize: 10, color: T.gray }}>Pending</p>
-        </div>
-        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-          <p style={{ fontSize: 18, fontWeight: 700, color: T.gold }}>{new Set(rsp.map(function(r){return r.st;})).size}</p>
-          <p style={{ fontSize: 10, color: T.gray }}>States</p>
-        </div>
-      </div>
-      <div style={{ overflowX: "auto" }}>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>State</th>
-              {!mobile && <><th>Age</th><th>Party</th></>}
-              <th>Joined</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(function(r) {
-              return (
-                <tr key={r.id} style={{ cursor: "pointer" }} onClick={function() { setSel(r); }}>
-                  <td style={{ fontWeight: 600, color: T.navy }}>{r.name}</td>
-                  <td><Badge text={r.vf ? "Verified" : "Pending"} color={r.vf ? "green" : "red"} /></td>
-                  <td>{r.st}</td>
-                  {!mobile && <><td>{r.age}</td><td>{r.party}</td></>}
-                  <td style={{ fontSize: 12 }}>{r.dt}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+  </div>);}
+  return (<div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div><h2 style={{fontSize:20,fontWeight:700,color:T.navy}}>Respondents</h2><p style={{fontSize:12,color:T.gray}}>{rsp.length} total, {vf} verified</p></div>
+      <div style={{display:"flex",gap:6}}>
+        <span style={{background:T.green+"14",color:T.green,padding:"5px 10px",borderRadius:12,fontSize:11,fontWeight:700}}>{vf} Verified</span>
+        <span style={{background:T.gold+"14",color:T.gold,padding:"5px 10px",borderRadius:12,fontSize:11,fontWeight:700}}>{rsp.length-vf} Pending</span>
       </div>
     </div>
-  );
-}
-
-function ClientPage({ mobile }) {
-  const cls = DATA.clients;
-  return (
-    <div>
-      <h2 style={{ fontSize: mobile ? 18 : 20, fontWeight: 700, color: T.navy, marginBottom: 16 }}>Clients</h2>
-      <div style={{ overflowX: "auto" }}>
-        <table>
-          <thead>
-            <tr>
-              <th>Organization</th>
-              <th>Tier</th>
-              <th>Surveys</th>
-              {!mobile && <th>Revenue</th>}
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cls.map(function(c) {
-              return (
-                <tr key={c.id}>
-                  <td style={{ fontWeight: 600, color: T.navy }}>{c.name}</td>
-                  <td><Badge text={c.tier} color={c.tier === "Precision" ? "gold" : c.tier === "Refined" ? "green" : "gray"} /></td>
-                  <td>{c.surveys}</td>
-                  {!mobile && <td>{"$" + c.rev.toLocaleString()}</td>}
-                  <td><Badge text={c.st} color={c.st === "active" ? "green" : "gold"} /></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <div className="card" style={{padding:0,overflow:"hidden"}}>
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",padding:"10px 16px",background:T.light,borderBottom:"1px solid #eee"}}>
+        {["Name","Location","Surveys","Status"].map(function(h){return <span key={h} style={{fontSize:10,fontWeight:700,color:T.gray,textTransform:"uppercase",letterSpacing:.5}}>{h}</span>;})}
       </div>
+      {rsp.map(function(r){return (<div key={r.id} onClick={function(){setSel(r.id);}} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:"1px solid #f5f5f5",cursor:"pointer",alignItems:"center"}}>
+        <div><p style={{fontSize:13,fontWeight:600,color:T.dark}}>{r.name}</p><p style={{fontSize:10,color:T.gray}}>Age {r.age}</p></div>
+        <span style={{fontSize:12,color:T.gray}}>{r.loc}</span>
+        <span style={{fontSize:13,color:T.dark}}>{r.sv}</span>
+        <Badge text={r.vf?"Verified":"Pending"} color={r.vf?"green":"gold"}/>
+      </div>);})}
     </div>
-  );
+  </div>);
 }
-
+function ClientPage({mobile}) {
+  var cls=DATA.clients;
+  var totalRev=cls.reduce(function(s,x){return s+x.rev;},0);
+  return (<div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div><h2 style={{fontSize:20,fontWeight:700,color:T.navy}}>Clients</h2><p style={{fontSize:12,color:T.gray}}>{cls.length} organizations</p></div>
+      <div style={{background:T.green+"14",color:T.green,padding:"6px 12px",borderRadius:20,fontSize:12,fontWeight:700}}>{"$"+totalRev.toLocaleString()} total revenue</div>
+    </div>
+    <div className="card" style={{padding:0,overflow:"hidden"}}>
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",padding:"10px 16px",background:T.light,borderBottom:"1px solid #eee"}}>
+        {["Organization","Tier","Surveys","Revenue"].map(function(h){return <span key={h} style={{fontSize:10,fontWeight:700,color:T.gray,textTransform:"uppercase",letterSpacing:.5}}>{h}</span>;})}
+      </div>
+      {cls.map(function(cl){return (<div key={cl.id} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",padding:"14px 16px",borderBottom:"1px solid #f5f5f5",alignItems:"center"}}>
+        <div><p style={{fontSize:13,fontWeight:600,color:T.dark}}>{cl.name}</p><p style={{fontSize:10,color:T.gray}}>Since Jan 2025</p></div>
+        <Badge text={cl.tier} color={cl.tier==="Precision"?"gold":cl.tier==="Refined"?"navy":"gray"}/>
+        <span style={{fontSize:13,color:T.dark}}>{cl.svs}</span>
+        <span style={{fontSize:13,fontWeight:700,color:T.green}}>{"$"+cl.rev.toLocaleString()}</span>
+      </div>);})}
+    </div>
+  </div>);
+}
 function AnalyticsPage({ mobile }) {
   var md = [{m:"Oct",r:320,rv:1600},{m:"Nov",r:580,rv:2900},{m:"Dec",r:890,rv:4450},{m:"Jan",r:1340,rv:6700},{m:"Feb",r:1870,rv:9350}];
   var mx = 1870;
@@ -747,49 +651,22 @@ function SettingsPage() {
 }
 
 /* ===== ADMIN LAYOUT ===== */
-function Admin({ user, onOut }) {
-  const mobile = useIsMobile();
-  const [page, setPage] = useState("dash");
-  const [sideOpen, setSideOpen] = useState(false);
-
-  var content = null;
-  if (page === "dash") { content = <DashPage mobile={mobile} />; }
-  else if (page === "rev") { content = <ReviewPage />; }
-  else if (page === "sv") { content = <SurveyPage mobile={mobile} />; }
-  else if (page === "rsp") { content = <RespondentPage mobile={mobile} />; }
-  else if (page === "cls") { content = <ClientPage mobile={mobile} />; }
-  else if (page === "an") { content = <AnalyticsPage mobile={mobile} />; }
-  else if (page === "set") { content = <SettingsPage />; }
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", background: T.light }}>
-      {(!mobile || sideOpen) && (
-        <AdminSidebar page={page} setPage={setPage} onOut={onOut} mobile={mobile} onClose={function() { setSideOpen(false); }} />
-      )}
-      {mobile && sideOpen && (
-        <div onClick={function() { setSideOpen(false); }} style={{ position: "fixed", inset: 0, background: "#0006", zIndex: 55 }} />
-      )}
-      <div style={{ flex: 1, overflow: "auto" }}>
-        {mobile && (
-          <div style={{ background: "#fff", padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #eee" }}>
-            <button onClick={function() { setSideOpen(true); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>
-              {"="}
-            </button>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Shield size={18} />
-              <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 13, fontWeight: 700, color: T.navy }}>
-                Civic<span style={{ color: T.gold }}>Verify</span>
-              </span>
-            </div>
-            <div style={{ width: 20 }} />
-          </div>
-        )}
-        <div style={{ padding: mobile ? "14px" : "24px 28px", maxWidth: 1100 }}>
-          {content}
-        </div>
-      </div>
+function Admin({user,onOut}) {
+  var m=useIsMobile();var st=useState("dash");var page=st[0];var setPage=st[1];
+  var st2=useState(false);var sideOpen=st2[0];var setSideOpen=st2[1];
+  var pages={dash:<DashPage mobile={m}/>,rev:<ReviewPage/>,sv:<SurveyPage mobile={m}/>,rsp:<RespondentPage mobile={m}/>,cls:<ClientPage mobile={m}/>,an:<AnalyticsPage mobile={m}/>,set:<SettingsPage/>};
+  return (<div style={{display:"flex",minHeight:"100vh",background:T.light}}>
+    {(!m||sideOpen)&&<AdminSidebar page={page} setPage={setPage} onOut={onOut} mobile={m} onClose={function(){setSideOpen(false);}}/>}
+    {m&&sideOpen&&<div onClick={function(){setSideOpen(false);}} style={{position:"fixed",inset:0,background:"#0006",zIndex:55}}/>}
+    <div style={{flex:1,overflow:"auto"}}>
+      {m&&<div style={{background:"#fff",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid #eee"}}>
+        <button onClick={function(){setSideOpen(true);}} style={{background:"none",border:"none",fontSize:20,cursor:"pointer"}}>{"="}</button>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><Shield size={18}/><span style={{fontFamily:"'Libre Baskerville',serif",fontSize:13,fontWeight:700,color:T.navy}}>Civic<span style={{color:T.gold}}>Verify</span></span></div>
+        <div style={{width:20}}/>
+      </div>}
+      <div style={{padding:m?"14px":"24px 28px",maxWidth:1100}}>{pages[page]}</div>
     </div>
-  );
+  </div>);
 }
 
 /* ===== CITIZEN APP ===== */
@@ -805,45 +682,27 @@ function CitizenApp({ user, onOut }) {
   /* Survey Taking View */
   if (activeSurvey) {
     var qs = activeSurvey.type === "5Q"
-      ? ["How would you rate the current state of this issue?", "How much does this issue affect your daily life?", "Do you support increased government spending on this issue?", "How confident are you in current leadership on this issue?", "Would you support a ballot measure on this issue?"]
-      : ["How would you rate the current state of this issue?", "How much does this issue affect your daily life?", "Do you support increased government spending on this issue?", "How confident are you in current leadership on this issue?", "Would you support a ballot measure on this issue?", "How informed do you feel about this issue?", "Should this be a state or federal priority?", "Rate the transparency of current policy on this issue.", "How important is this compared to other issues?", "Would you attend a town hall on this issue?"];
-    var opts = ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
-    var allAnswered = qs.every(function(_, i) { return answers[i] !== undefined; });
-
-    return (
-      <div style={{ minHeight: "100vh", background: T.light }}>
-        <header style={{ background: "#fff", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee" }}>
-          <button onClick={function() { setActiveSurvey(null); setAnswers({}); }} style={{ background: "none", border: "none", color: T.red, fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Exit Survey</button>
-          <span style={{ fontSize: 12, color: T.gray }}>{Object.keys(answers).length}/{qs.length} answered</span>
-        </header>
-        <div style={{ padding: mobile ? 14 : 24, maxWidth: 600, margin: "0 auto" }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: T.navy, marginBottom: 4 }}>{activeSurvey.title}</h2>
-          <p style={{ fontSize: 12, color: T.gray, marginBottom: 20 }}>{activeSurvey.type} Survey for {activeSurvey.client}</p>
-          {qs.map(function(q, qi) {
-            return (
-              <div key={qi} className="card" style={{ padding: 16, marginBottom: 10 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: T.dark, marginBottom: 10 }}>{(qi + 1) + ". " + q}</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {opts.map(function(o, oi) {
-                    var selected = answers[qi] === oi;
-                    return (
-                      <button key={oi} onClick={function() { setAnswers(function(prev) { var n = Object.assign({}, prev); n[qi] = oi; return n; }); }} style={{ padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, border: selected ? "2px solid " + T.red : "1px solid #ddd", background: selected ? T.red + "12" : "#fff", color: selected ? T.red : T.gray, cursor: "pointer" }}>
-                        {o}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          {allAnswered && (
-            <button onClick={function() { setCompleted(function(prev) { return prev.concat([activeSurvey.id]); }); setActiveSurvey(null); setAnswers({}); }} className="btn btn-r" style={{ width: "100%", padding: "14px", fontSize: 15, marginTop: 8 }}>
-              SUBMIT SURVEY
-            </button>
-          )}
-        </div>
+      ? ["How would you rate the current state of this issue?","How much does this issue affect your daily life?","Do you support increased government spending on this issue?","How confident are you in current leadership on this issue?","Would you support a ballot measure on this issue?"]
+      : ["How would you rate the current state of this issue?","How much does this issue affect your daily life?","Do you support increased government spending?","How confident are you in current leadership?","Would you support a ballot measure?","How informed do you feel?","Should this be a state or federal priority?","Rate the transparency of current policy.","How important is this vs other issues?","Would you attend a town hall on this?"];
+    var opts = ["Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"];
+    var allDone = qs.every(function(_,i){return answers[i]!==undefined;});
+    return (<div style={{minHeight:"100vh",background:T.light}}>
+      <header style={{background:"#fff",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #eee"}}>
+        <button onClick={function(){setActiveSurvey(null);setAnswers({});}} style={{background:"none",border:"none",color:T.red,fontSize:13,cursor:"pointer",fontWeight:600}}>Exit Survey</button>
+        <span style={{fontSize:12,color:T.gray}}>{Object.keys(answers).length}/{qs.length} answered</span>
+      </header>
+      <div style={{padding:mobile?14:24,maxWidth:600,margin:"0 auto"}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:T.navy,marginBottom:4}}>{activeSurvey.title}</h2>
+        <p style={{fontSize:12,color:T.gray,marginBottom:20}}>{activeSurvey.type} Survey for {activeSurvey.client}</p>
+        {qs.map(function(q,qi){return (<div key={qi} className="card" style={{padding:14,marginBottom:8}}>
+          <p style={{fontSize:13,fontWeight:600,color:T.dark,marginBottom:8}}>{(qi+1)+". "+q}</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {opts.map(function(o,oi){var sel=answers[qi]===oi;return (<button key={oi} onClick={function(){setAnswers(function(p){var n=Object.assign({},p);n[qi]=oi;return n;});}} style={{padding:"5px 10px",borderRadius:20,fontSize:11,fontWeight:600,border:sel?"2px solid "+T.red:"1px solid #ddd",background:sel?T.red+"12":"#fff",color:sel?T.red:T.gray,cursor:"pointer"}}>{o}</button>);})}
+          </div>
+        </div>);})}
+        {allDone&&<button onClick={function(){setCompleted(function(p){return p.concat([activeSurvey.id]);});setActiveSurvey(null);setAnswers({});}} className="btn btn-r" style={{width:"100%",padding:"14px",fontSize:15,marginTop:8}}>SUBMIT SURVEY</button>}
       </div>
-    );
+    </div>);
   }
 
   return (
@@ -967,62 +826,26 @@ function CitizenApp({ user, onOut }) {
 }
 
 /* ===== ORG PORTAL ===== */
-function OrgPortal({ user, onOut }) {
-  const mobile = useIsMobile();
-  return (
-    <div style={{ minHeight: "100vh", background: T.light }}>
-      <header style={{ background: "#fff", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Shield size={22} />
-          <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: T.navy }}>
-            Civic<span style={{ color: T.gold }}>Verify</span>
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: T.gray }}>{user.name}</span>
-          <button onClick={onOut} style={{ background: "none", border: "none", color: T.red, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Out</button>
-        </div>
-      </header>
-      <div style={{ padding: mobile ? 14 : 24, maxWidth: 800, margin: "0 auto" }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: T.navy, marginBottom: 16 }}>Organization Dashboard</h2>
-        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
-          <div className="card" style={{ padding: 16, textAlign: "center" }}>
-            <p style={{ fontSize: 24, fontWeight: 700, color: T.navy }}>3</p>
-            <p style={{ fontSize: 11, color: T.gray }}>Active Surveys</p>
-          </div>
-          <div className="card" style={{ padding: 16, textAlign: "center" }}>
-            <p style={{ fontSize: 24, fontWeight: 700, color: T.green }}>1,882</p>
-            <p style={{ fontSize: 11, color: T.gray }}>Total Responses</p>
-          </div>
-          <div className="card" style={{ padding: 16, textAlign: "center" }}>
-            <p style={{ fontSize: 24, fontWeight: 700, color: T.gold }}>Precision</p>
-            <p style={{ fontSize: 11, color: T.gray }}>Your Tier</p>
-          </div>
-        </div>
-        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 12 }}>Your Surveys</h3>
-          {DATA.surveys.slice(0, 3).map(function(s) {
-            return (
-              <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f0f0f0" }}>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</p>
-                  <p style={{ fontSize: 11, color: T.gray }}>{s.type} - {s.n} responses</p>
-                </div>
-                <Badge text={s.st} color={s.st === "active" ? "green" : "gray"} />
-              </div>
-            );
-          })}
-        </div>
-        <div className="card" style={{ padding: 20 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 8 }}>Why CivicVerify?</h3>
-          <p style={{ fontSize: 13, color: T.gray, lineHeight: 1.6 }}>Every respondent is identity-verified. Your survey data represents real citizens, not bots or fabricated responses.</p>
-        </div>
-        <button onClick={onOut} className="btn btn-o" style={{ color: T.red, borderColor: T.red, width: "100%", marginTop: 16 }}>Sign Out</button>
+function OrgPortal({user,onOut}) {
+  var m=useIsMobile();
+  return (<div style={{minHeight:"100vh",background:T.light}}>
+    <header style={{background:"#fff",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #eee"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}><Shield size={22}/><span style={{fontFamily:"'Libre Baskerville',serif",fontSize:14,fontWeight:700,color:T.navy}}>Civic<span style={{color:T.gold}}>Verify</span></span></div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:12,color:T.gray}}>{user.name}</span><button onClick={onOut} style={{background:"none",border:"none",color:T.red,fontSize:12,cursor:"pointer",fontWeight:600}}>Out</button></div>
+    </header>
+    <div style={{padding:m?14:24,maxWidth:800,margin:"0 auto"}}>
+      <h2 style={{fontSize:20,fontWeight:700,color:T.navy,marginBottom:16}}>Organization Dashboard</h2>
+      <div style={{display:"grid",gridTemplateColumns:m?"1fr":"1fr 1fr 1fr",gap:12,marginBottom:20}}>
+        {[["3","Active Surveys",T.navy],["1,882","Total Responses",T.green],["Precision","Your Tier",T.gold]].map(function(x,i){return (<div key={i} className="card" style={{padding:16,textAlign:"center"}}><p style={{fontSize:24,fontWeight:700,color:x[2]}}>{x[0]}</p><p style={{fontSize:11,color:T.gray}}>{x[1]}</p></div>);})}
       </div>
+      <div className="card" style={{padding:20,marginBottom:16}}>
+        <h3 style={{fontSize:14,fontWeight:700,color:T.navy,marginBottom:12}}>Active Surveys</h3>
+        {DATA.surveys.slice(0,3).map(function(s){return (<div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #f0f0f0"}}><div><p style={{fontSize:13,fontWeight:600}}>{s.title}</p><p style={{fontSize:11,color:T.gray}}>{s.type} - {s.n} responses</p></div><Badge text={s.st} color={s.st==="active"?"green":"gray"}/></div>);})}
+      </div>
+      <button onClick={onOut} className="btn btn-o" style={{color:T.red,borderColor:T.red,width:"100%",marginTop:16}}>Sign Out</button>
     </div>
-  );
+  </div>);
 }
-
 /* ===== MAIN APP ===== */
 export default function App() {
   const [user, setUser] = useState(null);
