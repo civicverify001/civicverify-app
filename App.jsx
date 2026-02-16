@@ -101,7 +101,7 @@ const DATA = {
 };
 
 /* ===== LANDING PAGE ===== */
-function Landing({ onLogin, onSignup }) {
+function Landing({ onLogin, onSignup, goHome }) {
   const m = useIsMobile();
   const sec = {py:m?"40px 16px":"60px 40px",mx:{maxWidth:800,margin:"0 auto"}};
 
@@ -110,7 +110,8 @@ function Landing({ onLogin, onSignup }) {
       {/* NAV */}
       <nav style={{position:"sticky",top:0,zIndex:100,background:T.navy,borderBottom:"1px solid #fff1"}}>
         <div style={{maxWidth:1100,margin:"0 auto",padding:m?"0 16px":"0 32px",display:"flex",justifyContent:"space-between",alignItems:"center",height:56}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{flex:1}}/>
+          <div onClick={goHome} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",position:"absolute",left:"50%",transform:"translateX(-50%)"}}>
             <Shield size={24}/>
             <span style={{color:"#fff",fontFamily:"'Libre Baskerville',serif",fontSize:15,fontWeight:700}}>Civic<span style={{color:T.gold}}>Verify</span></span>
           </div>
@@ -866,7 +867,7 @@ export default function App() {
   return (
     <div>
       <style>{globalCSS}</style>
-      {screen === "landing" && <Landing onLogin={function() { setScreen("login"); }} onSignup={function() { setScreen("signup"); }} />}
+      {screen === "landing" && <Landing onLogin={function() { setScreen("login"); }} onSignup={function() { setScreen("signup"); }} goHome={function() { setScreen("landing"); }} />}
       {screen === "login" && <Auth mode="login" onOk={handleAuth} goBack={function() { setScreen("landing"); }} />}
       {screen === "signup" && <Auth mode="signup" onOk={handleAuth} goBack={function() { setScreen("landing"); }} />}
       {screen === "admin" && user && <Admin user={user} onOut={handleOut} />}
