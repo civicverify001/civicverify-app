@@ -145,34 +145,34 @@ function Landing({ onLogin, onSignup }) {
       </section>
 
       {/* CREDIBILITY BAR */}
-      <section style={{borderTop:"1px solid #fff1",padding:"24px 16px",background:"#ffffff06"}}>
-        <div style={{maxWidth:900,margin:"0 auto",display:"flex",justifyContent:"center",alignItems:"center",gap:m?16:40,flexWrap:"wrap",textAlign:"center"}}>
+      <section style={{borderTop:"1px solid #fff1",padding:"30px 16px",background:"linear-gradient(180deg,#0B254510,#0B254500)"}}>
+        <div style={{maxWidth:900,margin:"0 auto",display:"grid",gridTemplateColumns:m?"repeat(2,1fr)":"repeat(5,1fr)",gap:m?16:8,textAlign:"center"}}>
           {[["100%","ID Verified"],["Real-Time","Demographics"],["Zero","Fake Accounts"],["Verified","Citizens Only"],["256-bit","Encryption"]].map(function(item,i){
-            return (<div key={i} style={{minWidth:m?80:100}}>
-              <p style={{fontSize:m?18:26,fontWeight:800,color:T.gold,fontFamily:"'Libre Baskerville',serif"}}>{item[0]}</p>
-              <p style={{fontSize:9,color:"#fff5",textTransform:"uppercase",letterSpacing:1}}>{item[1]}</p>
+            return (<div key={i} style={{padding:"12px 0"}}>
+              <p style={{fontSize:m?24:36,fontWeight:800,color:T.gold,fontFamily:"'Libre Baskerville',serif",lineHeight:1}}>{item[0]}</p>
+              <p style={{fontSize:10,color:"#fff5",textTransform:"uppercase",letterSpacing:1.5,marginTop:4}}>{item[1]}</p>
             </div>);
           })}
         </div>
       </section>
 
       {/* THE PROBLEM */}
-      <section style={{background:"#fff",padding:sec.py}}>
+      <section style={{background:"#fff",padding:m?"36px 16px":"56px 40px"}}>
         <div style={Object.assign({},sec.mx,{textAlign:"center"})}>
-          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?20:30,color:T.navy,marginBottom:8}}>The Problem With <span style={{color:T.red}}>Current Polling</span></h2>
-          <p style={{color:T.gray,fontSize:13,maxWidth:520,margin:"0 auto 24px",lineHeight:1.6}}>Traditional polls and online surveys are fundamentally broken. Here's why the data shaping your life can't be trusted.</p>
+          <p style={{color:T.red,fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>The Crisis in Public Data</p>
+          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?22:34,color:T.navy,marginBottom:10}}>The Problem With <span style={{color:T.red}}>Current Polling</span></h2>
+          <p style={{color:T.gray,fontSize:14,maxWidth:520,margin:"0 auto 28px",lineHeight:1.6}}>Traditional polls and online surveys are fundamentally broken. The data shaping your life cannot be trusted.</p>
           <div style={{display:"grid",gridTemplateColumns:m?"1fr":"repeat(3,1fr)",gap:16,textAlign:"left"}}>
             {[
-              ["Fake Respondents","Up to 40% of online survey responses come from bots, click farms, and duplicate accounts. Policies shaped by people who don't exist."],
-              ["Zero Verification","Traditional polls rely on phone calls and self-reported demographics with no way to confirm identity."],
-              ["Biased Sampling","Most polls oversample urban and tech-savvy demographics. Rural communities and working families are chronically underrepresented."]
+              ["Fake Respondents","Up to 40% of online survey responses come from bots, click farms, and duplicate accounts. Policies shaped by people who don't exist.","40%","bot responses"],
+              ["Zero Verification","Traditional polls rely on phone calls and self-reported demographics with no way to confirm identity.","0","identity checks"],
+              ["Biased Sampling","Most polls oversample urban and tech-savvy demographics. Rural communities and working families are chronically underrepresented.","62%","of Americans distrust polls"]
             ].map(function(item,i){
-              return (<div key={i} style={{background:T.light,borderRadius:14,padding:20,border:"1px solid #f0ece8"}}>
-                <div style={{width:36,height:36,borderRadius:"50%",background:T.red+"14",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10}}>
-                  <span style={{color:T.red,fontWeight:800,fontSize:16}}>!</span>
-                </div>
-                <h3 style={{fontSize:14,fontWeight:700,color:T.navy,marginBottom:6}}>{item[0]}</h3>
-                <p style={{fontSize:12,color:T.gray,lineHeight:1.6}}>{item[1]}</p>
+              return (<div key={i} style={{background:T.light,borderRadius:14,padding:24,border:"1px solid #f0ece8"}}>
+                <p style={{fontSize:28,fontWeight:800,color:T.red,fontFamily:"'Libre Baskerville',serif"}}>{item[2]}</p>
+                <p style={{fontSize:9,color:T.red,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>{item[3]}</p>
+                <h3 style={{fontSize:16,fontWeight:700,color:T.navy,marginBottom:8}}>{item[0]}</h3>
+                <p style={{fontSize:13,color:T.gray,lineHeight:1.6}}>{item[1]}</p>
               </div>);
             })}
           </div>
@@ -180,20 +180,21 @@ function Landing({ onLogin, onSignup }) {
       </section>
 
       {/* THE SOLUTION - HOW IT WORKS */}
-      <section style={{background:T.dark,padding:sec.py,borderTop:"1px solid #fff1"}}>
+      <section style={{background:T.dark,padding:m?"40px 16px":"64px 40px",borderTop:"1px solid #fff1"}}>
         <div style={Object.assign({},sec.mx,{textAlign:"center"})}>
-          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?20:28,color:"#fff",marginBottom:8}}>How <span style={{color:T.gold}}>CivicVerify</span> Works</h2>
-          <p style={{color:"#fff6",fontSize:13,maxWidth:500,margin:"0 auto 28px"}}>Three steps to make your verified voice count in the decisions that shape your life.</p>
+          <p style={{color:T.gold,fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>The CivicVerify Process</p>
+          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?22:32,color:"#fff",marginBottom:8}}>How <span style={{color:T.gold}}>CivicVerify</span> Works</h2>
+          <p style={{color:"#fff6",fontSize:14,maxWidth:500,margin:"0 auto 32px"}}>Three steps to make your verified voice count in the decisions that shape your life.</p>
           <div style={{display:"grid",gridTemplateColumns:m?"1fr":"repeat(3,1fr)",gap:16}}>
             {[
-              ["1","Verify Your Identity","Complete a quick, secure ID verification. Your identity is confirmed but never stored - we verify you're real, then forget the details."],
-              ["2","Share Your Voice","Answer short, focused surveys on policies that affect you. Healthcare, education, taxes, public safety - issues that matter."],
-              ["3","Shape Real Policy","Your verified responses go directly to lawmakers, researchers, and organizations. Real data from real people driving real change."]
+              ["01","Verify Your Identity","Complete a quick, secure ID verification. Your identity is confirmed but never stored - we verify you're real, then forget the details."],
+              ["02","Share Your Voice","Answer short, focused surveys on policies that affect you. Healthcare, education, taxes, public safety - issues that matter."],
+              ["03","Shape Real Policy","Your verified responses go directly to lawmakers, researchers, and organizations. Real data from real people driving real change."]
             ].map(function(step,i){
-              return (<div key={i} style={{background:"#ffffff08",borderRadius:14,padding:m?"20px 16px":"24px 20px",border:"1px solid #fff1",textAlign:"left"}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:T.gold,color:T.navy,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,marginBottom:12}}>{step[0]}</div>
-                <h3 style={{color:"#fff",fontSize:15,fontWeight:700,marginBottom:8}}>{step[1]}</h3>
-                <p style={{color:"#fff8",fontSize:12,lineHeight:1.6}}>{step[2]}</p>
+              return (<div key={i} style={{background:"#ffffff08",borderRadius:14,padding:m?"24px 18px":"28px 22px",border:"1px solid #fff1",textAlign:"left"}}>
+                <p style={{fontSize:32,fontWeight:800,color:T.gold,fontFamily:"'Libre Baskerville',serif",marginBottom:8,lineHeight:1}}>{step[0]}</p>
+                <h3 style={{color:"#fff",fontSize:16,fontWeight:700,marginBottom:10}}>{step[1]}</h3>
+                <p style={{color:"#ffffffaa",fontSize:13,lineHeight:1.7}}>{step[2]}</p>
               </div>);
             })}
           </div>
@@ -201,26 +202,27 @@ function Landing({ onLogin, onSignup }) {
       </section>
 
       {/* CIVICVERIFY vs TRADITIONAL POLLING */}
-      <section style={{background:"#fff",padding:sec.py}}>
+      <section style={{background:"#fff",padding:m?"36px 16px":"56px 40px"}}>
         <div style={sec.mx}>
-          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?20:28,color:T.navy,marginBottom:20,textAlign:"center"}}>Why CivicVerify is <span style={{color:T.gold}}>Different</span></h2>
-          <div style={{borderRadius:14,overflow:"hidden",border:"1px solid #eee"}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",background:T.navy,padding:"12px 16px"}}>
-              <span style={{color:"#fff8",fontSize:11,fontWeight:700}}> </span>
-              <span style={{color:"#fff",fontSize:11,fontWeight:700,textAlign:"center"}}>Traditional Polls</span>
-              <span style={{color:T.gold,fontSize:11,fontWeight:700,textAlign:"center"}}>CivicVerify</span>
+          <p style={{color:T.gold,fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",marginBottom:8,textAlign:"center"}}>Side-by-Side Comparison</p>
+          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?22:32,color:T.navy,marginBottom:24,textAlign:"center"}}>Why CivicVerify is <span style={{color:T.gold}}>Different</span></h2>
+          <div style={{borderRadius:14,overflow:"hidden",border:"2px solid "+T.navy}}>
+            <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr",background:T.navy,padding:"14px 20px"}}>
+              <span style={{color:"#fff6",fontSize:12,fontWeight:700}}>Feature</span>
+              <span style={{color:"#fff8",fontSize:12,fontWeight:700,textAlign:"center"}}>Traditional Polls</span>
+              <span style={{color:T.gold,fontSize:12,fontWeight:700,textAlign:"center"}}>CivicVerify</span>
             </div>
             {[
-              ["Identity Verified","No","Yes - 100%"],
-              ["Bot Protection","Basic","Military-grade"],
-              ["Demographics","Self-reported","ID-verified"],
-              ["Duplicate Prevention","IP-based","Identity-based"],
-              ["Data Transparency","Open & auditable","Fully auditable"]
+              ["Identity Verified","No","100% Verified"],
+              ["Bot Protection","Basic / IP-only","Identity-based"],
+              ["Demographics","Self-reported","ID-confirmed"],
+              ["Duplicate Prevention","Weak","Impossible"],
+              ["Data Transparency","Opaque","Fully auditable"]
             ].map(function(row,i){
-              return (<div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",padding:"10px 16px",background:i%2===0?T.light:"#fff",borderTop:"1px solid #eee"}}>
-                <span style={{fontSize:12,fontWeight:600,color:T.navy}}>{row[0]}</span>
-                <span style={{fontSize:12,color:T.red,textAlign:"center"}}>{row[1]}</span>
-                <span style={{fontSize:12,color:T.green,fontWeight:700,textAlign:"center"}}>{row[2]}</span>
+              return (<div key={i} style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr",padding:"14px 20px",background:i%2===0?T.light:"#fff",borderTop:"1px solid #eee"}}>
+                <span style={{fontSize:13,fontWeight:600,color:T.navy}}>{row[0]}</span>
+                <span style={{fontSize:13,color:T.red,textAlign:"center",fontWeight:600}}>{row[1]}</span>
+                <span style={{fontSize:13,color:T.green,fontWeight:700,textAlign:"center"}}>{row[2]}</span>
               </div>);
             })}
           </div>
@@ -228,10 +230,11 @@ function Landing({ onLogin, onSignup }) {
       </section>
 
       {/* TRUST / NONPARTISAN */}
-      <section style={{background:T.cream,padding:sec.py}}>
+      <section style={{background:T.cream,padding:m?"36px 16px":"56px 40px"}}>
         <div style={Object.assign({},sec.mx,{textAlign:"center"})}>
-          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?20:28,color:T.navy,marginBottom:10}}>Independent. Nonpartisan. <span style={{color:T.gold}}>Verified.</span></h2>
-          <p style={{color:T.gray,fontSize:13,maxWidth:560,margin:"0 auto 20px"}}>Not owned by any political party, news network, corporation, or special interest group. We exist to give real citizens a real voice.</p>
+          <p style={{color:T.navy,fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Our Commitment</p>
+          <h2 style={{fontFamily:"'Libre Baskerville',serif",fontSize:m?22:32,color:T.navy,marginBottom:10}}>Independent. Nonpartisan. <span style={{color:T.gold}}>Verified.</span></h2>
+          <p style={{color:T.gray,fontSize:14,maxWidth:560,margin:"0 auto 24px"}}>Not owned by any political party, news network, corporation, or special interest group. We exist to give real citizens a real voice.</p>
           <div style={{display:"grid",gridTemplateColumns:m?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
             {[
               ["Zero Political Ties","No party affiliation. No partisan agenda. Just verified citizen voices."],
@@ -239,10 +242,10 @@ function Landing({ onLogin, onSignup }) {
               ["Built for Citizens","Designed to serve the people, not corporations or politicians."],
               ["Public Audit Trail","All methodology is transparent and independently auditable."]
             ].map(function(item,i){
-              return (<div key={i} style={{background:"#fff",borderRadius:12,padding:16,textAlign:"left",border:"1px solid #eee"}}>
-                <Shield size={20}/>
-                <p style={{fontSize:13,fontWeight:700,color:T.navy,marginBottom:4,marginTop:8}}>{item[0]}</p>
-                <p style={{fontSize:11,color:T.gray,lineHeight:1.5}}>{item[1]}</p>
+              return (<div key={i} style={{background:"#fff",borderRadius:12,padding:20,textAlign:"left",border:"1px solid #eee"}}>
+                <Shield size={22}/>
+                <p style={{fontSize:14,fontWeight:700,color:T.navy,marginBottom:6,marginTop:10}}>{item[0]}</p>
+                <p style={{fontSize:12,color:T.gray,lineHeight:1.6}}>{item[1]}</p>
               </div>);
             })}
           </div>
@@ -733,28 +736,14 @@ function AnalyticsPage({ mobile }) {
 }
 
 function SettingsPage() {
-  return (
-    <div>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: T.navy, marginBottom: 16 }}>Settings</h2>
-      <div className="card" style={{ padding: 20 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 12 }}>Platform Configuration</h3>
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}>
-            <span style={{ fontSize: 13 }}>Require ID Verification</span>
-            <Badge text="Enabled" color="green" />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}>
-            <span style={{ fontSize: 13 }}>Auto-approve Standard Surveys</span>
-            <Badge text="Disabled" color="gray" />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}>
-            <span style={{ fontSize: 13 }}>Response Rate Limit</span>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>5 per day</span>
-          </div>
-        </div>
-      </div>
+  var items = [["Require ID Verification","Enabled","green"],["Auto-approve Standard Surveys","Disabled","gray"],["Response Rate Limit","5 per day",""]];
+  return (<div>
+    <h2 style={{fontSize:20,fontWeight:700,color:T.navy,marginBottom:16}}>Settings</h2>
+    <div className="card" style={{padding:20}}>
+      <h3 style={{fontSize:14,fontWeight:700,color:T.navy,marginBottom:12}}>Platform Configuration</h3>
+      {items.map(function(x,i){return (<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #f0f0f0"}}><span style={{fontSize:13}}>{x[0]}</span>{x[2]?<Badge text={x[1]} color={x[2]}/>:<span style={{fontSize:13,fontWeight:600}}>{x[1]}</span>}</div>);})}
     </div>
-  );
+  </div>);
 }
 
 /* ===== ADMIN LAYOUT ===== */
