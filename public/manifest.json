@@ -1,0 +1,12 @@
+{
+  "name": "CivicVerify",
+  "short_name": "CivicVerify",
+  "description": "Verified civic polling platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B2545",
+  "theme_color": "#0B2545",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
