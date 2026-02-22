@@ -1,98 +1,179 @@
-// src/pages/citizen/Surveys.jsx — Polished
+// src/pages/citizen/Surveys.jsx — Shows only surveys matching citizen's demographics
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
 
+var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
+var font = 'Libre Baskerville, Georgia, serif';
+
+function calcAge(dob) {
+  if (!dob) return null;
+  var d = new Date(dob);
+  return Math.floor((Date.now() - d.getTime()) / 31557600000);
+}
+
+function matchesSurvey(survey, profile) {
+  // Each targeting field: if survey has it set, citizen must match. If null/empty, means "all"
+  if (survey.target_state && profile.state !== survey.target_state) return false;
+  if (survey.target_county && profile.county !== survey.target_county) return false;
+  if (survey.target_city && profile.city && profile.city.toLowerCase() !== survey.target_city.toLowerCase()) return false;
+  if (survey.target_zip && profile.zip !== survey.target_zip) return false;
+  if (survey.target_race && profile.race !== survey.target_race) return false;
+  if (survey.target_sex && profile.sex !== survey.target_sex) return false;
+  if (survey.target_education && profile.education !== survey.target_education) return false;
+  if (survey.target_employment && profile.employment !== survey.target_employment) return false;
+  if (survey.target_income && profile.income !== survey.target_income) return false;
+  if (survey.target_marital && profile.marital_status !== survey.target_marital) return false;
+  if (survey.target_party && profile.party !== survey.target_party) return false;
+  if (survey.target_housing && profile.housing !== survey.target_housing) return false;
+  if (survey.target_voter_registered === 'Yes' && !profile.voter_registered) return false;
+  if (survey.target_voter_registered === 'No' && profile.voter_registered) return false;
+  if (survey.target_veteran === 'Yes' && !profile.veteran) return false;
+  if (survey.target_veteran === 'No' && profile.veteran) return false;
+  // Age matching
+  var age = calcAge(profile.date_of_birth);
+  if (age !== null) {
+    if (survey.target_age_min && age < survey.target_age_min) return false;
+    if (survey.target_age_max && age > survey.target_age_max) return false;
+  }
+  return true;
+}
+
 export default function CitizenSurveys() {
-  const navigate = useNavigate();
-  const { profile } = useAuth();
-  const [surveys, setSurveys] = useState([]);
-  const [completed, setCompleted] = useState([]);
-  const [tab, setTab] = useState('available');
-  const [loading, setLoading] = useState(true);
+  var navigate = useNavigate();
+  var auth = useAuth();
+  var profile = auth.profile;
+  var user = auth.user;
+  var [surveys, setSurveys] = useState([]);
+  var [completed, setCompleted] = useState([]);
+  var [loading, setLoading] = useState(true);
+  var [tab, setTab] = useState('available');
 
-  useEffect(() => {
-    (async () => {
-      const [{ data: surveyData }, { data: responseData }] = await Promise.all([
-        supabase.from('surveys').select('*').eq('status', 'active').order('created_at', { ascending: false }),
-        supabase.from('responses').select('survey_id').eq('user_id', profile?.id),
-      ]);
-      const completedIds = (responseData || []).map(r => r.survey_id);
-      setCompleted(completedIds);
-      setSurveys(surveyData || []);
+  useEffect(function() {
+    if (!user || !profile) return;
+    Promise.all([
+      supabase.from('surveys').select('*').eq('status', 'active').order('created_at', { ascending: false }),
+      supabase.from('responses').select('survey_id').eq('user_id', user.id)
+    ]).then(function(results) {
+      var allSurveys = results[0].data || [];
+      var doneIds = (results[1].data || []).map(function(r) { return r.survey_id; });
+      setCompleted(doneIds);
+      // Filter surveys that match this citizen's demographics
+      var matched = allSurveys.filter(function(s) { return matchesSurvey(s, profile); });
+      setSurveys(matched);
       setLoading(false);
-    })();
-  }, [profile]);
+    });
+  }, [user, profile]);
 
-  const available = surveys.filter(s => !completed.includes(s.id));
-  const done = surveys.filter(s => completed.includes(s.id));
-  const list = tab === 'available' ? available : done;
+  var available = surveys.filter(function(s) { return completed.indexOf(s.id) === -1; });
+  var done = surveys.filter(function(s) { return completed.indexOf(s.id) !== -1; });
+  var shown = tab === 'available' ? available : tab === 'completed' ? done : surveys;
 
-  if (!profile?.is_verified) {
-    return (
-      <div className="max-w-lg mx-auto py-16 text-center">
-        <div className="w-24 h-24 rounded-full bg-[#C5960C]/5 flex items-center justify-center text-4xl mx-auto mb-6">🔒</div>
-        <h2 className="text-2xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Verification Required</h2>
-        <p className="text-sm text-[#0B2545]/40 mt-3 max-w-sm mx-auto leading-relaxed">To ensure authentic civic participation, you need to verify your identity before accessing surveys.</p>
-        <button onClick={() => navigate('/citizen/verify')} className="mt-6 px-6 py-3 bg-[#C5960C] hover:bg-[#b3870b] text-white font-semibold rounded-xl shadow-sm hover:shadow-md hover:shadow-[#C5960C]/20 transition-all duration-200">Verify My Identity →</button>
-      </div>
-    );
+  // Check profile completeness for matching
+  var missingFields = [];
+  if (!profile) { /* loading */ }
+  else {
+    if (!profile.state) missingFields.push('State');
+    if (!profile.race) missingFields.push('Race');
+    if (!profile.sex) missingFields.push('Sex');
+    if (!profile.date_of_birth) missingFields.push('Date of Birth');
+    if (!profile.education) missingFields.push('Education');
+    if (!profile.employment) missingFields.push('Employment');
+    if (!profile.income) missingFields.push('Income');
+    if (!profile.party) missingFields.push('Party');
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-32">
-      <div className="w-10 h-10 border-[3px] border-[#C5960C] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><div style={{ width: 36, height: 36, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /><style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style></div>;
 
   return (
-    <div className="space-y-6 max-w-[1000px]">
-      <div>
-        <h1 className="text-3xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Surveys</h1>
-        <p className="text-sm text-[#0B2545]/35 mt-1">Make your voice heard on issues that matter</p>
-      </div>
+    <div style={{ fontFamily: 'DM Sans, sans-serif' }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: font }}>Available Surveys</h1>
+      <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: '0 0 24px' }}>Polls matched to your profile and location</p>
+
+      {/* Profile completeness warning */}
+      {missingFields.length > 0 && (
+        <div style={{ background: C.gold + '08', border: '1px solid ' + C.gold + '20', borderRadius: 12, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>{'\u26A0\uFE0F'}</span>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: '0 0 4px' }}>Complete your profile for more surveys</p>
+            <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.45)', margin: '0 0 8px', lineHeight: 1.5 }}>
+              You're missing: <strong>{missingFields.join(', ')}</strong>. Surveys targeting these demographics won't appear for you.
+            </p>
+            <button onClick={function(){navigate('/citizen/account')}} style={{ padding: '8px 16px', background: C.gold, color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Complete Profile {'\u2192'}</button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-white rounded-xl border border-[#0B2545]/[0.06] p-1 w-fit shadow-sm">
-        <button onClick={() => setTab('available')} className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${tab === 'available' ? 'bg-[#0B2545] text-white shadow-sm' : 'text-[#0B2545]/40 hover:text-[#0B2545]/70'}`}>
-          Available <span className="ml-1 opacity-50">{available.length}</span>
-        </button>
-        <button onClick={() => setTab('completed')} className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${tab === 'completed' ? 'bg-[#0B2545] text-white shadow-sm' : 'text-[#0B2545]/40 hover:text-[#0B2545]/70'}`}>
-          Completed <span className="ml-1 opacity-50">{done.length}</span>
-        </button>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'rgba(11,37,69,0.03)', borderRadius: 10, padding: 4 }}>
+        {[{ k: 'available', l: 'Available (' + available.length + ')' }, { k: 'completed', l: 'Completed (' + done.length + ')' }, { k: 'all', l: 'All (' + surveys.length + ')' }].map(function(t) {
+          return <button key={t.k} onClick={function(){setTab(t.k)}} style={{ flex: 1, padding: '10px 16px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: tab === t.k ? '#fff' : 'transparent', color: tab === t.k ? C.navy : 'rgba(11,37,69,0.35)', boxShadow: tab === t.k ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>{t.l}</button>;
+        })}
       </div>
 
       {/* Survey Cards */}
-      {list.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {list.map(s => (
-            <div key={s.id} className="bg-white rounded-2xl border border-[#0B2545]/[0.04] p-6 shadow-sm hover:shadow-lg hover:shadow-[#0B2545]/[0.04] hover:-translate-y-0.5 transition-all duration-300 group">
-              <div className="flex items-start justify-between mb-3">
-                <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${tab === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-[#C5960C]/10 text-[#C5960C]'}`}>
-                  {tab === 'completed' ? '✓ Completed' : `📝 ${(s.questions || []).length} questions`}
-                </span>
-                {s.urgency === 'urgent' && <span className="w-2 h-2 bg-[#B8352E] rounded-full animate-pulse" />}
-              </div>
-              <h3 className="text-lg font-bold text-[#0B2545] group-hover:text-[#C5960C] transition-colors">{s.title}</h3>
-              {s.description && <p className="text-sm text-[#0B2545]/35 mt-1.5 line-clamp-2 leading-relaxed">{s.description}</p>}
-              <div className="flex items-center gap-3 mt-4 text-[11px] text-[#0B2545]/25">
-                <span>📅 {new Date(s.created_at).toLocaleDateString()}</span>
-                {s.target_state && <span>📍 {s.target_state}</span>}
-              </div>
-              {tab === 'available' && (
-                <button onClick={() => navigate(`/citizen/surveys/${s.id}`)} className="mt-4 w-full py-2.5 bg-[#C5960C] hover:bg-[#b3870b] text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-[#C5960C]/20">
-                  Take Survey →
-                </button>
-              )}
-            </div>
-          ))}
+      {shown.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: 14, border: '1px solid rgba(11,37,69,0.06)' }}>
+          <span style={{ fontSize: 48, display: 'block', marginBottom: 16 }}>{tab === 'completed' ? '\uD83C\uDFC6' : '\uD83D\uDCED'}</span>
+          <p style={{ fontSize: 16, fontWeight: 600, color: C.navy, margin: '0 0 8px' }}>{tab === 'completed' ? 'No surveys completed yet' : 'No surveys available'}</p>
+          <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: 0 }}>{tab === 'completed' ? 'Take your first survey to make your voice heard!' : 'New polls matching your profile will appear here'}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-[#0B2545]/[0.04] py-20 flex flex-col items-center text-center shadow-sm">
-          <div className="w-20 h-20 rounded-2xl bg-[#C5960C]/5 flex items-center justify-center text-3xl mb-5">{tab === 'available' ? '📋' : '✅'}</div>
-          <p className="text-base font-semibold text-[#0B2545]/25">{tab === 'available' ? 'No surveys available right now' : 'No completed surveys yet'}</p>
-          <p className="text-sm text-[#0B2545]/20 mt-1">{tab === 'available' ? 'Check back soon for new surveys' : 'Start by taking your first survey'}</p>
+        <div style={{ display: 'grid', gap: 16 }}>
+          {shown.map(function(s) {
+            var isDone = completed.indexOf(s.id) !== -1;
+            var progress = s.target_responses ? Math.min(100, Math.round(((s.response_count || 0) / s.target_responses) * 100)) : null;
+            var qCount = s.questions ? (Array.isArray(s.questions) ? s.questions.length : 0) : 0;
+
+            // Build targeting tags
+            var tags = [s.target_state, s.target_race, s.target_sex, s.target_education, s.target_party, s.target_age_min ? 'Age ' + s.target_age_min + '+' : null].filter(Boolean);
+
+            return (
+              <div key={s.id} style={{ background: '#fff', borderRadius: 14, border: '1px solid rgba(11,37,69,0.06)', overflow: 'hidden', opacity: isDone ? 0.7 : 1 }}>
+                <div style={{ padding: '20px 24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: 17, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>{s.title}</h3>
+                      {s.description && <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: '0 0 8px', lineHeight: 1.5 }}>{s.description}</p>}
+                    </div>
+                    {isDone && <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: C.green + '10', padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>{'\u2713'} Completed</span>}
+                  </div>
+
+                  {/* Tags */}
+                  {tags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                      {tags.map(function(t, i) { return <span key={i} style={{ fontSize: 10, fontWeight: 600, color: 'rgba(11,37,69,0.35)', background: 'rgba(11,37,69,0.03)', padding: '3px 8px', borderRadius: 6 }}>{t}</span>; })}
+                    </div>
+                  )}
+
+                  {/* Stats row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: progress !== null ? 12 : 0 }}>
+                    <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)' }}>{'\uD83D\uDCCB'} {qCount} question{qCount !== 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)' }}>{'\uD83D\uDC65'} {s.response_count || 0} responses</span>
+                    {s.target_responses && <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)' }}>{'\uD83C\uDFAF'} {s.target_responses} target</span>}
+                  </div>
+
+                  {/* Progress bar */}
+                  {progress !== null && (
+                    <div style={{ marginBottom: 0 }}>
+                      <div style={{ width: '100%', height: 4, background: 'rgba(11,37,69,0.04)', borderRadius: 2 }}>
+                        <div style={{ height: '100%', background: progress >= 100 ? C.green : C.gold, borderRadius: 2, width: progress + '%', transition: 'width 0.5s' }} />
+                      </div>
+                      <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', margin: '4px 0 0' }}>{progress}% complete</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action */}
+                {!isDone && (
+                  <div style={{ padding: '12px 24px 20px' }}>
+                    <button onClick={function(){navigate('/citizen/surveys/' + s.id)}} style={{ width: '100%', padding: 12, background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Take Survey {'\u2192'}</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
