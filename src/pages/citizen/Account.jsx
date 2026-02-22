@@ -1,4 +1,4 @@
-// src/pages/citizen/Settings.jsx — Profile & Location Editor
+// src/pages/citizen/Account.jsx — Profile & Location Editor
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -6,12 +6,17 @@ import { useAuth } from '../../hooks/useAuth';
 
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
 var font = 'Libre Baskerville, Georgia, serif';
-
 var US_STATES = ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
 
-export default function CitizenSettings() {
+var inputStyle = { width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid rgba(11,37,69,0.1)', borderRadius: 10, outline: 'none', color: '#0B2545', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' };
+var selectStyle = Object.assign({}, inputStyle, { appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M2 4l4 4 4-4\' fill=\'none\' stroke=\'%230B2545\' stroke-width=\'1.5\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center', paddingRight: 40 });
+var labelStyle = { display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, color: 'rgba(11,37,69,0.35)', marginBottom: 6 };
+
+export default function CitizenAccount() {
   var navigate = useNavigate();
-  var { user, profile } = useAuth();
+  var auth = useAuth();
+  var user = auth.user;
+  var profile = auth.profile;
   var [form, setForm] = useState({ full_name: '', phone: '', state: '', county: '', city: '', zip: '' });
   var [loading, setLoading] = useState(true);
   var [saving, setSaving] = useState(false);
@@ -37,7 +42,7 @@ export default function CitizenSettings() {
   }
 
   function formatPhone(val) {
-    var digits = val.replace(/\D/g, '').slice(0, 10);
+    var digits = (val || '').replace(/\D/g, '').slice(0, 10);
     if (digits.length >= 7) return '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6);
     if (digits.length >= 4) return '(' + digits.slice(0,3) + ') ' + digits.slice(3);
     if (digits.length > 0) return '(' + digits;
@@ -51,17 +56,12 @@ export default function CitizenSettings() {
 
     setSaving(true);
     var phoneDigits = form.phone.replace(/\D/g, '');
-
-    // Check phone uniqueness if changed
     if (phoneDigits && phoneDigits !== profile.phone) {
-      var { data: existing } = await supabase.from('users').select('id').eq('phone', phoneDigits).neq('id', user.id).limit(1);
-      if (existing && existing.length > 0) {
-        setSaving(false);
-        return setMsg({ type: 'error', text: 'This phone number is already linked to another account.' });
-      }
+      var r = await supabase.from('users').select('id').eq('phone', phoneDigits).neq('id', user.id).limit(1);
+      if (r.data && r.data.length > 0) { setSaving(false); return setMsg({ type: 'error', text: 'This phone number is already linked to another account.' }); }
     }
 
-    var { error } = await supabase.from('users').update({
+    var res = await supabase.from('users').update({
       full_name: form.full_name.trim(),
       phone: phoneDigits || null,
       state: form.state,
@@ -71,23 +71,8 @@ export default function CitizenSettings() {
     }).eq('id', user.id);
 
     setSaving(false);
-    if (error) return setMsg({ type: 'error', text: error.message });
+    if (res.error) return setMsg({ type: 'error', text: res.error.message });
     setMsg({ type: 'success', text: 'Profile updated successfully!' });
-  }
-
-  var inputStyle = { width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid rgba(11,37,69,0.1)', borderRadius: 10, outline: 'none', color: C.navy, background: '#fff', fontFamily: 'inherit' };
-  var selectStyle = Object.assign({}, inputStyle, { appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M2 4l4 4 4-4\' fill=\'none\' stroke=\'%230B2545\' stroke-width=\'1.5\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center', paddingRight: 40 });
-
-  function Field({ label, required, children, hint }) {
-    return (
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, color: 'rgba(11,37,69,0.35)', marginBottom: 6 }}>
-          {label} {required ? <span style={{ color: C.red }}>*</span> : null}
-        </label>
-        {children}
-        {hint ? <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', margin: '4px 0 0' }}>{hint}</p> : null}
-      </div>
-    );
   }
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><div style={{ width: 36, height: 36, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /><style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style></div>;
@@ -127,17 +112,22 @@ export default function CitizenSettings() {
       <div style={{ background: '#fff', borderRadius: 14, padding: 24, border: '1px solid rgba(11,37,69,0.06)', marginBottom: 20 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>{'\uD83D\uDC64'} Account Information</h2>
 
-        <Field label="Full Name" required>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Full Name <span style={{ color: C.red }}>*</span></label>
           <input value={form.full_name} onChange={function(e){update('full_name', e.target.value)}} style={inputStyle} />
-        </Field>
+        </div>
 
-        <Field label="Email" hint="Email cannot be changed">
-          <input value={profile?.email || ''} disabled style={Object.assign({}, inputStyle, { background: 'rgba(11,37,69,0.02)', color: 'rgba(11,37,69,0.3)' })} />
-        </Field>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Email</label>
+          <input value={profile ? profile.email || '' : ''} disabled style={Object.assign({}, inputStyle, { background: 'rgba(11,37,69,0.02)', color: 'rgba(11,37,69,0.3)' })} />
+          <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', margin: '4px 0 0' }}>Email cannot be changed</p>
+        </div>
 
-        <Field label="Phone Number" hint="One phone number per account — prevents duplicates">
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Phone Number</label>
           <input value={formatPhone(form.phone)} onChange={function(e){update('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}} placeholder="(555) 123-4567" style={inputStyle} />
-        </Field>
+          <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', margin: '4px 0 0' }}>One phone number per account — prevents duplicates</p>
+        </div>
       </div>
 
       {/* Location */}
@@ -145,24 +135,28 @@ export default function CitizenSettings() {
         <h2 style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>{'\uD83D\uDCCD'} Location</h2>
         <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.25)', margin: '0 0 16px' }}>Used to match you with relevant local polls. Never shared publicly.</p>
 
-        <Field label="State" required>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>State <span style={{ color: C.red }}>*</span></label>
           <select value={form.state} onChange={function(e){update('state', e.target.value)}} style={selectStyle}>
             <option value="">Select your state</option>
             {US_STATES.map(function(s) { return <option key={s} value={s}>{s}</option>; })}
           </select>
-        </Field>
+        </div>
 
-        <Field label="County">
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>County</label>
           <input value={form.county} onChange={function(e){update('county', e.target.value)}} placeholder="e.g., Marion County" style={inputStyle} />
-        </Field>
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="City" required>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div>
+            <label style={labelStyle}>City <span style={{ color: C.red }}>*</span></label>
             <input value={form.city} onChange={function(e){update('city', e.target.value)}} placeholder="e.g., Indianapolis" style={inputStyle} />
-          </Field>
-          <Field label="ZIP Code">
+          </div>
+          <div>
+            <label style={labelStyle}>ZIP Code</label>
             <input value={form.zip} onChange={function(e){update('zip', e.target.value.replace(/\D/g, '').slice(0, 5))}} placeholder="e.g., 46201" maxLength={5} style={inputStyle} />
-          </Field>
+          </div>
         </div>
       </div>
 
@@ -170,18 +164,17 @@ export default function CitizenSettings() {
       <div style={{ background: '#fff', borderRadius: 14, padding: 24, border: '1px solid rgba(11,37,69,0.06)', marginBottom: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>{'\uD83D\uDEE1\uFE0F'} Verification Status</h2>
         <div style={{ display: 'flex', gap: 16 }}>
-          <div style={{ flex: 1, padding: 16, borderRadius: 10, background: profile?.is_verified ? C.green + '08' : 'rgba(11,37,69,0.02)', border: '1px solid ' + (profile?.is_verified ? C.green + '20' : 'rgba(11,37,69,0.06)'), textAlign: 'center' }}>
-            <span style={{ fontSize: 24, display: 'block', marginBottom: 4 }}>{profile?.is_verified ? '\u2705' : '\u23F3'}</span>
-            <p style={{ fontSize: 12, fontWeight: 600, color: profile?.is_verified ? C.green : 'rgba(11,37,69,0.3)', margin: 0 }}>{profile?.is_verified ? 'Email Verified' : 'Email Pending'}</p>
+          <div style={{ flex: 1, padding: 16, borderRadius: 10, background: profile && profile.is_verified ? C.green + '08' : 'rgba(11,37,69,0.02)', border: '1px solid ' + (profile && profile.is_verified ? C.green + '20' : 'rgba(11,37,69,0.06)'), textAlign: 'center' }}>
+            <span style={{ fontSize: 24, display: 'block', marginBottom: 4 }}>{profile && profile.is_verified ? '\u2705' : '\u23F3'}</span>
+            <p style={{ fontSize: 12, fontWeight: 600, color: profile && profile.is_verified ? C.green : 'rgba(11,37,69,0.3)', margin: 0 }}>{profile && profile.is_verified ? 'Email Verified' : 'Email Pending'}</p>
           </div>
-          <div style={{ flex: 1, padding: 16, borderRadius: 10, background: profile?.identity_verified ? C.green + '08' : 'rgba(11,37,69,0.02)', border: '1px solid ' + (profile?.identity_verified ? C.green + '20' : 'rgba(11,37,69,0.06)'), textAlign: 'center' }}>
-            <span style={{ fontSize: 24, display: 'block', marginBottom: 4 }}>{profile?.identity_verified ? '\u2705' : '\u23F3'}</span>
-            <p style={{ fontSize: 12, fontWeight: 600, color: profile?.identity_verified ? C.green : 'rgba(11,37,69,0.3)', margin: 0 }}>{profile?.identity_verified ? 'ID Verified' : 'ID Not Verified'}</p>
+          <div style={{ flex: 1, padding: 16, borderRadius: 10, background: profile && profile.identity_verified ? C.green + '08' : 'rgba(11,37,69,0.02)', border: '1px solid ' + (profile && profile.identity_verified ? C.green + '20' : 'rgba(11,37,69,0.06)'), textAlign: 'center' }}>
+            <span style={{ fontSize: 24, display: 'block', marginBottom: 4 }}>{profile && profile.identity_verified ? '\u2705' : '\u23F3'}</span>
+            <p style={{ fontSize: 12, fontWeight: 600, color: profile && profile.identity_verified ? C.green : 'rgba(11,37,69,0.3)', margin: 0 }}>{profile && profile.identity_verified ? 'ID Verified' : 'ID Not Verified'}</p>
           </div>
         </div>
       </div>
 
-      {/* Save Button */}
       <button onClick={save} disabled={saving}
         style={{ width: '100%', padding: 14, background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
         {saving ? 'Saving...' : 'Save Changes'}
