@@ -1,131 +1,139 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
-import { COLORS } from '../../utils/constants'
-import { Shield, Eye, EyeOff } from 'lucide-react'
+// src/pages/public/Login.jsx — With hCaptcha integration
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { supabase } from '../../supabaseClient';
+
+var HCAPTCHA_SITEKEY = 'a5ce465a-2468-4390-a696-c932b792aff6';
+var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
+var font = 'Libre Baskerville, Georgia, serif';
+var inputStyle = { width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid rgba(11,37,69,0.1)', borderRadius: 10, outline: 'none', color: '#0B2545', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' };
+var labelStyle = { display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, color: 'rgba(11,37,69,0.35)', marginBottom: 6 };
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
-  const navigate = useNavigate()
+  var navigate = useNavigate();
+  var [searchParams] = useSearchParams();
+  var [email, setEmail] = useState('');
+  var [password, setPassword] = useState('');
+  var [showPw, setShowPw] = useState(false);
+  var [loading, setLoading] = useState(false);
+  var [error, setError] = useState('');
+  var [captchaToken, setCaptchaToken] = useState('');
+  var captchaRef = useRef(null);
+  var widgetId = useRef(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      await signIn(email, password)
-      // Auth state change will trigger redirect via App.jsx
-      navigate('/citizen') // default, ProtectedRoute will redirect based on role
-    } catch (err) {
-      setError(err.message || 'Invalid email or password')
+  var justRegistered = searchParams.get('registered') === 'true';
+
+  useEffect(function() {
+    if (document.getElementById('hcaptcha-script')) return;
+    var s = document.createElement('script');
+    s.id = 'hcaptcha-script';
+    s.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
+    s.async = true;
+    document.head.appendChild(s);
+  }, []);
+
+  useEffect(function() {
+    var interval = setInterval(function() {
+      if (window.hcaptcha && captchaRef.current && widgetId.current === null) {
+        widgetId.current = window.hcaptcha.render(captchaRef.current, {
+          sitekey: HCAPTCHA_SITEKEY,
+          callback: function(token) { setCaptchaToken(token); },
+          'expired-callback': function() { setCaptchaToken(''); }
+        });
+        clearInterval(interval);
+      }
+    }, 200);
+    return function() { clearInterval(interval); };
+  }, []);
+
+  async function handleLogin(e) {
+    if (e) e.preventDefault();
+    if (!email.trim()) return setError('Email is required');
+    if (!password) return setError('Password is required');
+    if (!captchaToken) return setError('Please complete the captcha');
+    setLoading(true);
+    setError('');
+    var res = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: password, options: { captchaToken: captchaToken } });
+    if (res.error) {
+      setLoading(false);
+      setCaptchaToken('');
+      if (window.hcaptcha && widgetId.current !== null) window.hcaptcha.reset(widgetId.current);
+      return setError(res.error.message);
     }
-    setLoading(false)
-  }
-
-  const inputStyle = {
-    width: '100%', padding: '12px 16px', borderRadius: 8,
-    border: `1px solid ${COLORS.grayLight}`, fontSize: 15,
-    fontFamily: 'DM Sans, sans-serif', outline: 'none',
-    boxSizing: 'border-box', transition: 'border-color 0.2s',
+    // Fetch role and redirect
+    var u = res.data.user;
+    var r = await supabase.from('users').select('role').eq('id', u.id).single();
+    var role = r.data ? r.data.role : 'citizen';
+    if (role === 'admin') navigate('/admin');
+    else if (role === 'org') navigate('/org');
+    else navigate('/citizen');
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', background: COLORS.cream,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'DM Sans, sans-serif', padding: 20
-    }}>
-      <div style={{
-        width: '100%', maxWidth: 420, background: '#fff',
-        borderRadius: 16, padding: '48px 40px', 
-        boxShadow: '0 4px 24px rgba(11,37,69,0.08)'
-      }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, ' + C.cream + ' 0%, #fff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', fontFamily: 'DM Sans, -apple-system, sans-serif' }}>
+      <div style={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-            <Shield size={28} color={COLORS.gold} />
-            <span style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 20, fontWeight: 700, color: COLORS.navy }}>
-              Civic<span style={{ color: COLORS.gold }}>Verify</span>
-            </span>
-          </Link>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: COLORS.navy, marginTop: 20, marginBottom: 6 }}>
-            Welcome back
-          </h1>
-          <p style={{ color: COLORS.gray, fontSize: 14, margin: 0 }}>
-            Sign in to your CivicVerify account
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){navigate('/')}}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>CV</span>
+            </div>
+            <span style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: font }}>CivicVerify</span>
+          </div>
+        </div>
+
+        {/* Card */}
+        <div style={{ background: '#fff', borderRadius: 20, padding: '36px 32px', boxShadow: '0 4px 24px rgba(11,37,69,0.06)', border: '1px solid rgba(11,37,69,0.06)' }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: font }}>Welcome back</h1>
+          <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Sign in to your CivicVerify account</p>
+
+          {justRegistered && !error ? (
+            <div style={{ background: C.green + '08', border: '1px solid ' + C.green + '20', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+              <p style={{ fontSize: 13, color: C.green, margin: 0 }}>{'\u2713'} Account created! Please sign in.</p>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div style={{ background: C.red + '08', border: '1px solid ' + C.red + '20', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+              <p style={{ fontSize: 13, color: C.red, margin: 0 }}>{'\u26A0'} {error}</p>
+            </div>
+          ) : null}
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Email</label>
+            <input type="email" value={email} onChange={function(e){setEmail(e.target.value); setError('')}} placeholder="you@example.com" style={inputStyle} onKeyDown={function(e){if(e.key==='Enter')handleLogin()}} />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <input type={showPw ? 'text' : 'password'} value={password} onChange={function(e){setPassword(e.target.value); setError('')}} placeholder="Enter your password" style={Object.assign({}, inputStyle, { paddingRight: 44 })} onKeyDown={function(e){if(e.key==='Enter')handleLogin()}} />
+              <button onClick={function(){setShowPw(!showPw)}} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'rgba(11,37,69,0.25)', padding: 4 }}>{showPw ? '\uD83D\uDE48' : '\uD83D\uDC41'}</button>
+            </div>
+            <div style={{ textAlign: 'right', marginTop: 6 }}>
+              <Link to="/forgot-password" style={{ fontSize: 12, color: C.gold, textDecoration: 'none', fontWeight: 600 }}>Forgot password?</Link>
+            </div>
+          </div>
+
+          {/* hCaptcha */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <div ref={captchaRef}></div>
+          </div>
+
+          <button onClick={handleLogin} disabled={loading}
+            style={{ width: '100%', padding: 14, background: C.navy, color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(11,37,69,0.35)', marginTop: 20, marginBottom: 0 }}>
+            Don't have an account? <Link to="/signup" style={{ color: C.gold, fontWeight: 600, textDecoration: 'none' }}>Sign up</Link>
           </p>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div style={{
-            background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8,
-            padding: '10px 14px', marginBottom: 20, color: COLORS.red, fontSize: 13
-          }}>
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: COLORS.grayDark, marginBottom: 6 }}>
-              Email
-            </label>
-            <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com" required style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: COLORS.grayDark, marginBottom: 6 }}>
-              Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPass ? 'text' : 'password'} value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password" required
-                style={{ ...inputStyle, paddingRight: 44 }}
-              />
-              <button type="button" onClick={() => setShowPass(!showPass)} style={{
-                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                color: COLORS.gray
-              }}>
-                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            <div style={{ textAlign: 'right', marginTop: 8 }}>
-              <Link to="/forgot-password" style={{ fontSize: 13, color: COLORS.gold, textDecoration: 'none' }}>
-                Forgot password?
-              </Link>
-            </div>
-          </div>
-
-          <button type="submit" disabled={loading} style={{
-            width: '100%', padding: '13px', borderRadius: 8, border: 'none',
-            background: COLORS.navy, color: '#fff', fontSize: 15, fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
-            fontFamily: 'DM Sans, sans-serif', transition: 'opacity 0.2s'
-          }}>
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: COLORS.gray }}>
-          Don't have an account?{' '}
-          <Link to="/signup" style={{ color: COLORS.navy, fontWeight: 600, textDecoration: 'none' }}>
-            Sign up
-          </Link>
+        <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(11,37,69,0.2)', marginTop: 20 }}>
+          {'\u00A9'} {new Date().getFullYear()} CivicVerify. One person, one verified voice.
         </p>
       </div>
     </div>
-  )
+  );
 }
