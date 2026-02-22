@@ -13,19 +13,36 @@ import OrgLayout from './pages/org/OrgLayout'
 
 // Citizen pages
 import CitizenDashboard from './pages/citizen/Dashboard'
+import CitizenSurveys from './pages/citizen/Surveys'
+import CitizenTakeSurvey from './pages/citizen/TakeSurvey'
+import CitizenVerify from './pages/citizen/Verify'
+import CitizenImpact from './pages/citizen/Impact'
+import CitizenAccount from './pages/citizen/Account'
 
-// Placeholder pages (will be replaced with real implementations)
+// Admin pages
+import AdminDashboard from './pages/admin/Dashboard'
+import AdminSurveys from './pages/admin/Surveys'
+import AdminSurveyBuilder from './pages/admin/SurveyBuilder'
+import AdminReviewQueue from './pages/admin/ReviewQueue'
+import AdminUsers from './pages/admin/Users'
+import AdminAnalytics from './pages/admin/Analytics'
+import AdminExport from './pages/admin/Export'
+
+// Org pages
+import OrgDashboard from './pages/org/Dashboard'
+import OrgRequestSurvey from './pages/org/RequestSurvey'
+import OrgMySurveys from './pages/org/MySurveys'
+import OrgResults from './pages/org/Results'
+
+// Remaining placeholders
 import {
-  CitizenSurveys, CitizenTakeSurvey, CitizenVerify, CitizenImpact, CitizenAccount,
-  AdminDashboard, AdminSurveys, AdminSurveyBuilder, AdminReviewQueue,
-  AdminUsers, AdminOrganizations, AdminAnalytics, AdminSettings, AdminExport,
-  OrgDashboard, OrgRequestSurvey, OrgMySurveys, OrgResults, OrgBilling, OrgProfile,
+  AdminOrganizations, AdminSettings,
+  OrgBilling, OrgProfile,
   ForgotPassword, Contact, PublicSurvey, PublicResults
 } from './pages/Placeholders'
 
 import ProtectedRoute from './components/ProtectedRoute'
 
-// Auto-redirect based on role after login
 function AuthRedirect() {
   const { profile, loading } = useAuth()
   if (loading) return null
@@ -39,7 +56,6 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -49,7 +65,6 @@ export default function App() {
           <Route path="/results" element={<PublicResults />} />
           <Route path="/dashboard" element={<AuthRedirect />} />
 
-          {/* Citizen Routes */}
           <Route path="/citizen" element={
             <ProtectedRoute requiredRole="citizen"><CitizenLayout /></ProtectedRoute>
           }>
@@ -61,7 +76,6 @@ export default function App() {
             <Route path="account" element={<CitizenAccount />} />
           </Route>
 
-          {/* Admin Routes */}
           <Route path="/admin" element={
             <ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>
           }>
@@ -77,7 +91,6 @@ export default function App() {
             <Route path="export" element={<AdminExport />} />
           </Route>
 
-          {/* Organization Routes */}
           <Route path="/org" element={
             <ProtectedRoute requiredRole="org"><OrgLayout /></ProtectedRoute>
           }>
@@ -89,7 +102,6 @@ export default function App() {
             <Route path="profile" element={<OrgProfile />} />
           </Route>
 
-          {/* Catch all */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </AuthProvider>
