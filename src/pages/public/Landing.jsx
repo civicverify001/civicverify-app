@@ -520,12 +520,18 @@ export default function Landing() {
   var [surveys, setSurveys] = useState([]);
   var [loading, setLoading] = useState(true);
   var [userCount, setUserCount] = useState(0);
+  var [totalResponses, setTotalResponses] = useState(0);
+  var [totalResponses, setTotalResponses] = useState(0);
 
   useEffect(function() {
     supabase.from('surveys').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(6)
       .then(function(r) { setSurveys(r.data || []); setLoading(false); });
     supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'citizen')
       .then(function(r) { setUserCount(r.count || 0); });
+    supabase.from('responses').select('*', { count: 'exact', head: true })
+      .then(function(r) { setTotalResponses(r.count || 0); });
+    supabase.from('responses').select('*', { count: 'exact', head: true })
+      .then(function(r) { setTotalResponses(r.count || 0); });
   }, []);
 
   return (
@@ -554,8 +560,8 @@ export default function Landing() {
       {/* HERO */}
       <section style={{ background: 'linear-gradient(135deg, #0B2545 0%, #132d52 50%, #1a3a66 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-        <div style={{ maxWidth: 1140, margin: '0 auto', padding: '80px 24px 90px', position: 'relative' }}>
-          <div style={{ maxWidth: 580 }}>
+        <div style={{ maxWidth: 1140, margin: '0 auto', padding: '80px 24px 90px', position: 'relative', display: 'flex', alignItems: 'center', gap: 60 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 24, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 32 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', animation: 'pulse 2s infinite' }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{surveys.length} live poll{surveys.length !== 1 ? 's' : ''} running now</span>
@@ -574,6 +580,64 @@ export default function Landing() {
             </div>
             <div style={{ display: 'flex', gap: 32, paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
               {[{i:'\uD83D\uDEE1\uFE0F',t:'Identity Verified'},{i:'\uD83D\uDC65',t:'Real Citizens Only'},{i:'\uD83D\uDCCA',t:'Transparent Results'}].map(function(x,i){ return <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 16 }}>{x.i}</span><span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.25)' }}>{x.t}</span></div>; })}
+            </div>
+          </div>
+
+          {/* Right side — Live Platform Activity */}
+          <div style={{ width: 360, flexShrink: 0, display: 'none' }} className="hero-right">
+            <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(20px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+              {/* Header */}
+              <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', animation: 'pulse 2s infinite' }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Live Platform Activity</span>
+              </div>
+
+              {/* Stats Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'rgba(255,255,255,0.04)' }}>
+                <div style={{ padding: '20px 22px', background: 'rgba(11,37,69,0.3)' }}>
+                  <p style={{ fontSize: 28, fontWeight: 700, color: C.gold, margin: '0 0 2px', fontFamily: font }}>{userCount}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>Citizens</p>
+                </div>
+                <div style={{ padding: '20px 22px', background: 'rgba(11,37,69,0.3)' }}>
+                  <p style={{ fontSize: 28, fontWeight: 700, color: '#34d399', margin: '0 0 2px', fontFamily: font }}>{surveys.length}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>Live Polls</p>
+                </div>
+                <div style={{ padding: '20px 22px', background: 'rgba(11,37,69,0.3)' }}>
+                  <p style={{ fontSize: 28, fontWeight: 700, color: '#60a5fa', margin: '0 0 2px', fontFamily: font }}>{totalResponses}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>Total Votes</p>
+                </div>
+                <div style={{ padding: '20px 22px', background: 'rgba(11,37,69,0.3)' }}>
+                  <p style={{ fontSize: 28, fontWeight: 700, color: '#c084fc', margin: '0 0 2px', fontFamily: font }}>100%</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>Verified</p>
+                </div>
+              </div>
+
+              {/* Recent Activity Feed */}
+              <div style={{ padding: '16px 22px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1.5, margin: '0 0 12px' }}>Recent Activity</p>
+                {surveys.length > 0 ? surveys.slice(0, 3).map(function(s, i) {
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: [C.gold + '20', '#34d39920', '#60a5fa20'][i % 3], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
+                        {['\uD83D\uDDF3\uFE0F', '\uD83D\uDCCA', '\uD83D\uDC65'][i % 3]}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</p>
+                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: '2px 0 0' }}>{s.response_count || 0} votes · Active now</p>
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div style={{ padding: '12px 0', textAlign: 'center' }}>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.15)', margin: 0 }}>Platform launching soon</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom CTA */}
+              <div style={{ padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(197,150,12,0.06)' }}>
+                <button onClick={function(){navigate('/signup')}} style={{ width: '100%', padding: '10px', background: 'transparent', border: '1px solid ' + C.gold + '40', borderRadius: 10, fontSize: 12, fontWeight: 600, color: C.gold, cursor: 'pointer' }}>Join the Movement {'\u2192'}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -772,6 +836,7 @@ export default function Landing() {
         @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }\
         @keyframes spin { to { transform:rotate(360deg) } }\
         * { box-sizing:border-box; }\
+        @media (min-width: 900px) { .hero-right { display: block !important; } }\
       '}</style>
     </div>
   );
