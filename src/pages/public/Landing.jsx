@@ -519,10 +519,13 @@ export default function Landing() {
   var profile = auth.profile;
   var [surveys, setSurveys] = useState([]);
   var [loading, setLoading] = useState(true);
+  var [userCount, setUserCount] = useState(0);
 
   useEffect(function() {
     supabase.from('surveys').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(6)
       .then(function(r) { setSurveys(r.data || []); setLoading(false); });
+    supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'citizen')
+      .then(function(r) { setUserCount(r.count || 0); });
   }, []);
 
   return (
@@ -556,6 +559,10 @@ export default function Landing() {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 24, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 32 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', animation: 'pulse 2s infinite' }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{surveys.length} live poll{surveys.length !== 1 ? 's' : ''} running now</span>
+            </div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 24, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 32, marginLeft: 10 }}>
+              <span style={{ fontSize: 12 }}>{'\uD83D\uDEE1\uFE0F'}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{userCount} verified citizen{userCount !== 1 ? 's' : ''}</span>
             </div>
             <h1 style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 700, color: '#fff', lineHeight: 1.1, margin: '0 0 24px', fontFamily: font, letterSpacing: '-0.02em' }}>
               Your Voice, <span style={{ color: C.gold, position: 'relative', display: 'inline-block' }}>Verified<span style={{ position: 'absolute', bottom: -4, left: 0, right: 0, height: 4, background: C.gold + '40', borderRadius: 2 }} /></span>
