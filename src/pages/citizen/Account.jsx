@@ -1,168 +1,102 @@
-// src/pages/citizen/Account.jsx
-import { useEffect, useState } from 'react';
+// src/pages/citizen/Account.jsx — Polished
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
-import { US_STATES, AGE_RANGES } from '../../utils/constants';
-import { useNavigate } from 'react-router-dom';
 
-const STATES = US_STATES || ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
-const AGES = AGE_RANGES || ['18-24','25-34','35-44','45-54','55-64','65+'];
-
-export default function Account() {
-  const { user } = useAuth();
+export default function CitizenAccount() {
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState({ full_name: '', state: '', age_range: '', email_digest: true });
-  const [password, setPassword] = useState({ current: '', new1: '', new2: '' });
+  const [name, setName] = useState(profile?.full_name || '');
+  const [state, setState] = useState(profile?.state || '');
+  const [dob, setDob] = useState(profile?.date_of_birth || '');
   const [saving, setSaving] = useState(false);
-  const [savingPw, setSavingPw] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [pwSaved, setPwSaved] = useState(false);
 
-  useEffect(() => { if (user) fetchProfile(); }, [user]);
-
-  async function fetchProfile() {
-    const { data } = await supabase.from('users').select('full_name, state, age_range, email_digest').eq('id', user.id).single();
-    if (data) setProfile({ ...profile, ...data });
-    setLoading(false);
-  }
-
-  async function handleSaveProfile(e) {
-    e.preventDefault();
+  async function saveProfile() {
     setSaving(true);
-    setMsg(null);
-    const { error } = await supabase.from('users').update({
-      full_name: profile.full_name?.trim(),
-      state: profile.state,
-      age_range: profile.age_range,
-      email_digest: profile.email_digest,
-    }).eq('id', user.id);
+    const { error } = await supabase.from('users').update({ full_name: name, state, date_of_birth: dob || null }).eq('id', profile.id);
     setSaving(false);
-    setMsg(error ? { type: 'error', text: error.message } : { type: 'success', text: 'Profile updated successfully' });
-    setTimeout(() => setMsg(null), 3000);
+    if (!error) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
   }
 
-  async function handleChangePassword(e) {
-    e.preventDefault();
-    if (password.new1 !== password.new2) { setMsg({ type: 'error', text: 'Passwords do not match' }); return; }
-    if (password.new1.length < 6) { setMsg({ type: 'error', text: 'Password must be at least 6 characters' }); return; }
-    setSavingPw(true);
-    setMsg(null);
-    const { error } = await supabase.auth.updateUser({ password: password.new1 });
-    setSavingPw(false);
-    if (error) {
-      setMsg({ type: 'error', text: error.message });
-    } else {
-      setMsg({ type: 'success', text: 'Password changed successfully' });
-      setPassword({ current: '', new1: '', new2: '' });
-    }
-    setTimeout(() => setMsg(null), 3000);
+  async function changePassword() {
+    if (!newPassword || newPassword.length < 6) return alert('Password must be at least 6 characters');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (!error) { setPwSaved(true); setNewPassword(''); setTimeout(() => setPwSaved(false), 3000); }
+    else alert('Error: ' + error.message);
   }
 
-  async function handleDeleteAccount() {
-    if (!confirm('Are you sure you want to delete your account? This action is permanent and cannot be undone.')) return;
-    if (!confirm('This will delete all your responses and profile data. Type "DELETE" in the next prompt to confirm.')) return;
-    const confirmation = prompt('Type DELETE to confirm account deletion:');
-    if (confirmation !== 'DELETE') return;
-
-    // Delete user data
-    await supabase.from('responses').delete().eq('user_id', user.id);
-    await supabase.from('notifications').delete().eq('user_id', user.id);
-    await supabase.from('users').delete().eq('id', user.id);
-    await supabase.auth.signOut();
+  async function deleteAccount() {
+    if (!confirm('Are you sure? This will permanently delete your account and all data.')) return;
+    await supabase.from('users').delete().eq('id', profile.id);
+    await signOut();
     navigate('/');
   }
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-[#C5960C] border-t-transparent rounded-full animate-spin" /></div>;
-
-  const inputClass = "w-full px-3.5 py-2.5 text-sm bg-[#F5F1EC]/40 border border-[#0B2545]/8 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5960C]/20 focus:border-[#C5960C]/40 transition-all placeholder:text-[#0B2545]/15";
-  const labelClass = "block text-[10px] font-semibold text-[#0B2545]/40 uppercase tracking-wider mb-1.5";
-
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-8 max-w-2xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Account Settings</h1>
-        <p className="text-sm text-[#0B2545]/40 mt-1">{user?.email}</p>
+        <h1 className="text-3xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Account Settings</h1>
+        <p className="text-sm text-[#0B2545]/35 mt-1">Manage your profile and preferences</p>
       </div>
 
-      {/* Toast message */}
-      {msg && (
-        <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-lg border ${
-          msg.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-[#B8352E]'
-        }`}>
-          <span>{msg.type === 'success' ? '✓' : '✕'}</span> {msg.text}
-        </div>
-      )}
-
       {/* Profile */}
-      <form onSubmit={handleSaveProfile} className="bg-white rounded-xl border border-[#0B2545]/5 p-6 space-y-4">
-        <h3 className="font-semibold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Profile</h3>
+      <div className="bg-white rounded-2xl border border-[#0B2545]/[0.04] p-6 shadow-sm space-y-5">
+        <div className="flex items-center gap-4 pb-5 border-b border-[#0B2545]/[0.04]">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#C5960C]/20 to-[#C5960C]/5 flex items-center justify-center text-2xl font-bold text-[#C5960C]">
+            {(name || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="text-lg font-bold text-[#0B2545]">{name || 'User'}</p>
+            <p className="text-sm text-[#0B2545]/30">{profile?.email}</p>
+          </div>
+          <span className={`ml-auto text-xs font-semibold px-3 py-1.5 rounded-full ${profile?.is_verified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+            {profile?.is_verified ? '✓ Verified' : '⏳ Unverified'}
+          </span>
+        </div>
 
         <div>
-          <label className={labelClass}>Full Name</label>
-          <input type="text" value={profile.full_name || ''} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-            placeholder="Your full name" className={inputClass} />
+          <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0B2545]/30 block mb-2">Full Name</label>
+          <input value={name} onChange={e => setName(e.target.value)}
+            className="w-full text-sm text-[#0B2545] bg-[#0B2545]/[0.02] rounded-xl px-4 py-3 border border-[#0B2545]/[0.06] focus:border-[#C5960C]/40 focus:ring-2 focus:ring-[#C5960C]/10 outline-none transition-all" />
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>State</label>
-            <select value={profile.state || ''} onChange={(e) => setProfile({ ...profile, state: e.target.value })} className={inputClass}>
-              <option value="">Select state</option>
-              {STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0B2545]/30 block mb-2">State</label>
+            <input value={state} onChange={e => setState(e.target.value)} placeholder="e.g., California"
+              className="w-full text-sm text-[#0B2545] bg-[#0B2545]/[0.02] rounded-xl px-4 py-3 border border-[#0B2545]/[0.06] focus:border-[#C5960C]/40 outline-none transition-all" />
           </div>
           <div>
-            <label className={labelClass}>Age Range</label>
-            <select value={profile.age_range || ''} onChange={(e) => setProfile({ ...profile, age_range: e.target.value })} className={inputClass}>
-              <option value="">Select age range</option>
-              {AGES.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0B2545]/30 block mb-2">Date of Birth</label>
+            <input type="date" value={dob} onChange={e => setDob(e.target.value)}
+              className="w-full text-sm text-[#0B2545] bg-[#0B2545]/[0.02] rounded-xl px-4 py-3 border border-[#0B2545]/[0.06] focus:border-[#C5960C]/40 outline-none transition-all" />
           </div>
         </div>
-
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={profile.email_digest ?? true}
-            onChange={(e) => setProfile({ ...profile, email_digest: e.target.checked })}
-            className="w-4 h-4 rounded border-[#0B2545]/15 text-[#C5960C] focus:ring-[#C5960C]/20" />
-          <div>
-            <p className="text-sm text-[#0B2545]/70 font-medium">Weekly email digest</p>
-            <p className="text-[11px] text-[#0B2545]/30">Get notified about new surveys matching your profile</p>
-          </div>
-        </label>
-
-        <button type="submit" disabled={saving}
-          className="px-5 py-2.5 bg-[#C5960C] hover:bg-[#b3870b] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save Changes'}
+        <button onClick={saveProfile} disabled={saving}
+          className="px-6 py-2.5 bg-[#C5960C] hover:bg-[#b3870b] text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50">
+          {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Changes'}
         </button>
-      </form>
+      </div>
 
-      {/* Change Password */}
-      <form onSubmit={handleChangePassword} className="bg-white rounded-xl border border-[#0B2545]/5 p-6 space-y-4">
-        <h3 className="font-semibold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Change Password</h3>
-        <div>
-          <label className={labelClass}>New Password</label>
-          <input type="password" value={password.new1} onChange={(e) => setPassword({ ...password, new1: e.target.value })}
-            placeholder="New password (min 6 characters)" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Confirm New Password</label>
-          <input type="password" value={password.new2} onChange={(e) => setPassword({ ...password, new2: e.target.value })}
-            placeholder="Confirm new password" className={inputClass} />
-        </div>
-        <button type="submit" disabled={savingPw || !password.new1}
-          className="px-5 py-2.5 bg-[#0B2545] hover:bg-[#0B2545]/90 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
-          {savingPw ? 'Updating...' : 'Update Password'}
+      {/* Password */}
+      <div className="bg-white rounded-2xl border border-[#0B2545]/[0.04] p-6 shadow-sm space-y-4">
+        <h3 className="text-sm font-bold text-[#0B2545]">Change Password</h3>
+        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password (min 6 characters)"
+          className="w-full text-sm text-[#0B2545] bg-[#0B2545]/[0.02] rounded-xl px-4 py-3 border border-[#0B2545]/[0.06] focus:border-[#C5960C]/40 outline-none transition-all" />
+        <button onClick={changePassword}
+          className="px-6 py-2.5 bg-[#0B2545]/10 hover:bg-[#0B2545]/15 text-[#0B2545]/60 text-sm font-semibold rounded-xl transition-all duration-200">
+          {pwSaved ? '✓ Password Updated!' : 'Update Password'}
         </button>
-      </form>
+      </div>
 
-      {/* Danger Zone */}
-      <div className="bg-white rounded-xl border border-[#B8352E]/15 p-6">
-        <h3 className="font-semibold text-[#B8352E] mb-2" style={{ fontFamily: 'Libre Baskerville, serif' }}>Danger Zone</h3>
-        <p className="text-sm text-[#0B2545]/40 mb-4">
-          Deleting your account will permanently remove all your data, including survey responses and verification status.
-        </p>
-        <button onClick={handleDeleteAccount}
-          className="px-5 py-2.5 bg-white border border-[#B8352E]/20 text-[#B8352E] text-sm font-semibold rounded-lg hover:bg-[#B8352E]/5 transition-colors">
+      {/* Danger */}
+      <div className="bg-white rounded-2xl border border-red-200/60 p-6 shadow-sm">
+        <h3 className="text-sm font-bold text-[#B8352E]">Danger Zone</h3>
+        <p className="text-sm text-[#0B2545]/30 mt-1">Permanently delete your account and all associated data.</p>
+        <button onClick={deleteAccount} className="mt-4 px-5 py-2.5 bg-red-50 hover:bg-red-100 text-[#B8352E] text-sm font-semibold rounded-xl border border-red-200/60 transition-all duration-200">
           Delete My Account
         </button>
       </div>

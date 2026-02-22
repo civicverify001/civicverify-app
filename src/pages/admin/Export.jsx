@@ -1,158 +1,106 @@
-// src/pages/admin/Export.jsx
+// src/pages/admin/Export.jsx — Polished
 import { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 
-const DATA_TYPES = [
-  { key: 'users',     label: 'Users',     icon: '👥', description: 'All user profiles, roles, verification status' },
-  { key: 'surveys',   label: 'Surveys',   icon: '📋', description: 'All surveys with questions and metadata' },
-  { key: 'responses', label: 'Responses', icon: '📝', description: 'All survey responses with answers' },
-  { key: 'orgs',      label: 'Organizations', icon: '🏢', description: 'Organization profiles and tiers' },
+const DATASETS = [
+  { key: 'users', label: 'Users', icon: '👥', desc: 'All user profiles, roles, and verification status', table: 'users' },
+  { key: 'surveys', label: 'Surveys', icon: '📋', desc: 'All surveys with questions and metadata', table: 'surveys' },
+  { key: 'responses', label: 'Responses', icon: '📊', desc: 'All survey responses with answers', table: 'responses' },
+  { key: 'organizations', label: 'Organizations', icon: '🏢', desc: 'Organization profiles and tiers', table: 'organizations' },
 ];
 
-function downloadFile(content, filename, type = 'text/csv') {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
-
-function toCSV(data) {
-  if (!data?.length) return '';
-  const flattenObj = (obj, prefix = '') => {
-    const result = {};
-    for (const [k, v] of Object.entries(obj || {})) {
-      const key = prefix ? `${prefix}.${k}` : k;
-      if (v && typeof v === 'object' && !Array.isArray(v)) {
-        Object.assign(result, flattenObj(v, key));
-      } else if (Array.isArray(v)) {
-        result[key] = JSON.stringify(v);
-      } else {
-        result[key] = v;
-      }
-    }
-    return result;
-  };
-  const flat = data.map((d) => flattenObj(d));
-  const headers = [...new Set(flat.flatMap(Object.keys))];
-  const rows = flat.map((r) => headers.map((h) => {
-    const val = r[h];
-    if (val === null || val === undefined) return '';
-    const str = String(val);
-    return str.includes(',') || str.includes('"') || str.includes('\n')
-      ? `"${str.replace(/"/g, '""')}"` : str;
-  }).join(','));
-  return [headers.join(','), ...rows].join('\n');
-}
-
-export default function Export() {
+export default function AdminExport() {
   const [selected, setSelected] = useState('users');
   const [format, setFormat] = useState('csv');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [exporting, setExporting] = useState(false);
-  const [lastExport, setLastExport] = useState(null);
 
   async function handleExport() {
     setExporting(true);
-    try {
-      const table = selected === 'orgs' ? 'organizations' : selected;
-      let query = supabase.from(table).select('*').order('created_at', { ascending: false });
+    let query = supabase.from(DATASETS.find(d => d.key === selected).table).select('*');
+    if (fromDate) query = query.gte('created_at', fromDate);
+    if (toDate) query = query.lte('created_at', toDate + 'T23:59:59');
+    const { data, error } = await query;
+    setExporting(false);
+    if (error || !data?.length) return alert(error?.message || 'No data to export');
 
-      if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
-      if (dateTo) query = query.lte('created_at', new Date(dateTo + 'T23:59:59').toISOString());
-
-      const { data, error } = await query;
-      if (error) throw error;
-      if (!data?.length) { alert('No data found for the selected criteria.'); return; }
-
-      const timestamp = new Date().toISOString().split('T')[0];
-      if (format === 'csv') {
-        downloadFile(toCSV(data), `civicverify_${selected}_${timestamp}.csv`);
-      } else {
-        downloadFile(JSON.stringify(data, null, 2), `civicverify_${selected}_${timestamp}.json`, 'application/json');
-      }
-
-      setLastExport({ type: selected, count: data.length, time: new Date().toLocaleTimeString() });
-    } catch (err) {
-      console.error('Export error:', err);
-      alert('Export failed: ' + (err.message || 'Unknown error'));
-    } finally {
-      setExporting(false);
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${selected}_export.json`; a.click();
+    } else {
+      const headers = Object.keys(data[0]);
+      const csv = [headers.join(','), ...data.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${selected}_export.csv`; a.click();
     }
   }
 
-  const typeInfo = DATA_TYPES.find((t) => t.key === selected);
-
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-8 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Export Data</h1>
-        <p className="text-sm text-[#0B2545]/40 mt-1">Download platform data as CSV or JSON</p>
+        <h1 className="text-3xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Export Data</h1>
+        <p className="text-sm text-[#0B2545]/35 mt-1">Download platform data as CSV or JSON</p>
       </div>
 
-      {/* Data Type Selection */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {DATA_TYPES.map((t) => (
-          <button key={t.key} onClick={() => setSelected(t.key)}
-            className={`p-4 rounded-xl border text-left transition-all ${
-              selected === t.key
-                ? 'border-[#C5960C]/30 bg-[#C5960C]/[0.03] shadow-sm ring-1 ring-[#C5960C]/10'
-                : 'border-[#0B2545]/5 bg-white hover:border-[#0B2545]/10'
-            }`}>
-            <span className="text-2xl">{t.icon}</span>
-            <p className="text-sm font-semibold text-[#0B2545] mt-2">{t.label}</p>
-            <p className="text-[10px] text-[#0B2545]/30 mt-0.5">{t.description}</p>
-          </button>
-        ))}
+      {/* Dataset Selection */}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0B2545]/30 mb-3">Select Dataset</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {DATASETS.map(d => (
+            <button key={d.key} onClick={() => setSelected(d.key)}
+              className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-200 group ${
+                selected === d.key
+                  ? 'border-[#C5960C] bg-[#C5960C]/[0.03] shadow-md shadow-[#C5960C]/10'
+                  : 'border-[#0B2545]/[0.05] bg-white hover:border-[#0B2545]/10 hover:shadow-sm'
+              }`}>
+              <span className="text-2xl block mb-2">{d.icon}</span>
+              <p className={`text-sm font-bold transition-colors ${selected === d.key ? 'text-[#C5960C]' : 'text-[#0B2545]/70 group-hover:text-[#0B2545]'}`}>{d.label}</p>
+              <p className="text-[11px] text-[#0B2545]/30 mt-1 leading-relaxed">{d.desc}</p>
+              {selected === d.key && <div className="absolute top-3 right-3 w-5 h-5 bg-[#C5960C] rounded-full flex items-center justify-center text-white text-[10px] font-bold">✓</div>}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Options */}
-      <div className="bg-white rounded-xl border border-[#0B2545]/5 p-6 space-y-5">
-        <h3 className="font-semibold text-[#0B2545] text-sm">Export Settings</h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-[10px] font-semibold text-[#0B2545]/40 uppercase tracking-wider mb-1.5">Format</label>
-            <div className="flex bg-[#F5F1EC]/50 rounded-lg p-1 border border-[#0B2545]/5">
-              {['csv', 'json'].map((f) => (
-                <button key={f} onClick={() => setFormat(f)}
-                  className={`flex-1 py-2 rounded-md text-xs font-semibold transition-all ${
-                    format === f ? 'bg-white text-[#0B2545] shadow-sm' : 'text-[#0B2545]/35'
-                  }`}>
-                  {f.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold text-[#0B2545]/40 uppercase tracking-wider mb-1.5">From Date</label>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-[#F5F1EC]/40 border border-[#0B2545]/8 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5960C]/20 transition-all" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold text-[#0B2545]/40 uppercase tracking-wider mb-1.5">To Date</label>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-[#F5F1EC]/40 border border-[#0B2545]/8 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5960C]/20 transition-all" />
+      {/* Export Settings */}
+      <div className="bg-white rounded-2xl border border-[#0B2545]/[0.04] p-6 shadow-sm space-y-5">
+        <h3 className="text-sm font-bold text-[#0B2545]">Export Settings</h3>
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0B2545]/30 block mb-2">Format</label>
+          <div className="flex gap-2">
+            {['csv', 'json'].map(f => (
+              <button key={f} onClick={() => setFormat(f)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  format === f ? 'bg-[#0B2545] text-white shadow-sm' : 'bg-[#0B2545]/[0.04] text-[#0B2545]/40 hover:bg-[#0B2545]/[0.08] hover:text-[#0B2545]/60'
+                }`}>
+                {f.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
-
-        <button onClick={handleExport} disabled={exporting}
-          className="w-full py-3 bg-[#C5960C] hover:bg-[#b3870b] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2">
-          {exporting ? (
-            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Exporting...</>
-          ) : (
-            <>⬇ Export {typeInfo?.label} as {format.toUpperCase()}</>
-          )}
-        </button>
-
-        {lastExport && (
-          <div className="flex items-center gap-2 text-xs text-[#22863A] bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
-            <span>✓</span>
-            <span>Exported {lastExport.count} {lastExport.type} records at {lastExport.time}</span>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0B2545]/30 block mb-2">From Date</label>
+            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+              className="w-full text-sm text-[#0B2545] bg-[#0B2545]/[0.02] rounded-xl px-4 py-3 border border-[#0B2545]/[0.06] focus:border-[#C5960C]/40 focus:ring-2 focus:ring-[#C5960C]/10 outline-none transition-all" />
           </div>
-        )}
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0B2545]/30 block mb-2">To Date</label>
+            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+              className="w-full text-sm text-[#0B2545] bg-[#0B2545]/[0.02] rounded-xl px-4 py-3 border border-[#0B2545]/[0.06] focus:border-[#C5960C]/40 focus:ring-2 focus:ring-[#C5960C]/10 outline-none transition-all" />
+          </div>
+        </div>
       </div>
+
+      <button onClick={handleExport} disabled={exporting}
+        className="w-full py-3.5 bg-[#C5960C] hover:bg-[#b3870b] text-white font-semibold rounded-xl shadow-sm hover:shadow-md hover:shadow-[#C5960C]/20 transition-all duration-200 disabled:opacity-50 text-sm">
+        {exporting ? (
+          <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Exporting...</span>
+        ) : (
+          `⬇ Export ${DATASETS.find(d => d.key === selected)?.label} as ${format.toUpperCase()}`
+        )}
+      </button>
     </div>
   );
 }
