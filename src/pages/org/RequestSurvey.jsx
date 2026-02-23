@@ -112,7 +112,7 @@ export default function RequestSurvey() {
       questions: qData,
       target_responses: parseInt(form.target_responses) || 100,
       created_by: user.id,
-      org_id: user.id,
+      
       demographic_filters: {
         filters: activeFilters,
         state: form.state || null,
