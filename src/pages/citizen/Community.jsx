@@ -102,9 +102,10 @@ const VerifiedBadge = () => (
 );
 
 // ── Emoji Picker ──────────────────────────────────────────────────────────────
-const EmojiPicker = ({ onSelect, onClose }) => {
+const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
   const [cat, setCat] = useState("Smileys");
   const ref = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -112,13 +113,27 @@ const EmojiPicker = ({ onSelect, onClose }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  useEffect(() => {
+    if (anchorRef?.current && ref.current) {
+      const anchor = anchorRef.current.getBoundingClientRect();
+      const picker = ref.current;
+      const pw = 300, ph = 280;
+      let left = anchor.left;
+      let top = anchor.top - ph - 8;
+      if (left + pw > window.innerWidth - 10) left = window.innerWidth - pw - 10;
+      if (left < 10) left = 10;
+      if (top < 10) top = anchor.bottom + 8;
+      setPos({ top, left });
+    }
+  }, [anchorRef]);
+
   return (
     <div ref={ref} style={{
-      position: "absolute", bottom: "calc(100% + 8px)", left: 0,
-      width: 320, background: "#fff", borderRadius: 16,
+      position: "fixed", top: pos.top, left: pos.left,
+      width: 300, background: "#fff", borderRadius: 16,
       border: "1px solid " + T.border,
-      boxShadow: "0 8px 32px rgba(11,37,69,0.15)",
-      zIndex: 100, overflow: "hidden",
+      boxShadow: "0 8px 32px rgba(11,37,69,0.18)",
+      zIndex: 9999, overflow: "hidden",
     }}>
       {/* Category tabs */}
       <div style={{ display: "flex", overflowX: "auto", borderBottom: "1px solid " + T.border, padding: "8px 8px 0" }}>
@@ -203,6 +218,7 @@ const Composer = ({ user, onPost }) => {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
   const textRef = useRef(null);
+  const emojiButtonRef = useRef(null);
   const MAX = 280;
 
   const insertEmoji = (emoji) => {
@@ -306,13 +322,13 @@ const Composer = ({ user, onPost }) => {
 
                 {/* Emoji */}
                 <div style={{ position: "relative" }}>
-                  <button onClick={() => setShowEmoji(!showEmoji)} style={{
+                  <button ref={emojiButtonRef} onClick={() => setShowEmoji(!showEmoji)} style={{
                     width: 34, height: 34, borderRadius: 10, background: showEmoji ? T.cream : "none",
                     border: "1px solid " + (showEmoji ? T.gold + "44" : T.border),
                     cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                     color: showEmoji ? T.gold : T.muted, fontSize: 16, transition: "all 0.15s",
                   }}>😊</button>
-                  {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} />}
+                  {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={emojiButtonRef} />}
                 </div>
 
                 {/* Quick emojis */}
@@ -364,6 +380,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [replyImagePreview, setReplyImagePreview] = useState(null);
   const replyRef = useRef(null);
   const replyFileRef = useRef(null);
+  const replyEmojiRef = useRef(null);
 
   const toggleLike = async () => {
     setLiked((l) => !l);
@@ -525,8 +542,8 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
                 }} style={{ display: "none" }} />
                 {/* Emoji picker */}
                 <div style={{ position: "relative" }}>
-                  <button onClick={() => setShowEmojiReply(!showEmojiReply)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
-                  {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} />}
+                  <button ref={replyEmojiRef} onClick={() => setShowEmojiReply(!showEmojiReply)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
+                  {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
                 </div>
                 {/* Quick emojis */}
                 {["❤️","👍","🔥","😂"].map((e) => (
@@ -599,6 +616,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
   const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const chatEmojiRef = useRef(null);
 
   useEffect(() => {
     load();
@@ -682,19 +700,13 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
       <div style={{ background: "#fff", borderTop: "1px solid " + T.border, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 10, padding: "10px 14px", alignItems: "flex-end" }}>
           <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} />
-          <div style={{ flex: 1, position: "relative" }}>
+            <div style={{ flex: 1, position: "relative" }}>
             <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} placeholder="Message the room..." style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none", boxSizing: "border-box" }} />
-            <div style={{ position: "relative" }}>
-              <button onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
+              <button ref={chatEmojiRef} onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
                 😊
               </button>
-              {showEmoji && (
-                <div style={{ position: "absolute", bottom: "calc(100% + 8px)", right: 0 }}>
-                  <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} />
-                </div>
-              )}
+              {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={chatEmojiRef} />}
             </div>
-          </div>
           <button onClick={send} disabled={!text.trim()} style={{ width: 40, height: 40, borderRadius: "50%", background: T.navy, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, opacity: text.trim() ? 1 : 0.35, transition: "all 0.15s", flexShrink: 0, boxShadow: text.trim() ? "0 2px 8px " + T.navy + "40" : "none" }}>
             <Ico d={ICONS.send} size={14} />
           </button>
