@@ -1,4 +1,4 @@
-// src/pages/admin/Dashboard.jsx — Polished Admin Dashboard
+// src/pages/admin/Dashboard.jsx — Fixed Recent Surveys card + notifications bell
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -36,24 +36,44 @@ function SectionCard({ title, action, children, className = '' }) {
   );
 }
 
+const STATUS_STYLES = {
+  active:         'bg-emerald-50 text-emerald-700',
+  draft:          'bg-amber-50 text-amber-700',
+  pending_review: 'bg-purple-50 text-purple-700',
+  pending:        'bg-blue-50 text-blue-700',
+  closed:         'bg-gray-50 text-gray-500',
+  rejected:       'bg-red-50 text-red-700',
+};
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ users: 0, verified: 0, surveys: 0, responses: 0, pending: 0 });
   const [users, setUsers] = useState([]);
+  const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const [{ count: userCount }, { count: verifiedCount }, { count: surveyCount }, { count: responseCount }, { count: pendingCount }, { data: recentUsers }] = await Promise.all([
+      const [
+        { count: userCount },
+        { count: verifiedCount },
+        { count: surveyCount },
+        { count: responseCount },
+        { count: pendingCount },
+        { data: recentUsers },
+        { data: recentSurveys },
+      ] = await Promise.all([
         supabase.from('users').select('*', { count: 'exact', head: true }),
         supabase.from('users').select('*', { count: 'exact', head: true }).eq('is_verified', true),
         supabase.from('surveys').select('*', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('responses').select('*', { count: 'exact', head: true }),
-        supabase.from('surveys').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('surveys').select('*', { count: 'exact', head: true }).eq('status', 'pending_review'),
         supabase.from('users').select('*').order('created_at', { ascending: false }).limit(8),
+        supabase.from('surveys').select('id, title, status, created_at, response_count, target_responses').order('created_at', { ascending: false }).limit(5),
       ]);
       setStats({ users: userCount || 0, verified: verifiedCount || 0, surveys: surveyCount || 0, responses: responseCount || 0, pending: pendingCount || 0 });
       setUsers(recentUsers || []);
+      setSurveys(recentSurveys || []);
       setLoading(false);
     })();
   }, []);
@@ -99,6 +119,12 @@ export default function AdminDashboard() {
           <p className="text-sm text-[#0B2545]/35 mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <div className="flex items-center gap-3">
+          {stats.pending > 0 && (
+            <button onClick={() => navigate('/admin/surveys')} className="flex items-center gap-2 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200/60 px-3 py-1.5 rounded-full hover:bg-purple-100 transition-colors">
+              <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+              {stats.pending} survey{stats.pending !== 1 ? 's' : ''} pending review
+            </button>
+          )}
           <span className="flex items-center gap-2 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full">
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> All Systems Operational
           </span>
@@ -112,8 +138,8 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard icon="👥" label="Total Users" value={stats.users} trend={`${Math.round(stats.users * 0.12)}% from last month`} color={COLORS.navy} delay="0ms" />
         <StatCard icon="✓" label="Verified" value={stats.verified} trend={`${Math.round(stats.verified * 0.08)}% from last month`} color={COLORS.green} delay="50ms" />
-        <StatCard icon="📊" label="Active Surveys" value={stats.surveys} trend={`${Math.round(stats.surveys * 0.05)}% from last month`} color={COLORS.gold} delay="100ms" />
-        <StatCard icon="📈" label="Responses" value={stats.responses} trend={`${Math.round(stats.responses * 0.23)}% from last month`} color="#6366f1" delay="150ms" />
+        <StatCard icon="📊" label="Active Surveys" value={stats.surveys} color={COLORS.gold} delay="100ms" />
+        <StatCard icon="📈" label="Responses" value={stats.responses} color="#6366f1" delay="150ms" />
         <StatCard icon="⏳" label="Pending Review" value={stats.pending} color={COLORS.red} delay="200ms" />
       </div>
 
@@ -157,18 +183,38 @@ export default function AdminDashboard() {
 
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Surveys — FIXED */}
         <SectionCard title="Recent Surveys" action={<button onClick={() => navigate('/admin/surveys')} className="text-xs font-semibold text-[#C5960C] hover:text-[#b3870b] transition-colors">View All →</button>}>
-          <div className="flex flex-col items-center py-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[#C5960C]/5 flex items-center justify-center text-2xl mb-4">📋</div>
-            <p className="text-sm font-medium text-[#0B2545]/30">No surveys yet</p>
-            <button onClick={() => navigate('/admin/surveys/new')} className="text-sm font-semibold text-[#C5960C] hover:text-[#b3870b] mt-2 transition-colors">Create your first survey →</button>
-          </div>
+          {surveys.length > 0 ? (
+            <div className="space-y-1">
+              {surveys.map(s => (
+                <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-[#0B2545]/[0.02] transition-colors cursor-pointer" onClick={() => navigate('/admin/surveys')}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#0B2545] truncate">{s.title}</p>
+                    <p className="text-[11px] text-[#0B2545]/25">{timeAgo(s.created_at)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-xs text-[#0B2545]/30">{(s.response_count || 0)}{s.target_responses ? '/' + s.target_responses : ''}</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES[s.status] || STATUS_STYLES.draft}`}>
+                      {s.status === 'pending_review' ? 'Review' : s.status?.charAt(0).toUpperCase() + s.status?.slice(1)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-[#C5960C]/5 flex items-center justify-center text-2xl mb-4">📋</div>
+              <p className="text-sm font-medium text-[#0B2545]/30">No surveys yet</p>
+              <button onClick={() => navigate('/admin/surveys/new')} className="text-sm font-semibold text-[#C5960C] hover:text-[#b3870b] mt-2 transition-colors">Create your first survey →</button>
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard title="Recent Activity">
           {users.length > 0 ? (
             <div className="space-y-1">
-              {users.slice(0, 6).map((u, i) => (
+              {users.slice(0, 6).map((u) => (
                 <div key={u.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-[#0B2545]/[0.02] transition-colors">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0B2545]/10 to-[#0B2545]/5 flex items-center justify-center text-sm font-bold text-[#0B2545]/40">
                     {(u.full_name || 'U').charAt(0).toUpperCase()}
