@@ -138,7 +138,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
       author_name: currentProfile ? (currentProfile.full_name || 'Citizen') : 'Citizen',
       verified: !!(currentProfile && currentProfile.identity_verified),
       content: text,
-      likes: [],
+      likes: 0,
       parent_id: null,
     });
     if (r.error) {
@@ -153,10 +153,8 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
 
   async function toggleLike(comment) {
     if (!currentUser) return;
-    var likes = comment.likes || [];
-    var liked = likes.includes(currentUser.id);
-    var updated = liked ? likes.filter(function(id) { return id !== currentUser.id; }) : likes.concat([currentUser.id]);
-    await supabase.from('comments').update({ likes: updated }).eq('id', comment.id);
+    var current = typeof comment.likes === 'number' ? comment.likes : 0;
+    await supabase.from('comments').update({ likes: current + 1 }).eq('id', comment.id);
     loadFeed(true);
   }
 
@@ -229,7 +227,8 @@ create index if not exists idx_dc_survey
                 <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.3)', margin: '4px 0 10px', fontStyle: 'italic' }}>No comments yet — be the first!</p>
               )}
               {shown.map(function(c) {
-                var liked = currentUser && (c.likes || []).includes(currentUser.id);
+                var likeCount = typeof c.likes === 'number' ? c.likes : 0;
+                var liked = false;
                 var isOwn = currentUser && c.user_id === currentUser.id;
                 return (
                   <div key={c.id} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -251,7 +250,7 @@ create index if not exists idx_dc_survey
                       </div>
                       <button onClick={function() { toggleLike(c); }}
                         style={{ fontSize: 11, fontWeight: 700, color: liked ? C.gold : 'rgba(11,37,69,0.3)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px' }}>
-                        {liked ? '\u2665' : '\u2661'} {(c.likes || []).length || ''}
+                        {liked ? '\u2665' : '\u2661'} {likeCount || ''}
                       </button>
                     </div>
                   </div>
