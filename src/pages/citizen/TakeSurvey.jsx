@@ -1,171 +1,324 @@
-// src/pages/citizen/TakeSurvey.jsx — Polished
-import { useEffect, useState } from 'react';
+// src/pages/citizen/TakeSurvey.jsx
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
 
-export default function CitizenTakeSurvey() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { profile } = useAuth();
-  const [survey, setSurvey] = useState(null);
-  const [answers, setAnswers] = useState({});
-  const [current, setCurrent] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(true);
+var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
+var font = 'Libre Baskerville, Georgia, serif';
 
-  useEffect(() => {
-    supabase.from('surveys').select('*').eq('id', id).single().then(({ data }) => {
-      setSurvey(data);
+function MultipleChoice({ question, value, onChange }) {
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {(question.options || []).map(function(opt, i) {
+        var sel = value === opt;
+        return (
+          <button key={i} onClick={function() { onChange(opt); }} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', border: '2px solid ' + (sel ? C.gold : 'rgba(11,37,69,0.08)'), borderRadius: 12, background: sel ? C.gold + '0A' : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', width: '100%' }}>
+            <span style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid ' + (sel ? C.gold : 'rgba(11,37,69,0.2)'), background: sel ? C.gold : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {sel && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', display: 'block' }} />}
+            </span>
+            <span style={{ fontSize: 15, color: sel ? C.navy : 'rgba(11,37,69,0.7)', fontWeight: sel ? 600 : 400 }}>{opt}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CheckboxQ({ question, value, onChange }) {
+  var sel = Array.isArray(value) ? value : [];
+  function toggle(opt) { onChange(sel.includes(opt) ? sel.filter(function(v) { return v !== opt; }) : sel.concat([opt])); }
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {(question.options || []).map(function(opt, i) {
+        var checked = sel.includes(opt);
+        return (
+          <button key={i} onClick={function() { toggle(opt); }} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', border: '2px solid ' + (checked ? C.gold : 'rgba(11,37,69,0.08)'), borderRadius: 12, background: checked ? C.gold + '0A' : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', width: '100%' }}>
+            <span style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (checked ? C.gold : 'rgba(11,37,69,0.2)'), background: checked ? C.gold : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {checked && <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 5.5l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </span>
+            <span style={{ fontSize: 15, color: checked ? C.navy : 'rgba(11,37,69,0.7)', fontWeight: checked ? 600 : 400 }}>{opt}</span>
+          </button>
+        );
+      })}
+      {sel.length > 0 && <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', margin: '2px 0 0' }}>{sel.length} selected</p>}
+    </div>
+  );
+}
+
+function YesNo({ value, onChange }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      {['Yes', 'No'].map(function(opt) {
+        var sel = value === opt;
+        var col = opt === 'Yes' ? C.green : C.red;
+        return (
+          <button key={opt} onClick={function() { onChange(opt); }} style={{ padding: '22px 16px', border: '2px solid ' + (sel ? col : 'rgba(11,37,69,0.08)'), borderRadius: 14, background: sel ? col + '10' : '#fff', cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' }}>
+            <span style={{ fontSize: 30, display: 'block', marginBottom: 8 }}>{opt === 'Yes' ? '\u2714\uFE0F' : '\u274C'}</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: sel ? col : 'rgba(11,37,69,0.35)' }}>{opt}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Rating({ question, value, onChange }) {
+  var scale = question.scale || 5;
+  var nums = Array.from({ length: scale }, function(_, i) { return i + 1; });
+  var [hover, setHover] = useState(0);
+  var active = hover || value || 0;
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+        {nums.map(function(n) {
+          var lit = n <= active;
+          return (
+            <button key={n} onClick={function() { onChange(n); }} onMouseEnter={function() { setHover(n); }} onMouseLeave={function() { setHover(0); }}
+              style={{ width: 54, height: 54, border: '2px solid ' + (lit ? C.gold : 'rgba(11,37,69,0.08)'), borderRadius: 12, background: lit ? C.gold + '12' : '#fff', cursor: 'pointer', fontSize: 24, transition: 'all 0.12s', transform: lit ? 'scale(1.08)' : 'scale(1)' }}>
+              {lit ? '\u2605' : '\u2606'}
+            </button>
+          );
+        })}
+      </div>
+      <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(11,37,69,0.35)', margin: 0 }}>
+        {active ? active + ' / ' + scale : 'Click a star to rate'}
+      </p>
+    </div>
+  );
+}
+
+function TextAnswer({ value, onChange }) {
+  return (
+    <textarea value={value || ''} onChange={function(e) { onChange(e.target.value); }} placeholder="Type your answer here..." rows={4}
+      style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '2px solid rgba(11,37,69,0.08)', borderRadius: 12, outline: 'none', resize: 'vertical', fontFamily: 'DM Sans, sans-serif', color: C.navy, lineHeight: 1.6, boxSizing: 'border-box' }}
+      onFocus={function(e) { e.target.style.borderColor = C.gold; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; }} />
+  );
+}
+
+function QuestionInput({ question, value, onChange }) {
+  if (question.type === 'multiple_choice') return <MultipleChoice question={question} value={value} onChange={onChange} />;
+  if (question.type === 'checkbox') return <CheckboxQ question={question} value={value} onChange={onChange} />;
+  if (question.type === 'yes_no') return <YesNo value={value} onChange={onChange} />;
+  if (question.type === 'rating') return <Rating question={question} value={value} onChange={onChange} />;
+  return <TextAnswer value={value} onChange={onChange} />;
+}
+
+function ProgressDots({ total, current }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 28 }}>
+      {Array.from({ length: total }, function(_, i) {
+        var done = i < current - 1;
+        var active = i === current - 1;
+        return (
+          <span key={i} style={{ width: active ? 24 : 8, height: 8, borderRadius: 4, background: done ? C.gold + '60' : active ? C.gold : 'rgba(11,37,69,0.08)', transition: 'all 0.3s' }} />
+        );
+      })}
+    </div>
+  );
+}
+
+export default function TakeSurvey() {
+  var { id: surveyId } = useParams();
+  var navigate = useNavigate();
+  var { user } = useAuth();
+
+  var [survey, setSurvey] = useState(null);
+  var [answers, setAnswers] = useState({});
+  var [step, setStep] = useState(0);
+  var [submitting, setSubmitting] = useState(false);
+  var [error, setError] = useState('');
+  var [alreadyDone, setAlreadyDone] = useState(false);
+  var [loading, setLoading] = useState(true);
+  var startTime = useRef(Date.now());
+
+  useEffect(function() {
+    if (!user || !surveyId) return;
+    Promise.all([
+      supabase.from('surveys').select('*').eq('id', surveyId).eq('status', 'active').single(),
+      supabase.from('responses').select('id').eq('survey_id', surveyId).eq('user_id', user.id).maybeSingle()
+    ]).then(function(results) {
+      var s = results[0].data;
+      var existing = results[1].data;
+      if (!s) { navigate('/citizen/surveys'); return; }
+      setSurvey(s);
+      if (existing) setAlreadyDone(true);
       setLoading(false);
     });
-  }, [id]);
+  }, [user, surveyId]);
 
-  const questions = survey?.questions || [];
-  const q = questions[current];
-  const progress = questions.length > 0 ? ((current + 1) / questions.length) * 100 : 0;
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
+      <div style={{ width: 36, height: 36, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+    </div>
+  );
 
-  function setAnswer(val) {
-    setAnswers({ ...answers, [q.id]: val });
+  if (!survey) return null;
+
+  var questions = survey.questions || [];
+  var total = questions.length;
+
+  // Already completed
+  if (alreadyDone) return (
+    <div style={{ maxWidth: 520, margin: '60px auto', textAlign: 'center', padding: '0 20px', fontFamily: 'DM Sans, sans-serif' }}>
+      <span style={{ fontSize: 52, display: 'block', marginBottom: 16 }}>&#10003;</span>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: '0 0 10px', fontFamily: font }}>Already completed</h2>
+      <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 28px' }}>You already responded to this survey. Thank you!</p>
+      <button onClick={function() { navigate('/citizen/surveys'); }} style={{ padding: '12px 32px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Back to Surveys</button>
+    </div>
+  );
+
+  // Completion screen
+  if (step > total) return (
+    <div style={{ maxWidth: 520, margin: '60px auto', textAlign: 'center', padding: '0 20px', fontFamily: 'DM Sans, sans-serif' }}>
+      <div style={{ width: 80, height: 80, borderRadius: '50%', background: C.green + '12', border: '2px solid ' + C.green + '40', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontSize: 36, color: C.green }}>&#10003;</div>
+      <h1 style={{ fontSize: 28, fontWeight: 700, color: C.navy, margin: '0 0 12px', fontFamily: font }}>Thank you!</h1>
+      <p style={{ fontSize: 15, color: 'rgba(11,37,69,0.5)', margin: '0 0 6px', lineHeight: 1.7 }}>Your response to <strong style={{ color: C.navy }}>{survey.title}</strong> has been recorded.</p>
+      <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.3)', margin: '0 0 32px' }}>Your voice contributes to verified civic data.</p>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <button onClick={function() { navigate('/citizen/surveys'); }} style={{ padding: 14, background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Back to Surveys &#8594;</button>
+        <button onClick={function() { navigate('/citizen/discussion'); }} style={{ padding: 14, background: 'rgba(11,37,69,0.04)', color: C.navy, border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Join the Discussion &#8594;</button>
+      </div>
+    </div>
+  );
+
+  var currentQ = questions[step - 1];
+  var currentAnswer = currentQ ? answers[currentQ.id] : null;
+
+  function isAnswered(q, val) {
+    if (!q.required) return true;
+    if (val === null || val === undefined || val === '') return false;
+    if (Array.isArray(val) && val.length === 0) return false;
+    return true;
   }
 
-  async function handleSubmit() {
+  var canNext = step === 0 || (currentQ && isAnswered(currentQ, currentAnswer));
+
+  function setAnswer(qId, val) { setAnswers(function(p) { return Object.assign({}, p, { [qId]: val }); }); setError(''); }
+
+  function goNext() {
+    if (step > 0 && !canNext) { setError('Please answer this question before continuing.'); return; }
+    setError('');
+    if (step < total) { setStep(step + 1); window.scrollTo(0, 0); }
+    else submitSurvey();
+  }
+
+  function goPrev() { if (step > 0) { setStep(step - 1); setError(''); window.scrollTo(0, 0); } }
+
+  async function submitSurvey() {
     setSubmitting(true);
-    const { error } = await supabase.from('responses').insert({
-      survey_id: id, user_id: profile?.id, answers,
-    });
-    if (!error) {
-      await supabase.from('surveys').update({ response_count: (survey.response_count || 0) + 1 }).eq('id', id);
-      setSubmitted(true);
+    try {
+      var duration = Math.round((Date.now() - startTime.current) / 1000);
+      var answersArr = questions.map(function(q) { return { question_id: q.id, answer: answers[q.id] !== undefined ? answers[q.id] : null }; });
+
+      var r = await supabase.from('responses').insert({ survey_id: surveyId, user_id: user.id, answers: answersArr, duration_seconds: duration });
+      if (r.error) throw r.error;
+
+      // Increment response_count on survey
+      var sr = await supabase.from('surveys').select('response_count').eq('id', surveyId).single();
+      if (sr.data) await supabase.from('surveys').update({ response_count: (sr.data.response_count || 0) + 1 }).eq('id', surveyId);
+
+      // Increment trust score
+      var ur = await supabase.from('users').select('trust_score').eq('id', user.id).single();
+      if (ur.data) await supabase.from('users').update({ trust_score: (ur.data.trust_score || 0) + 1 }).eq('id', user.id);
+
+      setStep(total + 1);
+    } catch (e) {
+      setError('Submission failed: ' + (e.message || 'Please try again.'));
     }
     setSubmitting(false);
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-32">
-      <div className="w-10 h-10 border-[3px] border-[#C5960C] border-t-transparent rounded-full animate-spin" />
+  // ── Intro screen (step 0)
+  if (step === 0) return (
+    <div style={{ maxWidth: 580, margin: '0 auto', fontFamily: 'DM Sans, sans-serif' }}>
+      <button onClick={function() { navigate('/citizen/surveys'); }} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'rgba(11,37,69,0.4)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 28, padding: 0 }}>&#8592; Back to Surveys</button>
+
+      <div style={{ background: '#fff', borderRadius: 20, border: '1px solid rgba(11,37,69,0.06)', overflow: 'hidden', boxShadow: '0 4px 24px rgba(11,37,69,0.05)' }}>
+        <div style={{ background: 'linear-gradient(135deg, ' + C.navy + ' 0%, #1a3a6e 100%)', padding: '32px 36px' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: 2, margin: '0 0 10px' }}>Civic Survey</p>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: '0 0 8px', fontFamily: font, lineHeight: 1.3 }}>{survey.title}</h1>
+          {survey.description && <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.6 }}>{survey.description}</p>}
+        </div>
+        <div style={{ padding: '28px 36px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 28 }}>
+            {[
+              { label: 'Questions', val: total },
+              { label: 'Responses so far', val: (survey.response_count || 0).toLocaleString() },
+              { label: 'Est. time', val: total <= 3 ? '< 1 min' : total <= 8 ? '2-3 min' : '5 min' },
+            ].map(function(s) { return (
+              <div key={s.label} style={{ background: 'rgba(11,37,69,0.025)', borderRadius: 10, padding: '14px 16px', textAlign: 'center' }}>
+                <p style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: font }}>{s.val}</p>
+                <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.35)', margin: 0 }}>{s.label}</p>
+              </div>
+            ); })}
+          </div>
+          <div style={{ background: 'rgba(197,150,12,0.06)', border: '1px solid rgba(197,150,12,0.15)', borderRadius: 10, padding: '12px 16px', marginBottom: 24 }}>
+            <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.55)', margin: 0, lineHeight: 1.6 }}>
+              &#128274; Your response is anonymous to the public and used for verified civic data only. You earn +1 trust point for completing this survey.
+            </p>
+          </div>
+          <button onClick={goNext} style={{ width: '100%', padding: 16, background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(197,150,12,0.25)' }}>
+            Start Survey &#8594;
+          </button>
+        </div>
+      </div>
     </div>
   );
 
-  if (submitted) return (
-    <div className="max-w-lg mx-auto py-16 text-center">
-      <div className="w-24 h-24 rounded-full bg-emerald-50 flex items-center justify-center text-4xl mx-auto mb-6 animate-bounce">🎉</div>
-      <h2 className="text-2xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Thank You!</h2>
-      <p className="text-sm text-[#0B2545]/40 mt-3 max-w-sm mx-auto leading-relaxed">Your response has been submitted. Your voice matters in shaping civic decisions.</p>
-      <button onClick={() => navigate('/citizen/surveys')} className="mt-6 px-6 py-3 bg-[#C5960C] hover:bg-[#b3870b] text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200">Back to Surveys</button>
-    </div>
-  );
-
-  if (!survey) return (
-    <div className="max-w-lg mx-auto py-16 text-center">
-      <div className="w-20 h-20 rounded-2xl bg-red-50 flex items-center justify-center text-3xl mx-auto mb-5">⚠️</div>
-      <p className="text-lg font-semibold text-[#0B2545]/30">Survey not found</p>
-      <button onClick={() => navigate('/citizen/surveys')} className="mt-4 text-sm font-semibold text-[#C5960C]">← Back to Surveys</button>
-    </div>
-  );
-
+  // ── Question screen (step 1..N)
+  var pct = Math.round((step / total) * 100);
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <button onClick={() => navigate('/citizen/surveys')} className="text-sm text-[#0B2545]/30 hover:text-[#0B2545]/60 transition-colors mb-2 flex items-center gap-1">← Back to Surveys</button>
-        <h1 className="text-2xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>{survey.title}</h1>
-        {survey.description && <p className="text-sm text-[#0B2545]/40 mt-1">{survey.description}</p>}
-      </div>
+    <div style={{ maxWidth: 580, margin: '0 auto', fontFamily: 'DM Sans, sans-serif' }}>
 
-      {/* Progress */}
-      <div className="bg-white rounded-2xl border border-[#0B2545]/[0.04] p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-[#0B2545]/30">Question {current + 1} of {questions.length}</span>
-          <span className="text-xs font-bold text-[#C5960C]">{Math.round(progress)}%</span>
+      {/* Progress bar */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.3)', textTransform: 'uppercase', letterSpacing: 1 }}>Question {step} of {total}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: C.gold }}>{pct}%</span>
         </div>
-        <div className="w-full h-2 bg-[#0B2545]/[0.04] rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-[#C5960C] to-[#d4a832] rounded-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
+        <div style={{ width: '100%', height: 6, background: 'rgba(11,37,69,0.06)', borderRadius: 3 }}>
+          <div style={{ height: '100%', background: 'linear-gradient(90deg, ' + C.gold + ', #E8A838)', borderRadius: 3, width: pct + '%', transition: 'width 0.4s ease' }} />
         </div>
       </div>
 
-      {/* Question */}
-      {q && (
-        <div className="bg-white rounded-2xl border border-[#0B2545]/[0.04] p-8 shadow-sm">
-          <p className="text-lg font-semibold text-[#0B2545] mb-6">{q.text} {q.required && <span className="text-[#B8352E]">*</span>}</p>
+      {/* Question card */}
+      <div style={{ background: '#fff', borderRadius: 20, border: '1px solid rgba(11,37,69,0.06)', padding: '32px 36px', boxShadow: '0 4px 24px rgba(11,37,69,0.05)', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 24 }}>
+          <span style={{ width: 32, height: 32, borderRadius: '50%', background: C.navy, color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>{step}</span>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: font, lineHeight: 1.4 }}>{currentQ.text}</h2>
+            <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.25)', fontWeight: 600 }}>
+              {currentQ.type === 'multiple_choice' ? 'Select one' : currentQ.type === 'checkbox' ? 'Select all that apply' : currentQ.type === 'yes_no' ? 'Yes or No' : currentQ.type === 'rating' ? 'Rate 1-' + (currentQ.scale || 5) : 'Written answer'}
+              {currentQ.required ? ' \u2022 Required' : ' \u2022 Optional'}
+            </span>
+          </div>
+        </div>
 
-          {(q.type === 'multiple_choice') && (
-            <div className="space-y-3">
-              {(q.options || []).map((opt, i) => (
-                <button key={i} onClick={() => setAnswer(opt)}
-                  className={`w-full text-left px-5 py-3.5 rounded-xl border-2 transition-all duration-200 ${
-                    answers[q.id] === opt
-                      ? 'border-[#C5960C] bg-[#C5960C]/[0.03] text-[#0B2545] shadow-sm'
-                      : 'border-[#0B2545]/[0.06] hover:border-[#0B2545]/10 text-[#0B2545]/60 hover:text-[#0B2545]'
-                  }`}>
-                  <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full border-2 mr-3 ${answers[q.id] === opt ? 'border-[#C5960C] bg-[#C5960C]' : 'border-[#0B2545]/15'}`}>
-                    {answers[q.id] === opt && <span className="w-2 h-2 bg-white rounded-full" />}
-                  </span>
-                  <span className="text-sm font-medium">{opt}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <QuestionInput question={currentQ} value={currentAnswer} onChange={function(val) { setAnswer(currentQ.id, val); }} />
+      </div>
 
-          {q.type === 'checkbox' && (
-            <div className="space-y-3">
-              {(q.options || []).map((opt, i) => {
-                const selected = (answers[q.id] || []).includes(opt);
-                return (
-                  <button key={i} onClick={() => { const cur = answers[q.id] || []; setAnswer(selected ? cur.filter(x => x !== opt) : [...cur, opt]); }}
-                    className={`w-full text-left px-5 py-3.5 rounded-xl border-2 transition-all duration-200 ${
-                      selected ? 'border-[#C5960C] bg-[#C5960C]/[0.03] shadow-sm' : 'border-[#0B2545]/[0.06] hover:border-[#0B2545]/10'
-                    }`}>
-                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded mr-3 border-2 ${selected ? 'border-[#C5960C] bg-[#C5960C] text-white' : 'border-[#0B2545]/15'}`}>
-                      {selected && <span className="text-[10px] font-bold">✓</span>}
-                    </span>
-                    <span className="text-sm font-medium text-[#0B2545]/70">{opt}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {q.type === 'text' && (
-            <textarea value={answers[q.id] || ''} onChange={e => setAnswer(e.target.value)} rows={4} placeholder="Type your answer..."
-              className="w-full text-sm text-[#0B2545] bg-[#0B2545]/[0.02] rounded-xl px-4 py-3 border border-[#0B2545]/[0.06] focus:border-[#C5960C]/40 focus:ring-2 focus:ring-[#C5960C]/10 outline-none transition-all resize-none" />
-          )}
-
-          {q.type === 'rating' && (
-            <div className="flex items-center gap-3 justify-center py-4">
-              {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} onClick={() => setAnswer(n)}
-                  className={`w-14 h-14 rounded-2xl text-lg font-bold transition-all duration-200 ${
-                    answers[q.id] === n
-                      ? 'bg-[#C5960C] text-white shadow-md shadow-[#C5960C]/20 scale-110'
-                      : 'bg-[#0B2545]/[0.04] text-[#0B2545]/30 hover:bg-[#0B2545]/[0.08] hover:text-[#0B2545]/60 hover:scale-105'
-                  }`}>
-                  {n}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Error */}
+      {error && (
+        <div style={{ background: C.red + '08', border: '1px solid ' + C.red + '20', borderRadius: 10, padding: '10px 14px', marginBottom: 14 }}>
+          <p style={{ fontSize: 13, color: C.red, margin: 0 }}>{error}</p>
         </div>
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <button onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0}
-          className="px-5 py-2.5 text-sm font-semibold text-[#0B2545]/40 hover:text-[#0B2545]/70 rounded-xl border border-[#0B2545]/10 hover:border-[#0B2545]/20 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed">
-          ← Previous
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button onClick={goPrev} style={{ padding: '14px 24px', background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.4)', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>&#8592; Back</button>
+        <button onClick={goNext} disabled={submitting} style={{ flex: 1, padding: 14, background: canNext ? C.gold : 'rgba(11,37,69,0.06)', color: canNext ? '#fff' : 'rgba(11,37,69,0.2)', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: canNext ? 'pointer' : 'not-allowed', transition: 'all 0.2s', boxShadow: canNext ? '0 4px 16px rgba(197,150,12,0.2)' : 'none' }}>
+          {submitting ? 'Submitting...' : step === total ? 'Submit Survey &#10003;' : 'Next &#8594;'}
         </button>
-        {current < questions.length - 1 ? (
-          <button onClick={() => setCurrent(current + 1)}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-[#C5960C] hover:bg-[#b3870b] rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-            Next →
-          </button>
-        ) : (
-          <button onClick={handleSubmit} disabled={submitting}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-[#22863A] hover:bg-[#1d7533] rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50">
-            {submitting ? 'Submitting...' : 'Submit Response ✓'}
-          </button>
-        )}
+      </div>
+
+      {/* Dots */}
+      <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginTop: 20 }}>
+        {Array.from({ length: total }, function(_, i) {
+          return <span key={i} style={{ width: i === step - 1 ? 20 : 6, height: 6, borderRadius: 3, background: i < step ? C.gold : i === step ? C.gold + '40' : 'rgba(11,37,69,0.08)', transition: 'all 0.3s' }} />;
+        })}
       </div>
     </div>
   );
