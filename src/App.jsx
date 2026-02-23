@@ -18,6 +18,7 @@ import CitizenTakeSurvey from './pages/citizen/TakeSurvey'
 import CitizenVerify from './pages/citizen/Verify'
 import CitizenImpact from './pages/citizen/Impact'
 import CitizenAccount from './pages/citizen/Account'
+import CitizenCommunity from './pages/citizen/Community'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -28,6 +29,7 @@ import AdminUsers from './pages/admin/Users'
 import AdminAnalytics from './pages/admin/Analytics'
 import AdminExport from './pages/admin/Export'
 import OrgReview from './pages/admin/OrgReview'
+
 // Org pages
 import OrgDashboard from './pages/org/Dashboard'
 import OrgRequestSurvey from './pages/org/RequestSurvey'
@@ -75,6 +77,7 @@ export default function App() {
             <Route path="verify" element={<CitizenVerify />} />
             <Route path="impact" element={<CitizenImpact />} />
             <Route path="account" element={<CitizenAccount />} />
+            <Route path="community" element={<CitizenCommunity />} />
           </Route>
 
           <Route path="/admin" element={
@@ -90,7 +93,7 @@ export default function App() {
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="export" element={<AdminExport />} />
-<Route path="org-review" element={<OrgReview />} />
+            <Route path="org-review" element={<OrgReview />} />
           </Route>
 
           <Route path="/org" element={
