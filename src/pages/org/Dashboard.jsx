@@ -79,7 +79,7 @@ export default function OrgDashboard() {
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 20 }}>
               <input type="checkbox" checked={form.agreeTerms} onChange={function(e){ setForm(Object.assign({}, form, { agreeTerms: e.target.checked })); }} style={{ marginTop: 3, width: 18, height: 18, accentColor: C.gold }} />
-              <span style={{ fontSize: 13, color: 'rgba(11,37,69,0.45)', lineHeight: 1.5 }}I have read and agree to the <span style={{ color: C.gold, fontWeight: 600 }}>Organization Agreement</span> and data usage policies. Pricing and platform access details will be provided upon approval. I certify that the uploaded document is authentic and belongs to my organization.</span>
+              <span style={{ fontSize: 13, color: 'rgba(11,37,69,0.45)', lineHeight: 1.5 }}>I have read and agree to the <span style={{ color: C.gold, fontWeight: 600 }}>Organization Agreement</span> and data usage policies. Pricing and platform access details will be provided upon approval. I certify that the uploaded document is authentic and belongs to my organization.</span>
             </label>
 
             <button onClick={async function(){
