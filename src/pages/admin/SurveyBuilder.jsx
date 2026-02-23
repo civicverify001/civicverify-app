@@ -1,6 +1,6 @@
-// src/pages/admin/SurveyBuilder.jsx — Full demographic audience targeting
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/pages/admin/SurveyBuilder.jsx — Create + Edit mode
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
@@ -24,18 +24,61 @@ var labelStyle = { display: 'block', fontSize: 11, fontWeight: 700, textTransfor
 
 var qTypes = { multiple_choice: { icon: '\uD83D\uDD18', label: 'Multiple Choice' }, checkbox: { icon: '\u2611\uFE0F', label: 'Checkbox' }, text: { icon: '\uD83D\uDCDD', label: 'Text' }, rating: { icon: '\u2B50', label: 'Rating' } };
 
+var EMPTY_FORM = {
+  title: '', description: '', status: 'draft',
+  target_state: '', target_county: '', target_city: '', target_zip: '',
+  target_race: '', target_sex: '', target_education: '', target_employment: '', target_income: '',
+  target_marital: '', target_party: '', target_voter_registered: '', target_veteran: '', target_housing: '',
+  target_age_min: '', target_age_max: '', target_responses: ''
+};
+
 export default function SurveyBuilder() {
   var navigate = useNavigate();
-  var [form, setForm] = useState({
-    title: '', description: '', status: 'draft',
-    target_state: '', target_county: '', target_city: '', target_zip: '',
-    target_race: '', target_sex: '', target_education: '', target_employment: '', target_income: '',
-    target_marital: '', target_party: '', target_voter_registered: '', target_veteran: '', target_housing: '',
-    target_age_min: '', target_age_max: '', target_responses: ''
-  });
+  var params = useParams();
+  var editId = params.id; // present when editing
+  var isEdit = !!editId;
+
+  var [form, setForm] = useState(EMPTY_FORM);
   var [questions, setQuestions] = useState([]);
   var [saving, setSaving] = useState(false);
+  var [loading, setLoading] = useState(isEdit);
   var [error, setError] = useState('');
+
+  // Load existing survey when editing
+  useEffect(function() {
+    if (!isEdit) return;
+    (async function() {
+      var r = await supabase.from('surveys').select('*').eq('id', editId).single();
+      if (r.error || !r.data) { setError('Survey not found'); setLoading(false); return; }
+      var s = r.data;
+      setForm({
+        title: s.title || '',
+        description: s.description || '',
+        status: s.status || 'draft',
+        target_state: s.target_state || '',
+        target_county: s.target_county || '',
+        target_city: s.target_city || '',
+        target_zip: s.target_zip || '',
+        target_race: s.target_race || '',
+        target_sex: s.target_sex || '',
+        target_education: s.target_education || '',
+        target_employment: s.target_employment || '',
+        target_income: s.target_income || '',
+        target_marital: s.target_marital || '',
+        target_party: s.target_party || '',
+        target_voter_registered: s.target_voter_registered || '',
+        target_veteran: s.target_veteran || '',
+        target_housing: s.target_housing || '',
+        target_age_min: s.target_age_min != null ? String(s.target_age_min) : '',
+        target_age_max: s.target_age_max != null ? String(s.target_age_max) : '',
+        target_responses: s.target_responses != null ? String(s.target_responses) : '',
+      });
+      setQuestions((s.questions || []).map(function(q) {
+        return { id: q.id || ('q'+Date.now()+Math.random()), type: q.type || 'multiple_choice', text: q.text || '', required: q.required !== false, options: q.options || [] };
+      }));
+      setLoading(false);
+    })();
+  }, [editId]);
 
   function update(f,v){ setForm(function(p){ return Object.assign({},p,{[f]:v}); }); setError(''); }
 
@@ -50,7 +93,10 @@ export default function SurveyBuilder() {
   async function handleSave(status) {
     if (!form.title.trim()) return setError('Title required');
     if (questions.length===0) return setError('Add at least one question');
-    for (var i=0;i<questions.length;i++) { if(!questions[i].text.trim()) return setError('Q'+(i+1)+' needs text'); if((questions[i].type==='multiple_choice'||questions[i].type==='checkbox')&&questions[i].options.filter(function(o){return o.trim()}).length<2) return setError('Q'+(i+1)+' needs 2+ options'); }
+    for (var i=0;i<questions.length;i++) {
+      if(!questions[i].text.trim()) return setError('Q'+(i+1)+' needs text');
+      if((questions[i].type==='multiple_choice'||questions[i].type==='checkbox')&&questions[i].options.filter(function(o){return o.trim()}).length<2) return setError('Q'+(i+1)+' needs 2+ options');
+    }
     setSaving(true);
     var d = {
       title: form.title.trim(), description: form.description.trim()||null, status: status,
@@ -62,25 +108,40 @@ export default function SurveyBuilder() {
       target_party: form.target_party||null, target_voter_registered: form.target_voter_registered||null,
       target_veteran: form.target_veteran||null, target_housing: form.target_housing||null,
       target_age_min: form.target_age_min?parseInt(form.target_age_min):null, target_age_max: form.target_age_max?parseInt(form.target_age_max):null,
-      target_responses: form.target_responses?parseInt(form.target_responses):null, response_count: 0
+      target_responses: form.target_responses?parseInt(form.target_responses):null,
     };
-    var r = await supabase.from('surveys').insert(d);
+
+    var r;
+    if (isEdit) {
+      r = await supabase.from('surveys').update(d).eq('id', editId);
+    } else {
+      d.response_count = 0;
+      r = await supabase.from('surveys').insert(d);
+    }
     setSaving(false);
     if (r.error) return setError(r.error.message);
     navigate('/admin/surveys');
   }
 
-  // Count active filters
   var filterCount = [form.target_state,form.target_county,form.target_city,form.target_zip,form.target_race,form.target_sex,form.target_education,form.target_employment,form.target_income,form.target_marital,form.target_party,form.target_voter_registered,form.target_veteran,form.target_housing,form.target_age_min,form.target_age_max].filter(Boolean).length;
 
   function Sel(props){ return <select value={props.value} onChange={function(e){update(props.field,e.target.value)}} style={selectStyle}><option value="">{props.ph||'All'}</option>{props.opts.map(function(o){return <option key={o} value={o}>{o}</option>;})}</select>; }
+
+  if (loading) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding: '80px 0' }}>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+        <div style={{ width:36, height:36, border:'3px solid '+C.gold, borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+        <p style={{ fontSize:13, color:'rgba(11,37,69,0.3)' }}>Loading survey...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: 780, fontFamily: 'DM Sans, sans-serif' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize:28, fontWeight:700, color:C.navy, margin:'0 0 4px', fontFamily:font }}>Create Survey</h1>
-          <p style={{ fontSize:14, color:'rgba(11,37,69,0.35)', margin:0 }}>Build polls with precise audience targeting</p>
+          <h1 style={{ fontSize:28, fontWeight:700, color:C.navy, margin:'0 0 4px', fontFamily:font }}>{isEdit ? 'Edit Survey' : 'Create Survey'}</h1>
+          <p style={{ fontSize:14, color:'rgba(11,37,69,0.35)', margin:0 }}>{isEdit ? 'Update survey details and targeting' : 'Build polls with precise audience targeting'}</p>
         </div>
         <button onClick={function(){navigate('/admin/surveys')}} style={{ padding:'8px 16px', background:'rgba(11,37,69,0.05)', border:'none', borderRadius:8, fontSize:13, fontWeight:600, color:'rgba(11,37,69,0.4)', cursor:'pointer' }}>{'\u2190'} Back</button>
       </div>
@@ -101,8 +162,6 @@ export default function SurveyBuilder() {
           {filterCount > 0 ? <span style={{ fontSize:11, fontWeight:700, color:C.gold, background:C.gold+'15', padding:'4px 10px', borderRadius:20 }}>{filterCount} filter{filterCount!==1?'s':''} active</span> : null}
         </div>
         <p style={{ fontSize:12, color:'rgba(11,37,69,0.25)', margin:'0 0 20px' }}>Leave blank to target all citizens</p>
-
-        {/* Location */}
         <p style={{ fontSize:11, fontWeight:700, color:'rgba(11,37,69,0.2)', textTransform:'uppercase', letterSpacing:1.5, margin:'0 0 10px' }}>{'\uD83D\uDCCD'} Location</p>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
           <div><label style={labelStyle}>State</label><Sel value={form.target_state} field="target_state" opts={US_STATES} ph="All States" /></div>
@@ -110,8 +169,6 @@ export default function SurveyBuilder() {
           <div><label style={labelStyle}>City</label><input value={form.target_city} onChange={function(e){update('target_city',e.target.value)}} placeholder="Any city" style={inputStyle} /></div>
           <div><label style={labelStyle}>ZIP Code</label><input value={form.target_zip} onChange={function(e){update('target_zip',e.target.value.replace(/\D/g,'').slice(0,5))}} placeholder="Any ZIP" maxLength={5} style={inputStyle} /></div>
         </div>
-
-        {/* Demographics */}
         <p style={{ fontSize:11, fontWeight:700, color:'rgba(11,37,69,0.2)', textTransform:'uppercase', letterSpacing:1.5, margin:'0 0 10px' }}>{'\uD83D\uDC64'} Demographics</p>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
           <div><label style={labelStyle}>Race / Ethnicity</label><Sel value={form.target_race} field="target_race" opts={RACE_OPTIONS} /></div>
@@ -119,8 +176,6 @@ export default function SurveyBuilder() {
           <div><label style={labelStyle}>Min Age</label><input type="number" value={form.target_age_min} onChange={function(e){update('target_age_min',e.target.value)}} placeholder="e.g., 18" style={inputStyle} /></div>
           <div><label style={labelStyle}>Max Age</label><input type="number" value={form.target_age_max} onChange={function(e){update('target_age_max',e.target.value)}} placeholder="e.g., 65" style={inputStyle} /></div>
         </div>
-
-        {/* Socioeconomic */}
         <p style={{ fontSize:11, fontWeight:700, color:'rgba(11,37,69,0.2)', textTransform:'uppercase', letterSpacing:1.5, margin:'0 0 10px' }}>{'\uD83C\uDFE2'} Socioeconomic</p>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
           <div><label style={labelStyle}>Education</label><Sel value={form.target_education} field="target_education" opts={EDUCATION_OPTIONS} /></div>
@@ -128,8 +183,6 @@ export default function SurveyBuilder() {
           <div><label style={labelStyle}>Income</label><Sel value={form.target_income} field="target_income" opts={INCOME_OPTIONS} /></div>
           <div><label style={labelStyle}>Housing</label><Sel value={form.target_housing} field="target_housing" opts={HOUSING_OPTIONS} /></div>
         </div>
-
-        {/* Political */}
         <p style={{ fontSize:11, fontWeight:700, color:'rgba(11,37,69,0.2)', textTransform:'uppercase', letterSpacing:1.5, margin:'0 0 10px' }}>{'\uD83C\uDDFA\uD83C\uDDF8'} Political</p>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
           <div><label style={labelStyle}>Party Affiliation</label><Sel value={form.target_party} field="target_party" opts={PARTY_OPTIONS} /></div>
@@ -137,14 +190,7 @@ export default function SurveyBuilder() {
           <div><label style={labelStyle}>Veteran</label><Sel value={form.target_veteran} field="target_veteran" opts={VETERAN_OPTIONS} /></div>
           <div><label style={labelStyle}>Marital Status</label><Sel value={form.target_marital} field="target_marital" opts={MARITAL_OPTIONS} /></div>
         </div>
-
         <div style={{ marginBottom: 0 }}><label style={labelStyle}>Target Responses</label><input type="number" value={form.target_responses} onChange={function(e){update('target_responses',e.target.value)}} placeholder="e.g., 500" style={inputStyle} /></div>
-
-        {filterCount > 0 ? <div style={{ marginTop:16, padding:'12px 14px', background:C.gold+'06', borderRadius:8, border:'1px solid '+C.gold+'15' }}>
-          <p style={{ fontSize:12, color:'rgba(11,37,69,0.45)', margin:0 }}>{'\uD83C\uDFAF'} Targeting: <strong style={{color:C.navy}}>
-            {[form.target_state,form.target_county,form.target_city,form.target_race,form.target_sex,form.target_education,form.target_employment,form.target_income,form.target_party,form.target_housing,form.target_age_min?'Age '+form.target_age_min+'+':'',form.target_age_max?'Under '+form.target_age_max:'',form.target_voter_registered==='Yes'?'Voters':'',form.target_veteran==='Yes'?'Veterans':''].filter(Boolean).join(', ')||'All Citizens'}
-          </strong></p>
-        </div> : null}
       </div>
 
       {/* Questions */}
@@ -181,7 +227,7 @@ export default function SurveyBuilder() {
       {/* Actions */}
       <div style={{ display:'flex', gap:12 }}>
         <button onClick={function(){handleSave('draft')}} disabled={saving} style={{ flex:1, padding:14, background:'rgba(11,37,69,0.05)', color:'rgba(11,37,69,0.5)', border:'none', borderRadius:12, fontSize:14, fontWeight:600, cursor:'pointer', opacity:saving?0.5:1 }}>{saving?'...':'Save Draft'}</button>
-        <button onClick={function(){handleSave('active')}} disabled={saving} style={{ flex:2, padding:14, background:C.gold, color:'#fff', border:'none', borderRadius:12, fontSize:15, fontWeight:600, cursor:'pointer', opacity:saving?0.5:1, boxShadow:'0 4px 16px rgba(197,150,12,0.2)' }}>{saving?'Publishing...':'Publish Survey \u2192'}</button>
+        <button onClick={function(){handleSave('active')}} disabled={saving} style={{ flex:2, padding:14, background:C.gold, color:'#fff', border:'none', borderRadius:12, fontSize:15, fontWeight:600, cursor:'pointer', opacity:saving?0.5:1, boxShadow:'0 4px 16px rgba(197,150,12,0.2)' }}>{saving ? (isEdit ? 'Saving...' : 'Publishing...') : (isEdit ? 'Save & Publish \u2192' : 'Publish Survey \u2192')}</button>
       </div>
     </div>
   );
