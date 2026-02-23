@@ -1,4 +1,4 @@
-// src/pages/org/Billing.jsx
+// src/pages/org/Billing.jsx — with survey progress + correct cost display
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -8,10 +8,12 @@ var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', gr
 var font = 'Libre Baskerville, Georgia, serif';
 
 const STATUS_CONFIG = {
-  active:    { label: 'Active',    color: '#22863A', bg: '#F0FFF4' },
-  completed: { label: 'Completed', color: '#0B2545', bg: '#EEF2FF' },
-  pending_review: { label: 'Pending', color: '#C5960C', bg: '#FFFBF0' },
-  rejected:  { label: 'Rejected',  color: '#B8352E', bg: '#FFF5F5' },
+  active:         { label: 'Active',        color: '#22863A', bg: '#F0FFF4' },
+  completed:      { label: 'Completed',     color: '#6366f1', bg: '#EEF2FF' },
+  pending_review: { label: 'Pending Review',color: '#C5960C', bg: '#FFFBF0' },
+  rejected:       { label: 'Rejected',      color: '#B8352E', bg: '#FFF5F5' },
+  draft:          { label: 'Draft',         color: '#6B7280', bg: '#F9FAFB' },
+  closed:         { label: 'Closed',        color: '#6B7280', bg: '#F9FAFB' },
 };
 
 function SummaryCard({ label, value, sub, color }) {
@@ -22,6 +24,22 @@ function SummaryCard({ label, value, sub, color }) {
       {sub && <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', margin: 0 }}>{sub}</p>}
     </div>
   );
+}
+
+function fmt(n) {
+  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getCost(s) {
+  if (s.estimated_cost && Number(s.estimated_cost) > 0) return Number(s.estimated_cost);
+  if (s.demographic_filters?.estimated_total) return Number(s.demographic_filters.estimated_total);
+  if (s.demographic_filters?.price_per_response && s.target_responses)
+    return Number(s.demographic_filters.price_per_response) * Number(s.target_responses);
+  return 0;
+}
+
+function getRate(s) {
+  return s.demographic_filters?.price_per_response ? Number(s.demographic_filters.price_per_response) : null;
 }
 
 export default function Billing() {
@@ -35,7 +53,7 @@ export default function Billing() {
     (async function() {
       var { data } = await supabase
         .from('surveys')
-        .select('id, title, status, created_at, target_responses, estimated_cost, demographic_filters')
+        .select('id, title, status, created_at, target_responses, estimated_cost, demographic_filters, response_count')
         .eq('created_by', user.id)
         .order('created_at', { ascending: false });
       setSurveys(data || []);
@@ -43,93 +61,124 @@ export default function Billing() {
     })();
   }, [user]);
 
-  var totalEstimated = surveys.reduce(function(sum, s) { return sum + (Number(s.estimated_cost) || 0); }, 0);
-  var activeCost = surveys.filter(function(s) { return s.status === 'active'; }).reduce(function(sum, s) { return sum + (Number(s.estimated_cost) || 0); }, 0);
-  var completedCost = surveys.filter(function(s) { return s.status === 'completed'; }).reduce(function(sum, s) { return sum + (Number(s.estimated_cost) || 0); }, 0);
-
-  function getRate(s) {
-    var df = s.demographic_filters;
-    if (!df) return null;
-    return df.price_per_response || null;
-  }
+  var totalEst = surveys.reduce(function(s, r) { return s + getCost(r); }, 0);
+  var activeCost = surveys.filter(function(s) { return s.status === 'active'; }).reduce(function(s, r) { return s + getCost(r); }, 0);
+  var completedCost = surveys.filter(function(s) { return s.status === 'completed'; }).reduce(function(s, r) { return s + getCost(r); }, 0);
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
       <div style={{ width: 32, height: 32, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
     </div>
   );
 
   return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 860 }}>
+    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 900 }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: font }}>Billing</h1>
-        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: 0 }}>Estimated costs based on your survey requests</p>
+        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: 0 }}>Survey progress and estimated costs</p>
       </div>
 
-      {/* Notice */}
-      <div style={{ background: C.gold + '08', border: '1px solid ' + C.gold + '20', borderRadius: 12, padding: '14px 18px', marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <div style={{ background: C.gold + '08', border: '1px solid ' + C.gold + '20', borderRadius: 12, padding: '14px 18px', marginBottom: 24, display: 'flex', gap: 12 }}>
         <span style={{ fontSize: 18 }}>ℹ️</span>
         <div>
           <p style={{ fontSize: 13, fontWeight: 600, color: C.navy, margin: '0 0 2px' }}>Invoicing upon completion</p>
-          <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.45)', margin: 0 }}>Costs shown are estimates based on target responses. You are only billed for verified responses received when a survey completes. Final invoices are sent by email.</p>
+          <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.45)', margin: 0 }}>You are only billed for verified responses received. Final invoices are sent by email.</p>
         </div>
       </div>
 
-      {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-        <SummaryCard label="Total Estimated" value={'$' + totalEstimated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sub={surveys.length + ' survey' + (surveys.length !== 1 ? 's' : '')} color={C.navy} />
-        <SummaryCard label="Currently Active" value={'$' + activeCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sub="In progress" color={C.green} />
-        <SummaryCard label="Completed" value={'$' + completedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sub="Invoiced" color="#6366f1" />
+        <SummaryCard label="Total Estimated" value={fmt(totalEst)} sub={surveys.length + ' survey' + (surveys.length !== 1 ? 's' : '')} color={C.navy} />
+        <SummaryCard label="Currently Active" value={fmt(activeCost)} sub="In progress" color={C.green} />
+        <SummaryCard label="Completed" value={fmt(completedCost)} sub="Invoiced" color="#6366f1" />
       </div>
 
-      {/* Survey breakdown */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', overflow: 'hidden' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(11,37,69,0.04)' }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: 0 }}>Survey Cost Breakdown</h2>
-        </div>
-
+      {/* Survey progress cards */}
+      <div style={{ display: 'grid', gap: 16, marginBottom: 28 }}>
         {surveys.length === 0 ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: '48px 24px', textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.3)', margin: '0 0 12px' }}>No surveys yet</p>
-            <button onClick={function() { navigate('/org/request-survey'); }} style={{ padding: '10px 20px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Request a Survey</button>
+            <button onClick={function() { navigate('/org/request'); }} style={{ padding: '10px 20px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Request a Survey</button>
           </div>
-        ) : (
-          <div>
-            {/* Table header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 110px 100px 120px', gap: 0, padding: '10px 24px', borderBottom: '1px solid rgba(11,37,69,0.04)', background: 'rgba(11,37,69,0.01)' }}>
-              {['Survey', 'Status', 'Rate/Response', 'Target', 'Est. Total'].map(function(h) {
-                return <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, color: 'rgba(11,37,69,0.25)' }}>{h}</span>;
-              })}
-            </div>
-            {surveys.map(function(s, i) {
-              var cfg = STATUS_CONFIG[s.status] || STATUS_CONFIG.pending_review;
-              var rate = getRate(s);
-              var tier = s.demographic_filters && s.demographic_filters.tier;
-              return (
-                <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 110px 100px 120px', gap: 0, padding: '16px 24px', borderBottom: i < surveys.length - 1 ? '1px solid rgba(11,37,69,0.03)' : 'none', alignItems: 'center' }}>
+        ) : surveys.map(function(s) {
+          var cfg = STATUS_CONFIG[s.status] || STATUS_CONFIG.draft;
+          var cost = getCost(s);
+          var rate = getRate(s);
+          var tier = s.demographic_filters?.tier || null;
+          var responses = s.response_count || 0;
+          var target = s.target_responses || 0;
+          var pct = target > 0 ? Math.min(100, Math.round((responses / target) * 100)) : null;
+          var accrued = rate ? rate * responses : null;
+
+          return (
+            <div key={s.id} style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', overflow: 'hidden' }}>
+              {/* Top */}
+              <div style={{ padding: '20px 24px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                   <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: '0 0 2px' }}>{s.title}</p>
-                    <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.3)', margin: 0 }}>{new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{tier ? ' · ' + tier : ''}</p>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>{s.title}</h3>
+                    <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', margin: 0 }}>
+                      {new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {tier ? ' · ' + tier : ''}
+                    </p>
                   </div>
-                  <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, color: cfg.color, background: cfg.bg }}>{cfg.label}</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: C.navy }}>{rate ? '$' + rate.toFixed(2) : '—'}</span>
-                  <span style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)' }}>{s.target_responses ? s.target_responses.toLocaleString() : '—'}</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: s.estimated_cost ? C.gold : 'rgba(11,37,69,0.25)' }}>{s.estimated_cost ? '$' + Number(s.estimated_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</span>
+                  <span style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, color: cfg.color, background: cfg.bg }}>{cfg.label}</span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                {/* Progress bar */}
+                {target > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.4)' }}>Survey Progress</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: pct >= 100 ? C.green : C.navy }}>
+                        {responses.toLocaleString()} / {target.toLocaleString()} responses ({pct}%)
+                      </span>
+                    </div>
+                    <div style={{ width: '100%', height: 8, background: 'rgba(11,37,69,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 4, width: pct + '%', background: pct >= 100 ? C.green : C.gold, transition: 'width 0.6s ease' }} />
+                    </div>
+                    {pct >= 100 && <p style={{ fontSize: 11, color: C.green, margin: '4px 0 0', fontWeight: 600 }}>✓ Target reached!</p>}
+                  </div>
+                )}
+
+                {/* Cost grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                  {[
+                    { label: 'Rate / Response', value: rate ? '$' + rate.toFixed(2) : '—', color: rate ? C.gold : null },
+                    { label: 'Estimated Total', value: cost > 0 ? fmt(cost) : '—', color: cost > 0 ? C.navy : null },
+                    { label: 'Accrued So Far', value: accrued ? fmt(accrued) : '—', color: accrued ? C.green : null },
+                  ].map(function(item) {
+                    return (
+                      <div key={item.label} style={{ padding: '12px 14px', background: 'rgba(245,241,236,0.5)', borderRadius: 10 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(11,37,69,0.25)', margin: '0 0 4px' }}>{item.label}</p>
+                        <p style={{ fontSize: 18, fontWeight: 700, color: item.color || 'rgba(11,37,69,0.2)', margin: 0 }}>{item.value}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer link */}
+              {(s.status === 'active' || s.status === 'completed') && (
+                <div style={{ padding: '12px 24px', borderTop: '1px solid rgba(11,37,69,0.04)' }}>
+                  <button onClick={function() { navigate('/org/results/' + s.id); }} style={{ fontSize: 12, fontWeight: 600, color: C.gold, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                    View Survey Results →
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Pricing reference */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: 24, marginTop: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: '0 0 16px' }}>Pricing Reference</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
           {[
             { tier: 'General Audience', desc: 'No demographic filters', price: '$3.50/response' },
-            { tier: 'Basic Targeting', desc: '1–2 demographic filters', price: '$4.50/response' },
-            { tier: 'Refined Targeting', desc: '3–4 demographic filters', price: '$5.50/response' },
+            { tier: 'Basic Targeting',  desc: '1–2 demographic filters', price: '$4.50/response' },
+            { tier: 'Refined Targeting',desc: '3–4 demographic filters', price: '$5.50/response' },
             { tier: 'Precision Targeting', desc: '5+ demographic filters', price: '$7.00/response' },
           ].map(function(t) {
             return (
