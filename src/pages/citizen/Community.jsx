@@ -105,7 +105,7 @@ const VerifiedBadge = () => (
 const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
   const [cat, setCat] = useState("Smileys");
   const ref = useRef(null);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState(null);
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -113,19 +113,20 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Calculate position ONCE on mount — never recalculate
   useEffect(() => {
-    if (anchorRef?.current && ref.current) {
-      const anchor = anchorRef.current.getBoundingClientRect();
-      const picker = ref.current;
-      const pw = 300, ph = 280;
-      let left = anchor.left;
-      let top = anchor.top - ph - 8;
-      if (left + pw > window.innerWidth - 10) left = window.innerWidth - pw - 10;
-      if (left < 10) left = 10;
-      if (top < 10) top = anchor.bottom + 8;
-      setPos({ top, left });
-    }
-  }, [anchorRef]);
+    if (!anchorRef?.current) { setPos({ top: 100, left: 100 }); return; }
+    const anchor = anchorRef.current.getBoundingClientRect();
+    const pw = 300, ph = 290;
+    let left = anchor.left;
+    let top = anchor.top - ph - 8;
+    if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+    if (left < 12) left = 12;
+    if (top < 12) top = anchor.bottom + 8;
+    setPos({ top, left });
+  }, []); // empty deps = runs once only
+
+  if (!pos) return null;
 
   return (
     <div ref={ref} style={{
