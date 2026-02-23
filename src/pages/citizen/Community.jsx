@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "../../supabaseClient";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -104,39 +105,41 @@ const VerifiedBadge = () => (
 // ── Emoji Picker ──────────────────────────────────────────────────────────────
 const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
   const [cat, setCat] = useState("Smileys");
-  const ref = useRef(null);
-  const [pos, setPos] = useState(null);
+  const pickerRef = useRef(null);
 
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    // Position via direct DOM — no state, no re-render, never moves
+    if (pickerRef.current && anchorRef?.current) {
+      const anchor = anchorRef.current.getBoundingClientRect();
+      const pw = 300, ph = 290;
+      let left = anchor.left;
+      let top = anchor.top - ph - 8;
+      if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+      if (left < 12) left = 12;
+      if (top < 12) top = anchor.bottom + 8;
+      pickerRef.current.style.top = top + "px";
+      pickerRef.current.style.left = left + "px";
+      pickerRef.current.style.visibility = "visible";
+    }
+    // Close on outside click — delay 100ms so opening click doesn't immediately close
+    const handler = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target) &&
+          anchorRef?.current && !anchorRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    const t = setTimeout(() => document.addEventListener("mousedown", handler), 100);
+    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+  }, []); // runs ONCE on mount only
 
-  // Calculate position ONCE on mount — never recalculate
-  useEffect(() => {
-    if (!anchorRef?.current) { setPos({ top: 100, left: 100 }); return; }
-    const anchor = anchorRef.current.getBoundingClientRect();
-    const pw = 300, ph = 290;
-    let left = anchor.left;
-    let top = anchor.top - ph - 8;
-    if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
-    if (left < 12) left = 12;
-    if (top < 12) top = anchor.bottom + 8;
-    setPos({ top, left });
-  }, []); // empty deps = runs once only
-
-  if (!pos) return null;
-
-  return (
-    <div ref={ref} style={{
-      position: "fixed", top: pos.top, left: pos.left,
+  const picker = (
+    <div ref={pickerRef} style={{
+      position: "fixed", top: -9999, left: -9999, visibility: "hidden",
       width: 300, background: "#fff", borderRadius: 16,
       border: "1px solid " + T.border,
       boxShadow: "0 8px 32px rgba(11,37,69,0.18)",
       zIndex: 9999, overflow: "hidden",
     }}>
-      {/* Category tabs */}
       <div style={{ display: "flex", overflowX: "auto", borderBottom: "1px solid " + T.border, padding: "8px 8px 0" }}>
         {Object.keys(EMOJI_CATEGORIES).map((c) => (
           <button key={c} onClick={() => setCat(c)} style={{
@@ -148,13 +151,11 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
           }}>{c}</button>
         ))}
       </div>
-      {/* Emojis grid */}
       <div style={{ padding: 10, maxHeight: 200, overflowY: "auto", display: "flex", flexWrap: "wrap", gap: 2 }}>
         {EMOJI_CATEGORIES[cat].map((e) => (
           <button key={e} onClick={() => onSelect(e)} style={{
             width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 20, background: "none", border: "none", cursor: "pointer", borderRadius: 8,
-            transition: "background 0.1s",
           }}
             onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
             onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
@@ -163,6 +164,10 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
       </div>
     </div>
   );
+
+  // Portal: renders on document.body — completely outside parent tree
+  // Parent re-renders (typing) CANNOT affect this component
+  return createPortal(picker, document.body);
 };
 
 // ── Reaction Bar ──────────────────────────────────────────────────────────────
@@ -369,7 +374,90 @@ const Composer = ({ user, onPost }) => {
   );
 };
 
-// ── Post Card ─────────────────────────────────────────────────────────────────
+// ── Reply Box (isolated to prevent parent re-renders moving the emoji picker) ─
+const ReplyBox = ({ postId, onComment }) => {
+  const [reply, setReply] = useState("");
+  const [showEmojiReply, setShowEmojiReply] = useState(false);
+  const [replyImageFile, setReplyImageFile] = useState(null);
+  const [replyImagePreview, setReplyImagePreview] = useState(null);
+  const replyRef = useRef(null);
+  const replyFileRef = useRef(null);
+  const replyEmojiRef = useRef(null);
+
+  const insertReplyEmoji = (emoji) => {
+    setReply((r) => r + emoji);
+    setShowEmojiReply(false);
+    replyRef.current?.focus();
+  };
+
+  const submitReply = async () => {
+    if (!reply.trim() && !replyImageFile) return;
+    let imageUrl = null;
+    if (replyImageFile) {
+      const ext = replyImageFile.name.split(".").pop();
+      const path = "community/" + Date.now() + "-reply." + ext;
+      const { error: upErr } = await supabase.storage
+        .from("community-images").upload(path, replyImageFile, { cacheControl: "3600", upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
+        imageUrl = urlData?.publicUrl;
+      }
+    }
+    await onComment(postId, reply.trim(), imageUrl);
+    setReply("");
+    setReplyImageFile(null);
+    setReplyImagePreview(null);
+  };
+
+  return (
+    <div style={{ marginTop: 12, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
+      <textarea
+        ref={replyRef}
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && submitReply()}
+        placeholder="Write a thoughtful reply..."
+        rows={2}
+        style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
+      />
+      {replyImagePreview && (
+        <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
+          <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
+          <button onClick={() => { setReplyImageFile(null); setReplyImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+            <Ico d={ICONS.x} size={10} />
+          </button>
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
+            <Ico d={ICONS.image} size={14} />
+          </button>
+          <input ref={replyFileRef} type="file" accept="image/*" onChange={(e) => {
+            const file = e.target.files[0]; if (!file) return;
+            setReplyImageFile(file);
+            const reader = new FileReader();
+            reader.onload = (ev) => setReplyImagePreview(ev.target.result);
+            reader.readAsDataURL(file);
+          }} style={{ display: "none" }} />
+          <div style={{ position: "relative" }}>
+            <button ref={replyEmojiRef} onClick={() => setShowEmojiReply((v) => !v)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
+            {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
+          </div>
+          {["❤️","👍","🔥","😂"].map((e) => (
+            <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter</span>
+          <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
+            Reply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(post.likes_count || 0);
