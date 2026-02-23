@@ -374,6 +374,84 @@ const Composer = ({ user, onPost }) => {
   );
 };
 
+// ── Comments List (collapsed to 4, expandable) ───────────────────────────────
+const CommentsList = ({ comments }) => {
+  const [expanded, setExpanded] = useState(false);
+  const SHOW = 4;
+  const visible = expanded ? comments : comments.slice(0, SHOW);
+  const hiddenCount = comments.length - SHOW;
+
+  if (comments.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 8 }}>
+      {/* Show older replies button */}
+      {!expanded && hiddenCount > 0 && (
+        <button onClick={() => setExpanded(true)} style={{
+          display: "flex", alignItems: "center", gap: 6, padding: "6px 0",
+          background: "none", border: "none", cursor: "pointer",
+          fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.muted,
+          marginBottom: 8,
+        }}>
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 20, height: 20, borderRadius: "50%", background: T.border, fontSize: 14 }}>↑</span>
+          View {hiddenCount} earlier {hiddenCount === 1 ? "reply" : "replies"}
+        </button>
+      )}
+
+      {visible.map((c, i) => (
+        <div key={c.id} style={{
+          display: "flex", gap: 10, marginBottom: 10, paddingLeft: 4,
+          animation: "fadeIn 0.2s ease",
+        }}>
+          <Avatar name={c.users?.full_name || "?"} size={30} verified={c.users?.identity_verified} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              background: T.cream, borderRadius: "14px 14px 14px 4px",
+              padding: "8px 12px", border: "1px solid " + T.border,
+              display: "inline-block", maxWidth: "100%",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy }}>
+                  {c.users?.full_name || "Citizen"}
+                </span>
+                {c.users?.identity_verified && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "1px 5px", borderRadius: 10, background: T.gold + "18", border: "1px solid " + T.gold + "33", fontSize: 9, fontWeight: 700, color: T.gold, fontFamily: T.sans }}>
+                    ✓ Verified
+                  </span>
+                )}
+              </div>
+              {c.content && (
+                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+              )}
+              {c.image_url && (
+                <img src={c.image_url} alt="reply" style={{ maxWidth: "100%", maxHeight: 160, borderRadius: 8, marginTop: c.content ? 6 : 0, display: "block" }} />
+              )}
+            </div>
+            <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, paddingLeft: 4 }}>
+              {timeAgo(c.created_at)}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {/* Collapse button */}
+      {expanded && hiddenCount > 0 && (
+        <button onClick={() => setExpanded(false)} style={{
+          display: "flex", alignItems: "center", gap: 6, padding: "4px 0",
+          background: "none", border: "none", cursor: "pointer",
+          fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.muted,
+          marginBottom: 6,
+        }}>
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 20, height: 20, borderRadius: "50%", background: T.border, fontSize: 14 }}>↓</span>
+          Collapse replies
+        </button>
+      )}
+    </div>
+  );
+};
+
 // ── Reply Box (isolated to prevent parent re-renders moving the emoji picker) ─
 const ReplyBox = ({ postId, onComment }) => {
   const [reply, setReply] = useState("");
@@ -510,9 +588,8 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
         imageUrl = urlData?.publicUrl;
       }
     }
-    await onComment(post.id, reply.trim(), imageUrl);
-    // Add comment optimistically to UI
-    const newComment = {
+    const saved = await onComment(post.id, reply.trim(), imageUrl);
+    const newComment = saved || {
       id: Date.now(),
       content: reply.trim(),
       image_url: imageUrl,
@@ -626,35 +703,14 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
         {/* Comments + Reply box */}
         {showReply && (
           <div style={{ marginTop: 14 }}>
-            {/* Existing comments */}
+            {/* Existing comments — show 4, expand rest */}
             {loadingComments ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}>
                 <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
               </div>
-            ) : comments.map((c) => (
-              <div key={c.id} style={{ display: "flex", gap: 10, marginBottom: 12, paddingLeft: 4 }}>
-                <Avatar name={c.users?.full_name || "?"} size={32} verified={c.users?.identity_verified} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ background: T.cream, borderRadius: "14px 14px 14px 4px", padding: "10px 14px", border: "1px solid " + T.border, display: "inline-block", maxWidth: "100%" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                      <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy }}>
-                        {c.users?.full_name || "Citizen"}
-                      </span>
-                      {c.users?.identity_verified && <Ico d={ICONS.shield} size={10} />}
-                    </div>
-                    {c.content && (
-                      <p style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>{c.content}</p>
-                    )}
-                    {c.image_url && (
-                      <img src={c.image_url} alt="reply" style={{ maxWidth: "100%", maxHeight: 180, borderRadius: 10, marginTop: c.content ? 8 : 0, display: "block" }} />
-                    )}
-                  </div>
-                  <div style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, marginTop: 3, paddingLeft: 4 }}>
-                    {timeAgo(c.created_at)}
-                  </div>
-                </div>
-              </div>
-            ))}
+            ) : (
+              <CommentsList comments={comments} />
+            )}
           </div>
         )}
         {/* Reply composer */}
@@ -945,9 +1001,14 @@ export default function Community() {
     await supabase.from("community_posts").update({ likes_count: supabase.rpc("increment", { x: 1 }) }).eq("id", id);
   };
 
-  const handleComment = async (postId, content) => {
-    await supabase.from("community_post_comments").insert({ post_id: postId, user_id: user.id, content });
+  const handleComment = async (postId, content, imageUrl) => {
+    const { data } = await supabase
+      .from("community_post_comments")
+      .insert({ post_id: postId, user_id: user.id, content: content || null, image_url: imageUrl || null })
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .single();
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
+    return data;
   };
 
   const handleReact = async (postId, emoji) => {
@@ -958,7 +1019,7 @@ export default function Community() {
   if (activeRoom) {
     return (
       <div style={{ height: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
-        <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }"}</style>
+        <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }"}</style>
         <ChatRoom survey={activeRoom} currentUser={currentUser} onBack={() => setActiveRoom(null)} />
       </div>
     );
@@ -966,7 +1027,7 @@ export default function Community() {
 
   return (
     <div style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans }}>
-      <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }"}</style>
+      <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }"}</style>
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
