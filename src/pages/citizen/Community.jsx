@@ -467,6 +467,9 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [hovered, setHovered] = useState(false);
   const [replyImageFile, setReplyImageFile] = useState(null);
   const [replyImagePreview, setReplyImagePreview] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.comments_count || 0);
   const replyRef = useRef(null);
   const replyFileRef = useRef(null);
   const replyEmojiRef = useRef(null);
@@ -477,13 +480,30 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
     await onLike(post.id);
   };
 
+  const loadComments = async () => {
+    setLoadingComments(true);
+    const { data } = await supabase
+      .from("community_post_comments")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .eq("post_id", post.id)
+      .order("created_at", { ascending: true });
+    setComments(data || []);
+    setLoadingComments(false);
+  };
+
+  const toggleReplies = () => {
+    const next = !showReply;
+    setShowReply(next);
+    if (next && comments.length === 0) loadComments();
+  };
+
   const submitReply = async () => {
     if (!reply.trim() && !replyImageFile) return;
     let imageUrl = null;
     if (replyImageFile) {
       const ext = replyImageFile.name.split(".").pop();
       const path = "community/" + Date.now() + "-reply." + ext;
-      const { data: upData, error: upErr } = await supabase.storage
+      const { error: upErr } = await supabase.storage
         .from("community-images").upload(path, replyImageFile, { cacheControl: "3600", upsert: false });
       if (!upErr) {
         const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
@@ -491,10 +511,19 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
       }
     }
     await onComment(post.id, reply.trim(), imageUrl);
+    // Add comment optimistically to UI
+    const newComment = {
+      id: Date.now(),
+      content: reply.trim(),
+      image_url: imageUrl,
+      created_at: new Date().toISOString(),
+      users: { full_name: post._currentUserName, identity_verified: post._currentUserVerified },
+    };
+    setComments((prev) => [...prev, newComment]);
+    setCommentCount((c) => c + 1);
     setReply("");
     setReplyImageFile(null);
     setReplyImagePreview(null);
-    setShowReply(false);
   };
 
   const insertReplyEmoji = (emoji) => {
@@ -569,7 +598,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
             {likes > 0 ? likes : "Like"}
           </button>
 
-          <button onClick={() => setShowReply(!showReply)} style={{
+          <button onClick={toggleReplies} style={{
             display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
             borderRadius: 20, background: showReply ? T.navy + "08" : "none",
             border: "1px solid " + (showReply ? T.navy + "22" : T.border),
@@ -577,7 +606,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
             color: showReply ? T.navy : T.muted, transition: "all 0.15s",
           }}>
             <Ico d={ICONS.chat} size={14} />
-            {post.comments_count > 0 ? post.comments_count + " Reply" : "Reply"}
+            {commentCount > 0 ? commentCount + (commentCount === 1 ? " Reply" : " Replies") : "Reply"}
           </button>
 
           {/* Quick reactions */}
@@ -594,9 +623,43 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
           </div>
         </div>
 
-        {/* Reply box */}
+        {/* Comments + Reply box */}
         {showReply && (
-          <div style={{ marginTop: 12, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
+          <div style={{ marginTop: 14 }}>
+            {/* Existing comments */}
+            {loadingComments ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+              </div>
+            ) : comments.map((c) => (
+              <div key={c.id} style={{ display: "flex", gap: 10, marginBottom: 12, paddingLeft: 4 }}>
+                <Avatar name={c.users?.full_name || "?"} size={32} verified={c.users?.identity_verified} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ background: T.cream, borderRadius: "14px 14px 14px 4px", padding: "10px 14px", border: "1px solid " + T.border, display: "inline-block", maxWidth: "100%" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                      <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy }}>
+                        {c.users?.full_name || "Citizen"}
+                      </span>
+                      {c.users?.identity_verified && <Ico d={ICONS.shield} size={10} />}
+                    </div>
+                    {c.content && (
+                      <p style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+                    )}
+                    {c.image_url && (
+                      <img src={c.image_url} alt="reply" style={{ maxWidth: "100%", maxHeight: 180, borderRadius: 10, marginTop: c.content ? 8 : 0, display: "block" }} />
+                    )}
+                  </div>
+                  <div style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, marginTop: 3, paddingLeft: 4 }}>
+                    {timeAgo(c.created_at)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Reply composer */}
+        {showReply && (
+          <div style={{ marginTop: 4, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
             <textarea
               ref={replyRef}
               value={reply}
@@ -973,7 +1036,7 @@ export default function Community() {
               </div>
             ) : (
               <>
-                {posts.map((p) => <PostCard key={p.id} post={p} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
+                {posts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified}} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
                 {hasMore && (
                   <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
