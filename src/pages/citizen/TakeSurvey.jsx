@@ -170,15 +170,58 @@ export default function TakeSurvey() {
   );
 
   // Completion screen
+  var [shareThought, setShareThought] = useState('');
+  var [shared, setShared] = useState(false);
+  var [sharing, setSharing] = useState(false);
+
+  async function shareComment() {
+    if (!shareThought.trim() || !user) return;
+    setSharing(true);
+    await supabase.from('discussion_comments').insert({
+      survey_id: surveyId,
+      user_id: user.id,
+      author_name: 'Citizen',
+      verified: false,
+      content: shareThought.trim(),
+      likes: [],
+      parent_id: null,
+    });
+    setShared(true);
+    setSharing(false);
+  }
+
   if (step > total) return (
-    <div style={{ maxWidth: 520, margin: '60px auto', textAlign: 'center', padding: '0 20px', fontFamily: 'DM Sans, sans-serif' }}>
-      <div style={{ width: 80, height: 80, borderRadius: '50%', background: C.green + '12', border: '2px solid ' + C.green + '40', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontSize: 36, color: C.green }}>&#10003;</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: C.navy, margin: '0 0 12px', fontFamily: font }}>Thank you!</h1>
-      <p style={{ fontSize: 15, color: 'rgba(11,37,69,0.5)', margin: '0 0 6px', lineHeight: 1.7 }}>Your response to <strong style={{ color: C.navy }}>{survey.title}</strong> has been recorded.</p>
-      <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.3)', margin: '0 0 32px' }}>Your voice contributes to verified civic data.</p>
-      <div style={{ display: 'grid', gap: 12 }}>
-        <button onClick={function() { navigate('/citizen/surveys'); }} style={{ padding: 14, background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Back to Surveys &#8594;</button>
-        <button onClick={function() { navigate('/citizen/discussion'); }} style={{ padding: 14, background: 'rgba(11,37,69,0.04)', color: C.navy, border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Join the Discussion &#8594;</button>
+    <div style={{ maxWidth: 520, margin: '40px auto', padding: '0 20px', fontFamily: 'DM Sans, sans-serif' }}>
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ width: 72, height: 72, borderRadius: '50%', background: C.green + '12', border: '2px solid ' + C.green + '40', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', fontSize: 30, color: C.green }}>&#10003;</div>
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: C.navy, margin: '0 0 8px', fontFamily: font }}>Response recorded!</h1>
+        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.45)', margin: 0, lineHeight: 1.6 }}>Thanks for completing <strong style={{ color: C.navy }}>{survey.title}</strong>. Your voice contributes to verified civic data.</p>
+      </div>
+
+      {/* Inline discussion prompt */}
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: '20px 22px', marginBottom: 16 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 4px' }}>&#128172; What do you think about this poll?</p>
+        <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)', margin: '0 0 14px' }}>Share a thought — others can see and reply. Discussion stays open even after the poll ends.</p>
+        {shared
+          ? <div style={{ background: C.green + '08', border: '1px solid ' + C.green + '20', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: C.green, fontWeight: 600, margin: 0 }}>&#10003; Your comment was posted!</p>
+            </div>
+          : <div>
+              <textarea value={shareThought} onChange={function(e) { setShareThought(e.target.value); }} placeholder={'e.g. "I think this matters because..." or "Here's my take..."'} rows={3}
+                style={{ width: '100%', padding: '12px 14px', fontSize: 13, border: '1px solid rgba(11,37,69,0.08)', borderRadius: 10, outline: 'none', resize: 'none', fontFamily: 'inherit', lineHeight: 1.5, boxSizing: 'border-box' }}
+                onFocus={function(e) { e.target.style.borderColor = C.gold; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                <button onClick={shareComment} disabled={!shareThought.trim() || sharing} style={{ padding: '9px 20px', background: shareThought.trim() ? C.navy : 'rgba(11,37,69,0.06)', color: shareThought.trim() ? '#fff' : 'rgba(11,37,69,0.2)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: shareThought.trim() ? 'pointer' : 'default' }}>
+                  {sharing ? 'Posting...' : 'Share Thought'}
+                </button>
+              </div>
+            </div>
+        }
+      </div>
+
+      <div style={{ display: 'grid', gap: 10 }}>
+        <button onClick={function() { navigate('/citizen/surveys'); }} style={{ padding: 13, background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Back to Surveys &#8594;</button>
+        <button onClick={function() { navigate('/citizen/discussion'); }} style={{ padding: 13, background: 'rgba(11,37,69,0.04)', color: C.navy, border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>View Poll Discussions &#8594;</button>
       </div>
     </div>
   );
