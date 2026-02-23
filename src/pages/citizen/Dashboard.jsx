@@ -110,7 +110,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
       var userIds = [...new Set(allComments.map(function(c) { return c.user_id; }).filter(Boolean))];
       var profileMap = {};
       if (userIds.length) {
-        var pr = await supabase.from('profiles').select('id,full_name,identity_verified').in('id', userIds);
+        var pr = await supabase.from('users').select('id,full_name,identity_verified').in('id', userIds);
         (pr.data || []).forEach(function(p) { profileMap[p.id] = p; });
       }
       allComments = allComments.map(function(c) {
