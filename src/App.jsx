@@ -37,10 +37,11 @@ import OrgResults from './pages/org/Results'
 // Remaining placeholders
 import {
   AdminOrganizations, AdminSettings,
-  OrgBilling, OrgProfile,
   ForgotPassword, Contact, PublicSurvey, PublicResults
 } from './pages/Placeholders'
 
+import OrgBilling from './pages/org/Billing'
+import OrgProfile from './pages/org/Profile'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function AuthRedirect() {
@@ -98,7 +99,7 @@ export default function App() {
             <Route index element={<OrgDashboard />} />
             <Route path="request" element={<OrgRequestSurvey />} />
             <Route path="surveys" element={<OrgMySurveys />} />
-            <Route path="surveys/:id/results" element={<OrgResults />} />
+            <Route path="results/:id" element={<OrgResults />} />
             <Route path="billing" element={<OrgBilling />} />
             <Route path="profile" element={<OrgProfile />} />
           </Route>
