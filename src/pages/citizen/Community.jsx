@@ -374,80 +374,73 @@ const Composer = ({ user, onPost }) => {
   );
 };
 
-// ── Comments List (collapsed to 4, expandable) ───────────────────────────────
+// ── Single comment row ────────────────────────────────────────────────────────
+const CommentRow = ({ c }) => (
+  <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} />
+    <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
+      <div style={{
+        background: T.cream, borderRadius: "12px 12px 12px 3px",
+        padding: "7px 12px", border: "1px solid " + T.border,
+        display: "inline-block", maxWidth: "100%",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+          <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy }}>
+            {c.users?.full_name || "Citizen"}
+          </span>
+          {c.users?.identity_verified && (
+            <span style={{ fontSize: 9, fontWeight: 700, color: T.gold, fontFamily: T.sans }}>✓</span>
+          )}
+          <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, marginLeft: 2 }}>
+            · {timeAgo(c.created_at)}
+          </span>
+        </div>
+        {c.content && (
+          <p style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+        )}
+        {c.image_url && (
+          <img src={c.image_url} alt="reply" style={{ maxWidth: "100%", maxHeight: 140, borderRadius: 8, marginTop: c.content ? 6 : 0, display: "block" }} />
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// ── Comments List with smooth slide expand ────────────────────────────────────
 const CommentsList = ({ comments }) => {
   const [expanded, setExpanded] = useState(false);
-  const SHOW = 4;
-  const visible = expanded ? comments : comments.slice(0, SHOW);
-  const hiddenCount = comments.length - SHOW;
+  const SHOW = 3;
+  const hiddenCount = Math.max(0, comments.length - SHOW);
+  const latest = comments.slice(-SHOW); // always show the 3 most recent
+  const older = comments.slice(0, -SHOW); // the rest hidden by default
 
   if (comments.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: 8 }}>
-      {/* Show older replies button */}
-      {!expanded && hiddenCount > 0 && (
-        <button onClick={() => setExpanded(true)} style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "6px 0",
-          background: "none", border: "none", cursor: "pointer",
-          fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.muted,
-          marginBottom: 8,
-        }}>
-          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 20, height: 20, borderRadius: "50%", background: T.border, fontSize: 14 }}>↑</span>
-          View {hiddenCount} earlier {hiddenCount === 1 ? "reply" : "replies"}
-        </button>
-      )}
-
-      {visible.map((c, i) => (
-        <div key={c.id} style={{
-          display: "flex", gap: 10, marginBottom: 10, paddingLeft: 4,
-          animation: "fadeIn 0.2s ease",
-        }}>
-          <Avatar name={c.users?.full_name || "?"} size={30} verified={c.users?.identity_verified} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              background: T.cream, borderRadius: "14px 14px 14px 4px",
-              padding: "8px 12px", border: "1px solid " + T.border,
-              display: "inline-block", maxWidth: "100%",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
-                <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy }}>
-                  {c.users?.full_name || "Citizen"}
-                </span>
-                {c.users?.identity_verified && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "1px 5px", borderRadius: 10, background: T.gold + "18", border: "1px solid " + T.gold + "33", fontSize: 9, fontWeight: 700, color: T.gold, fontFamily: T.sans }}>
-                    ✓ Verified
-                  </span>
-                )}
-              </div>
-              {c.content && (
-                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>{c.content}</p>
-              )}
-              {c.image_url && (
-                <img src={c.image_url} alt="reply" style={{ maxWidth: "100%", maxHeight: 160, borderRadius: 8, marginTop: c.content ? 6 : 0, display: "block" }} />
-              )}
-            </div>
-            <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, paddingLeft: 4 }}>
-              {timeAgo(c.created_at)}
-            </span>
+    <div style={{ borderLeft: "2px solid " + T.gold + "33", marginLeft: 14, paddingLeft: 8, marginBottom: 4 }}>
+      {/* Older replies — slide open */}
+      {hiddenCount > 0 && (
+        <>
+          <button onClick={() => setExpanded((v) => !v)} style={{
+            display: "flex", alignItems: "center", gap: 5, padding: "4px 0 8px",
+            background: "none", border: "none", cursor: "pointer",
+            fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.navy + "99",
+          }}>
+            <span style={{ fontSize: 13, transition: "transform 0.2s", display: "inline-block", transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+            {expanded ? "Hide older replies" : "View " + hiddenCount + " more " + (hiddenCount === 1 ? "reply" : "replies")}
+          </button>
+          {/* Slide wrapper using max-height transition */}
+          <div style={{
+            overflow: "hidden",
+            maxHeight: expanded ? older.length * 120 + "px" : "0px",
+            transition: "max-height 0.35s ease",
+          }}>
+            {older.map((c) => <CommentRow key={c.id} c={c} />)}
           </div>
-        </div>
-      ))}
-
-      {/* Collapse button */}
-      {expanded && hiddenCount > 0 && (
-        <button onClick={() => setExpanded(false)} style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "4px 0",
-          background: "none", border: "none", cursor: "pointer",
-          fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.muted,
-          marginBottom: 6,
-        }}>
-          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 20, height: 20, borderRadius: "50%", background: T.border, fontSize: 14 }}>↓</span>
-          Collapse replies
-        </button>
+        </>
       )}
+      {/* Always-visible latest replies */}
+      {latest.map((c) => <CommentRow key={c.id} c={c} />)}
     </div>
   );
 };
@@ -1002,11 +995,14 @@ export default function Community() {
   };
 
   const handleComment = async (postId, content, imageUrl) => {
-    const { data } = await supabase
+    const insertData = { post_id: postId, user_id: user.id, content: content || null };
+    if (imageUrl) insertData.image_url = imageUrl;
+    const { data, error } = await supabase
       .from("community_post_comments")
-      .insert({ post_id: postId, user_id: user.id, content: content || null, image_url: imageUrl || null })
+      .insert(insertData)
       .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
       .single();
+    if (error) console.error("Comment save error:", error);
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
     return data;
   };
