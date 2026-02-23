@@ -108,7 +108,7 @@ export default function RequestSurvey() {
     var surveyData = {
       title: form.title.trim(),
       description: form.description.trim(),
-      status: 'pending',
+      status: 'pending_review',
       questions: qData,
       target_responses: parseInt(form.target_responses) || 100,
       created_by: user.id,
