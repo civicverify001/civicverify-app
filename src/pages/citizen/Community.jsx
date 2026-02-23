@@ -31,8 +31,26 @@ const ICONS = {
   trending: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
   users:    "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
   back:     "M15 18l-6-6 6-6",
+  image:    "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+  x:        "M6 18L18 6M6 6l12 12",
+  smile:    "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   poll:     "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
 };
+
+// Emoji sets
+const EMOJI_CATEGORIES = {
+  "Smileys": ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡"],
+  "Gestures": ["👍","👎","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👋","🤚","🖐","✋","🖖","🤜","🤛","✊","👊","🙌","👏","🤲","🙏","✍️","💪","🦾"],
+  "People": ["👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","👴","👵","🧓","👮","🕵️","💂","🥷","👷","🫅","🤴","👸","👰","🤵","🦸","🦹","🧙","🧚","🧛","🧜","🧝"],
+  "Nature": ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜"],
+  "Food": ["🍎","🍊","🍋","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🥑","🫒","🍆","🥔","🥕","🌽","🌶️","🫑","🧄","🧅","🥜","🌰","🍞","🥐","🧆","🧇","🥞","🧈"],
+  "Activities": ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🏓","🏸","🏒","🥊","🥋","🎽","⛷️","🏂","🪂","🏋️","🤸","⛹️","🤺","🤼","🤽","🤾","🏌️","🏇","🧘"],
+  "Travel": ["🚗","🚕","🚙","🚌","🚎","🏎️","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🛵","🏍️","🚲","🛴","🛹","🛼","🚁","🛸","✈️","🚀","🛶","⛵","🚤","🛥️","🛳️"],
+  "Objects": ["💡","🔦","🕯️","🪔","🧱","💎","🔮","🪄","🎭","📺","📷","📸","🎸","🎹","🥁","🎷","🎺","🎻","🪕","📱","💻","🖥️","🖨️","⌨️","🖱️","📝","📖","📚","📰"],
+  "Symbols": ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","☮️","✝️","☯️","🕊️","🌈","⭐","🌟","💫","✨","🎉","🎊","🏆"],
+};
+
+const REACTION_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥", "👏", "🤔"];
 
 const timeAgo = (ts) => {
   const s = Math.floor((Date.now() - new Date(ts)) / 1000);
@@ -45,6 +63,7 @@ const timeAgo = (ts) => {
 const initials = (name) =>
   (name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
+// ── Avatar ────────────────────────────────────────────────────────────────────
 const Avatar = ({ name, size = 38, verified = false }) => (
   <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
     <div style={{
@@ -82,71 +101,247 @@ const VerifiedBadge = () => (
   </span>
 );
 
-const TOPICS = [
-  { tag: "LocalGovernment", n: "1.2k" },
-  { tag: "ClimatePolicy", n: "847" },
-  { tag: "PublicTransit", n: "623" },
-  { tag: "Education", n: "510" },
-  { tag: "Healthcare", n: "489" },
-  { tag: "HousingCrisis", n: "391" },
-];
+// ── Emoji Picker ──────────────────────────────────────────────────────────────
+const EmojiPicker = ({ onSelect, onClose }) => {
+  const [cat, setCat] = useState("Smileys");
+  const ref = useRef(null);
 
-const Skeleton = () => (
-  <div style={{ background: "#fff", borderRadius: 16, border: "1px solid " + T.border, padding: "18px 20px" }}>
-    <div style={{ display: "flex", gap: 12 }}>
-      <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#f1f5f9" }} />
-      <div style={{ flex: 1 }}>
-        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "35%", marginBottom: 8 }} />
-        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "100%", marginBottom: 6 }} />
-        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "70%" }} />
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{
+      position: "absolute", bottom: "calc(100% + 8px)", left: 0,
+      width: 320, background: "#fff", borderRadius: 16,
+      border: "1px solid " + T.border,
+      boxShadow: "0 8px 32px rgba(11,37,69,0.15)",
+      zIndex: 100, overflow: "hidden",
+    }}>
+      {/* Category tabs */}
+      <div style={{ display: "flex", overflowX: "auto", borderBottom: "1px solid " + T.border, padding: "8px 8px 0" }}>
+        {Object.keys(EMOJI_CATEGORIES).map((c) => (
+          <button key={c} onClick={() => setCat(c)} style={{
+            flexShrink: 0, padding: "4px 10px 8px", background: "none", border: "none",
+            cursor: "pointer", fontFamily: T.sans, fontSize: 11, fontWeight: 600,
+            color: cat === c ? T.navy : T.muted,
+            borderBottom: cat === c ? "2px solid " + T.gold : "2px solid transparent",
+            transition: "all 0.15s", whiteSpace: "nowrap",
+          }}>{c}</button>
+        ))}
+      </div>
+      {/* Emojis grid */}
+      <div style={{ padding: 10, maxHeight: 200, overflowY: "auto", display: "flex", flexWrap: "wrap", gap: 2 }}>
+        {EMOJI_CATEGORIES[cat].map((e) => (
+          <button key={e} onClick={() => onSelect(e)} style={{
+            width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 20, background: "none", border: "none", cursor: "pointer", borderRadius: 8,
+            transition: "background 0.1s",
+          }}
+            onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
+            onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
+          >{e}</button>
+        ))}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
+// ── Reaction Bar ──────────────────────────────────────────────────────────────
+const ReactionBar = ({ reactions, onReact }) => {
+  const [showPicker, setShowPicker] = useState(false);
+  const grouped = (reactions || []).reduce((a, r) => {
+    a[r.emoji] = (a[r.emoji] || 0) + 1; return a;
+  }, {});
+
+  return (
+    <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+      {Object.entries(grouped).map(([emoji, count]) => (
+        <button key={emoji} onClick={() => onReact(emoji)} style={{
+          display: "inline-flex", alignItems: "center", gap: 4,
+          padding: "3px 8px", borderRadius: 20, border: "1px solid " + T.border,
+          background: T.cream, cursor: "pointer", fontSize: 14,
+          fontFamily: T.sans, fontWeight: 600, color: T.navy, fontSize: 12,
+          transition: "all 0.15s",
+        }}>
+          {emoji} <span style={{ fontSize: 11 }}>{count}</span>
+        </button>
+      ))}
+      <button onClick={() => setShowPicker(!showPicker)} style={{
+        width: 28, height: 28, borderRadius: "50%", border: "1px dashed " + T.border,
+        background: "none", cursor: "pointer", display: "flex", alignItems: "center",
+        justifyContent: "center", color: T.muted, fontSize: 14, transition: "all 0.15s",
+      }}>+</button>
+      {showPicker && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 50,
+          background: "#fff", borderRadius: 12, padding: 8, border: "1px solid " + T.border,
+          boxShadow: "0 4px 20px rgba(11,37,69,0.12)", display: "flex", gap: 4 }}>
+          {REACTION_EMOJIS.map((e) => (
+            <button key={e} onClick={() => { onReact(e); setShowPicker(false); }} style={{
+              width: 36, height: 36, fontSize: 20, background: "none", border: "none",
+              cursor: "pointer", borderRadius: 8, transition: "background 0.1s",
+            }}
+              onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
+              onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
+            >{e}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Post Composer ─────────────────────────────────────────────────────────────
 const Composer = ({ user, onPost }) => {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+  const textRef = useRef(null);
   const MAX = 280;
+
+  const insertEmoji = (emoji) => {
+    const el = textRef.current;
+    if (!el) { setText((t) => t + emoji); return; }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const next = text.slice(0, start) + emoji + text.slice(end);
+    setText(next.slice(0, MAX));
+    setShowEmoji(false);
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
+  };
+
+  const pickImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => { setImageFile(null); setImagePreview(null); };
+
   const post = async () => {
-    if (!text.trim() || busy) return;
+    if ((!text.trim() && !imageFile) || busy) return;
     setBusy(true);
-    await onPost(text.trim());
+    let imageUrl = null;
+    if (imageFile) {
+      setUploading(true);
+      const ext = imageFile.name.split(".").pop();
+      const path = "community/" + Date.now() + "." + ext;
+      const { data: upData, error: upErr } = await supabase.storage
+        .from("community-images").upload(path, imageFile, { cacheControl: "3600", upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
+        imageUrl = urlData?.publicUrl;
+      }
+      setUploading(false);
+    }
+    await onPost(text.trim(), imageUrl);
     setText("");
+    setImageFile(null);
+    setImagePreview(null);
     setBusy(false);
   };
+
+  const left = MAX - text.length;
+  const hasContent = text.trim() || imageFile;
+
   return (
-    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid " + T.border, boxShadow: "0 2px 12px rgba(11,37,69,0.06)", overflow: "hidden" }}>
-      <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)" }} />
+    <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, boxShadow: "0 2px 16px rgba(11,37,69,0.08)", overflow: "visible" }}>
+      <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)", borderRadius: "20px 20px 0 0" }} />
       <div style={{ padding: "16px 20px 14px" }}>
         <div style={{ display: "flex", gap: 12 }}>
-          <Avatar name={user?.full_name} size={40} verified={user?.identity_verified} />
-          <div style={{ flex: 1 }}>
+          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} />
+          <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
+              ref={textRef}
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, MAX))}
-              placeholder="Share a civic thought with verified citizens..."
-              rows={2}
+              placeholder="What's on your civic mind? Share a thought, ask a question..."
+              rows={3}
               style={{
                 width: "100%", resize: "none", border: "none", outline: "none",
-                fontFamily: T.sans, fontSize: 14, lineHeight: 1.6,
+                fontFamily: T.sans, fontSize: 15, lineHeight: 1.6,
                 color: T.ink, background: "transparent", boxSizing: "border-box",
               }}
             />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid " + T.border }}>
-              <Ico d={ICONS.poll} size={15} />
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 11, fontFamily: T.sans, color: (MAX - text.length) < 40 ? "#e53e3e" : T.muted }}>
-                  {MAX - text.length}
-                </span>
-                <button onClick={post} disabled={!text.trim() || busy} style={{
-                  padding: "7px 18px", borderRadius: 20, border: "none",
-                  background: text.trim() ? T.navy : "#f1f5f9",
-                  color: text.trim() ? T.gold : T.muted,
-                  fontFamily: T.sans, fontSize: 12, fontWeight: 700,
-                  cursor: text.trim() ? "pointer" : "default", transition: "all 0.15s",
+
+            {/* Image preview */}
+            {imagePreview && (
+              <div style={{ position: "relative", marginBottom: 10, borderRadius: 12, overflow: "hidden", display: "inline-block" }}>
+                <img src={imagePreview} alt="preview" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 12, display: "block" }} />
+                <button onClick={removeImage} style={{
+                  position: "absolute", top: 6, right: 6, width: 24, height: 24,
+                  borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
                 }}>
-                  {busy ? "Posting..." : "Post"}
+                  <Ico d={ICONS.x} size={12} />
+                </button>
+              </div>
+            )}
+
+            {/* Toolbar */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid " + T.border }}>
+              <div style={{ display: "flex", gap: 4, position: "relative" }}>
+                {/* Image upload */}
+                <button onClick={() => fileRef.current?.click()} style={{
+                  width: 34, height: 34, borderRadius: 10, background: "none",
+                  border: "1px solid " + T.border, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", color: T.muted,
+                  transition: "all 0.15s",
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; e.currentTarget.style.color = T.navy; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; }}
+                >
+                  <Ico d={ICONS.image} size={16} />
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" onChange={pickImage} style={{ display: "none" }} />
+
+                {/* Emoji */}
+                <div style={{ position: "relative" }}>
+                  <button onClick={() => setShowEmoji(!showEmoji)} style={{
+                    width: 34, height: 34, borderRadius: 10, background: showEmoji ? T.cream : "none",
+                    border: "1px solid " + (showEmoji ? T.gold + "44" : T.border),
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    color: showEmoji ? T.gold : T.muted, fontSize: 16, transition: "all 0.15s",
+                  }}>😊</button>
+                  {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} />}
+                </div>
+
+                {/* Quick emojis */}
+                <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>
+                  {["❤️","👍","🔥","🎉"].map((e) => (
+                    <button key={e} onClick={() => insertEmoji(e)} style={{
+                      width: 30, height: 30, fontSize: 16, background: "none", border: "none",
+                      cursor: "pointer", borderRadius: 8, transition: "background 0.1s",
+                    }}
+                      onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
+                      onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
+                    >{e}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 11, fontFamily: T.sans, fontWeight: 500, color: left < 40 ? "#e53e3e" : T.muted }}>
+                  {left}
+                </span>
+                <button onClick={post} disabled={!hasContent || busy} style={{
+                  padding: "8px 20px", borderRadius: 20, border: "none",
+                  background: hasContent ? "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)" : "#f1f5f9",
+                  color: hasContent ? T.gold : T.muted,
+                  fontFamily: T.sans, fontSize: 13, fontWeight: 700,
+                  cursor: hasContent ? "pointer" : "default", transition: "all 0.2s",
+                  boxShadow: hasContent ? "0 2px 8px " + T.navy + "40" : "none",
+                }}>
+                  {uploading ? "Uploading..." : busy ? "Posting..." : "Post"}
                 </button>
               </div>
             </div>
@@ -157,12 +352,15 @@ const Composer = ({ user, onPost }) => {
   );
 };
 
-const PostCard = ({ post, onLike, onComment }) => {
+// ── Post Card ─────────────────────────────────────────────────────────────────
+const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(post.likes_count || 0);
   const [showReply, setShowReply] = useState(false);
   const [reply, setReply] = useState("");
+  const [showEmojiReply, setShowEmojiReply] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const replyRef = useRef(null);
 
   const toggleLike = async () => {
     setLiked((l) => !l);
@@ -177,124 +375,181 @@ const PostCard = ({ post, onLike, onComment }) => {
     setShowReply(false);
   };
 
+  const insertReplyEmoji = (emoji) => {
+    setReply((r) => r + emoji);
+    setShowEmojiReply(false);
+    replyRef.current?.focus();
+  };
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: "#fff", borderRadius: 16,
+        background: "#fff", borderRadius: 20,
         border: "1px solid " + (hovered ? T.gold + "33" : T.border),
-        boxShadow: hovered ? "0 4px 20px rgba(11,37,69,0.1)" : "0 1px 6px rgba(11,37,69,0.05)",
-        transform: hovered ? "translateY(-1px)" : "none",
-        transition: "all 0.2s", overflow: "hidden", padding: "18px 20px 14px",
+        boxShadow: hovered ? "0 6px 24px rgba(11,37,69,0.1)" : "0 1px 6px rgba(11,37,69,0.05)",
+        transform: hovered ? "translateY(-2px)" : "none",
+        transition: "all 0.2s", overflow: "hidden",
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-        <Avatar name={post.author_name} size={42} verified={post.author_verified} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 14, color: T.navy }}>
-              {post.author_name || "Anonymous Citizen"}
-            </span>
-            {post.author_verified && <VerifiedBadge />}
-            {post.survey_tag && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontSize: 10, color: T.muted, fontFamily: T.sans }}>
-                <Ico d={ICONS.hash} size={8} /> {post.survey_tag}
+      <div style={{ padding: "18px 20px 14px" }}>
+        {/* Author */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+          <Avatar name={post.author_name} size={44} verified={post.author_verified} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+              <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy }}>
+                {post.author_name || "Anonymous Citizen"}
               </span>
-            )}
+              {post.author_verified && <VerifiedBadge />}
+              {post.survey_tag && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontSize: 10, color: T.muted, fontFamily: T.sans }}>
+                  <Ico d={ICONS.hash} size={8} /> {post.survey_tag}
+                </span>
+              )}
+            </div>
+            <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{timeAgo(post.created_at)}</span>
           </div>
-          <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{timeAgo(post.created_at)}</span>
         </div>
-      </div>
 
-      <p style={{ fontFamily: T.sans, fontSize: 14, lineHeight: 1.65, color: T.ink, margin: "0 0 14px" }}>
-        {post.content}
-      </p>
+        {/* Content */}
+        {post.content && (
+          <p style={{ fontFamily: T.sans, fontSize: 15, lineHeight: 1.65, color: T.ink, margin: "0 0 12px" }}>
+            {post.content}
+          </p>
+        )}
 
-      {post.linked_survey && (
-        <div style={{ borderRadius: 10, padding: "12px 14px", marginBottom: 14, background: T.cream, border: "1px solid " + T.gold + "30" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-            <Ico d={ICONS.poll} size={13} />
-            <span style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.navy }}>{post.linked_survey.title}</span>
+        {/* Image */}
+        {post.image_url && (
+          <div style={{ marginBottom: 14, borderRadius: 14, overflow: "hidden" }}>
+            <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 360, objectFit: "cover", display: "block" }} />
           </div>
-          {(post.linked_survey.top_result || []).map((opt, i) => (
-            <div key={i} style={{ position: "relative", marginBottom: 5 }}>
-              <div style={{ position: "absolute", inset: 0, borderRadius: 6, background: T.gold + (i === 0 ? "28" : "14"), width: opt.pct + "%" }} />
-              <div style={{ position: "relative", display: "flex", justifyContent: "space-between", padding: "4px 10px" }}>
-                <span style={{ fontFamily: T.sans, fontSize: 12, color: T.ink }}>{opt.label}</span>
-                <span style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 700, color: T.gold }}>{opt.pct}%</span>
+        )}
+
+        {/* Reactions */}
+        {(post.reactions && post.reactions.length > 0) && (
+          <div style={{ marginBottom: 10 }}>
+            <ReactionBar reactions={post.reactions} onReact={(emoji) => onReact(post.id, emoji)} />
+          </div>
+        )}
+
+        {/* Action bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 10, borderTop: "1px solid " + T.border }}>
+          <button onClick={toggleLike} style={{
+            display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
+            borderRadius: 20, background: liked ? "#fee2e2" : "none",
+            border: "1px solid " + (liked ? "#fca5a5" : T.border),
+            cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 600,
+            color: liked ? "#e53e3e" : T.muted, transition: "all 0.15s",
+          }}>
+            <Ico d={ICONS.heart} size={14} fill={liked ? "#e53e3e" : "none"} />
+            {likes > 0 ? likes : "Like"}
+          </button>
+
+          <button onClick={() => setShowReply(!showReply)} style={{
+            display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
+            borderRadius: 20, background: showReply ? T.navy + "08" : "none",
+            border: "1px solid " + (showReply ? T.navy + "22" : T.border),
+            cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 600,
+            color: showReply ? T.navy : T.muted, transition: "all 0.15s",
+          }}>
+            <Ico d={ICONS.chat} size={14} />
+            {post.comments_count > 0 ? post.comments_count + " Reply" : "Reply"}
+          </button>
+
+          {/* Quick reactions */}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
+            {["❤️","👍","🔥","😂"].map((e) => (
+              <button key={e} onClick={() => onReact(post.id, e)} style={{
+                width: 30, height: 30, fontSize: 15, background: "none", border: "none",
+                cursor: "pointer", borderRadius: 8, transition: "all 0.15s", opacity: 0.7,
+              }}
+                onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; el.currentTarget.style.opacity = "1"; el.currentTarget.style.transform = "scale(1.2)"; }}
+                onMouseLeave={(el) => { el.currentTarget.style.background = "none"; el.currentTarget.style.opacity = "0.7"; el.currentTarget.style.transform = "none"; }}
+              >{e}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Reply box */}
+        {showReply && (
+          <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <div style={{ flex: 1, position: "relative" }}>
+              <input
+                ref={replyRef}
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitReply()}
+                placeholder="Write a thoughtful reply..."
+                style={{
+                  width: "100%", padding: "10px 40px 10px 14px", borderRadius: 20,
+                  border: "1px solid " + T.border, background: T.cream,
+                  fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <button onClick={() => setShowEmojiReply(!showEmojiReply)} style={{
+                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", fontSize: 16,
+                }}>😊</button>
+                {showEmojiReply && (
+                  <div style={{ position: "absolute", bottom: "calc(100% + 8px)", right: 0 }}>
+                    <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} />
+                  </div>
+                )}
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={toggleLike} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 500, color: liked ? "#e53e3e" : T.muted, transition: "color 0.15s", padding: 0 }}>
-          <Ico d={ICONS.heart} size={15} fill={liked ? "#e53e3e" : "none"} />
-          {likes > 0 ? likes : ""}
-        </button>
-        <button onClick={() => setShowReply(!showReply)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 500, color: showReply ? T.navy : T.muted, transition: "color 0.15s", padding: 0 }}>
-          <Ico d={ICONS.chat} size={15} />
-          {post.comments_count > 0 ? post.comments_count : ""}
-        </button>
+            <button onClick={submitReply} disabled={!reply.trim()} style={{
+              width: 38, height: 38, borderRadius: "50%", background: T.navy, border: "none",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              color: T.gold, opacity: reply.trim() ? 1 : 0.35, transition: "opacity 0.15s", flexShrink: 0,
+            }}>
+              <Ico d={ICONS.send} size={14} />
+            </button>
+          </div>
+        )}
       </div>
-
-      {showReply && (
-        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-          <input
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submitReply()}
-            placeholder="Write a reply..."
-            style={{ flex: 1, padding: "8px 12px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none" }}
-          />
-          <button onClick={submitReply} disabled={!reply.trim()} style={{ width: 34, height: 34, borderRadius: "50%", background: T.navy, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, opacity: reply.trim() ? 1 : 0.4 }}>
-            <Ico d={ICONS.send} size={13} />
-          </button>
-        </div>
-      )}
     </div>
   );
 };
 
+// ── Room Card ─────────────────────────────────────────────────────────────────
 const RoomCard = ({ survey, onEnter }) => {
   const [hovered, setHovered] = useState(false);
   return (
-    <button
-      onClick={() => onEnter(survey)}
+    <button onClick={() => onEnter(survey)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         width: "100%", textAlign: "left", background: "#fff",
-        borderRadius: 16, border: "1px solid " + (hovered ? T.gold + "44" : T.border),
-        boxShadow: hovered ? "0 4px 20px rgba(11,37,69,0.1)" : "0 1px 6px rgba(11,37,69,0.05)",
+        borderRadius: 20, border: "1px solid " + (hovered ? T.gold + "44" : T.border),
+        boxShadow: hovered ? "0 6px 24px rgba(11,37,69,0.1)" : "0 1px 6px rgba(11,37,69,0.05)",
         padding: "18px 20px", cursor: "pointer",
-        transform: hovered ? "translateY(-1px)" : "none",
+        transform: hovered ? "translateY(-2px)" : "none",
         transition: "all 0.2s", display: "block",
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px " + T.navy + "30" }}>
-          <Ico d={ICONS.hash} size={18} />
+        <div style={{ width: 46, height: 46, borderRadius: 14, flexShrink: 0, background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px " + T.navy + "30" }}>
+          <Ico d={ICONS.hash} size={20} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-            <p style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 14, color: T.navy, margin: 0, lineHeight: 1.4 }}>
-              {survey.title}
-            </p>
+            <p style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 15, color: T.navy, margin: 0, lineHeight: 1.4 }}>{survey.title}</p>
             {survey.message_count > 0 && (
-              <span style={{ flexShrink: 0, minWidth: 22, height: 22, borderRadius: 11, background: T.gold, color: "#fff", fontFamily: T.sans, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px" }}>
+              <span style={{ flexShrink: 0, minWidth: 24, height: 24, borderRadius: 12, background: T.gold, color: "#fff", fontFamily: T.sans, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px" }}>
                 {survey.message_count > 99 ? "99+" : survey.message_count}
               </span>
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 6 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 11, color: T.muted }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: T.muted }}>
               <Ico d={ICONS.users} size={11} /> {survey.participant_count || 0} participants
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 11, color: "#16a34a", fontWeight: 500 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", display: "inline-block" }} />
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: "#16a34a", fontWeight: 600 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#16a34a", display: "inline-block", animation: "pulse 2s infinite" }} />
               Live
             </span>
           </div>
@@ -304,16 +559,18 @@ const RoomCard = ({ survey, onEnter }) => {
   );
 };
 
+// ── Chat Room ─────────────────────────────────────────────────────────────────
 const ChatRoom = ({ survey, currentUser, onBack }) => {
   const [msgs, setMsgs] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     load();
-    const ch = supabase
-      .channel("room-" + survey.id)
+    const ch = supabase.channel("room-" + survey.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "survey_chat_messages", filter: "survey_id=eq." + survey.id },
         (p) => { setMsgs((prev) => [...prev, p.new]); setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50); })
       .subscribe();
@@ -322,8 +579,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("survey_chat_messages")
+    const { data } = await supabase.from("survey_chat_messages")
       .select("id, content, created_at, user_id, users:user_id(full_name, identity_verified)")
       .eq("survey_id", survey.id).order("created_at", { ascending: true }).limit(100);
     setMsgs(data || []);
@@ -337,14 +593,20 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
     await supabase.from("survey_chat_messages").insert({ survey_id: survey.id, user_id: currentUser.id, content: msg });
   };
 
+  const insertEmoji = (emoji) => {
+    setText((t) => t + emoji);
+    setShowEmoji(false);
+    inputRef.current?.focus();
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: "#fff", borderBottom: "1px solid " + T.border, flexShrink: 0, boxShadow: "0 1px 4px rgba(11,37,69,0.05)" }}>
-        <button onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, background: T.cream, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.navy }}>
+        <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: 10, background: T.cream, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.navy }}>
           <Ico d={ICONS.back} size={16} />
         </button>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Ico d={ICONS.hash} size={16} />
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Ico d={ICONS.hash} size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 14, color: T.navy, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{survey.title}</p>
@@ -355,28 +617,29 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px", background: T.cream, minHeight: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px", background: T.cream, minHeight: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         {loading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
             <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
           </div>
         ) : msgs.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
-            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted }}>Start the conversation</p>
+          <div style={{ textAlign: "center", padding: "60px 0" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>👋</div>
+            <p style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 15, color: T.navy, margin: "0 0 4px" }}>Start the conversation!</p>
+            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share your thoughts on this survey.</p>
           </div>
         ) : msgs.map((msg) => {
           const isMe = msg.user_id === currentUser?.id;
           const name = msg.users?.full_name || "Citizen";
           return (
             <div key={msg.id} style={{ display: "flex", gap: 8, flexDirection: isMe ? "row-reverse" : "row", alignItems: "flex-end" }}>
-              {!isMe && <Avatar name={name} size={30} verified={msg.users?.identity_verified} />}
+              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} />}
               <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 3 }}>
-                {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 2 }}>{name}</span>}
-                <div style={{ padding: "9px 14px", background: isMe ? T.navy : "#fff", color: isMe ? T.cream : T.ink, borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontFamily: T.sans, fontSize: 13, lineHeight: 1.5, boxShadow: "0 1px 4px rgba(11,37,69,0.08)", border: isMe ? "none" : "1px solid " + T.border }}>
+                {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4 }}>{name}</span>}
+                <div style={{ padding: "10px 14px", background: isMe ? T.navy : "#fff", color: isMe ? T.cream : T.ink, borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontFamily: T.sans, fontSize: 14, lineHeight: 1.5, boxShadow: "0 1px 4px rgba(11,37,69,0.08)", border: isMe ? "none" : "1px solid " + T.border }}>
                   {msg.content}
                 </div>
-                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, padding: "0 2px" }}>{timeAgo(msg.created_at)}</span>
+                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, padding: "0 4px" }}>{timeAgo(msg.created_at)}</span>
               </div>
             </div>
           );
@@ -384,17 +647,51 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ display: "flex", gap: 10, padding: "12px 16px", background: "#fff", borderTop: "1px solid " + T.border, flexShrink: 0 }}>
-        <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} />
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} placeholder="Message the room..." style={{ flex: 1, padding: "9px 14px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none" }} />
-        <button onClick={send} disabled={!text.trim()} style={{ width: 38, height: 38, borderRadius: "50%", background: T.navy, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, opacity: text.trim() ? 1 : 0.35, transition: "opacity 0.15s", flexShrink: 0 }}>
-          <Ico d={ICONS.send} size={14} />
-        </button>
+      <div style={{ background: "#fff", borderTop: "1px solid " + T.border, flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 10, padding: "10px 14px", alignItems: "flex-end" }}>
+          <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} />
+          <div style={{ flex: 1, position: "relative" }}>
+            <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} placeholder="Message the room..." style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none", boxSizing: "border-box" }} />
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
+                😊
+              </button>
+              {showEmoji && (
+                <div style={{ position: "absolute", bottom: "calc(100% + 8px)", right: 0 }}>
+                  <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} />
+                </div>
+              )}
+            </div>
+          </div>
+          <button onClick={send} disabled={!text.trim()} style={{ width: 40, height: 40, borderRadius: "50%", background: T.navy, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, opacity: text.trim() ? 1 : 0.35, transition: "all 0.15s", flexShrink: 0, boxShadow: text.trim() ? "0 2px 8px " + T.navy + "40" : "none" }}>
+            <Ico d={ICONS.send} size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
+const Skeleton = () => (
+  <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "18px 20px" }}>
+    <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#f1f5f9" }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "30%", marginBottom: 10 }} />
+        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "100%", marginBottom: 6 }} />
+        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "65%" }} />
+      </div>
+    </div>
+  </div>
+);
+
+const TOPICS = [
+  { tag: "LocalGovernment", n: "1.2k" }, { tag: "ClimatePolicy", n: "847" },
+  { tag: "PublicTransit", n: "623" }, { tag: "Education", n: "510" },
+  { tag: "Healthcare", n: "489" }, { tag: "HousingCrisis", n: "391" },
+];
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function Community() {
   const { user } = useAuth();
   const [tab, setTab] = useState("feed");
@@ -424,7 +721,7 @@ export default function Community() {
     const from = p * PAGE;
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, created_at, likes_count, comments_count, survey_tag, linked_survey_data, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, likes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
       .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
     const shaped = (data || []).map((x) => ({ ...x, author_name: x.users?.full_name, author_verified: x.users?.identity_verified, linked_survey: x.linked_survey_data }));
     if (p === 0) setPosts(shaped); else setPosts((prev) => [...prev, ...shaped]);
@@ -441,8 +738,10 @@ export default function Community() {
     setSurveys(data.map((s) => ({ ...s, participant_count: s.participant_count?.[0]?.count || 0, message_count: cmap[s.id] || 0 })));
   };
 
-  const handlePost = async (content) => {
-    const { data, error } = await supabase.from("community_posts").insert({ user_id: user.id, content, likes_count: 0, comments_count: 0 }).select("id, content, created_at, likes_count, comments_count, users:user_id(full_name, identity_verified)").single();
+  const handlePost = async (content, imageUrl) => {
+    const { data, error } = await supabase.from("community_posts")
+      .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 })
+      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified)").single();
     if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
   };
 
@@ -455,10 +754,15 @@ export default function Community() {
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
   };
 
+  const handleReact = async (postId, emoji) => {
+    await supabase.from("community_post_reactions").insert({ post_id: postId, user_id: user.id, emoji }).select();
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, reactions: [...(p.reactions || []), { emoji, user_id: user.id }] } : p));
+  };
+
   if (activeRoom) {
     return (
       <div style={{ height: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
-        <style>{"@keyframes spin { to { transform: rotate(360deg) } }"}</style>
+        <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }"}</style>
         <ChatRoom survey={activeRoom} currentUser={currentUser} onBack={() => setActiveRoom(null)} />
       </div>
     );
@@ -466,21 +770,17 @@ export default function Community() {
 
   return (
     <div style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans }}>
-      <style>{"@keyframes spin { to { transform: rotate(360deg) } }"}</style>
+      <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }"}</style>
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
-            <h1 style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 28, color: T.navy, margin: "0 0 4px", lineHeight: 1.2 }}>
-              Community
-            </h1>
-            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>
-              Verified civic voices — discuss, react, and engage.
-            </p>
+            <h1 style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 30, color: T.navy, margin: "0 0 4px", lineHeight: 1.2 }}>Community</h1>
+            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Verified civic voices — discuss, react, and engage.</p>
           </div>
-          <div style={{ padding: "6px 14px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 11, color: T.navy, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-            <Ico d={ICONS.users} size={11} />
+          <div style={{ padding: "7px 14px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, color: T.navy, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            <Ico d={ICONS.users} size={12} />
             {surveys.length} Live Rooms
           </div>
         </div>
@@ -496,7 +796,10 @@ export default function Community() {
         <div style={{ overflowX: "auto", paddingBottom: 2 }}>
           <div style={{ display: "flex", gap: 8, minWidth: "max-content" }}>
             {TOPICS.map((t) => (
-              <button key={t.tag} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 20, background: "#fff", border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, fontWeight: 500, color: T.navy, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 1px 3px rgba(11,37,69,0.06)" }}>
+              <button key={t.tag} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 20, background: "#fff", border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, fontWeight: 500, color: T.navy, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 1px 3px rgba(11,37,69,0.06)", transition: "all 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold + "66"; e.currentTarget.style.background = T.cream; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = "#fff"; }}
+              >
                 <Ico d={ICONS.hash} size={10} />
                 {t.tag}
                 <span style={{ fontSize: 10, color: T.muted, fontWeight: 400 }}>{t.n}</span>
@@ -507,19 +810,12 @@ export default function Community() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 2, marginBottom: 20, padding: 4, background: T.navy + "08", borderRadius: 14, border: "1px solid " + T.border }}>
+      <div style={{ display: "flex", gap: 2, marginBottom: 20, padding: 4, background: T.navy + "08", borderRadius: 16, border: "1px solid " + T.border }}>
         {[
           { id: "feed", label: "Feed", icon: ICONS.chat },
           { id: "rooms", label: "Survey Rooms", icon: ICONS.hash, count: surveys.length },
         ].map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-            padding: "9px 12px", borderRadius: 10, border: "none", cursor: "pointer",
-            fontFamily: T.sans, fontSize: 13, fontWeight: 600, transition: "all 0.2s",
-            background: tab === t.id ? "#fff" : "transparent",
-            color: tab === t.id ? T.navy : T.muted,
-            boxShadow: tab === t.id ? "0 1px 6px rgba(11,37,69,0.1)" : "none",
-          }}>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "10px 12px", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 13, fontWeight: 600, transition: "all 0.2s", background: tab === t.id ? "#fff" : "transparent", color: tab === t.id ? T.navy : T.muted, boxShadow: tab === t.id ? "0 1px 6px rgba(11,37,69,0.1)" : "none" }}>
             <Ico d={t.icon} size={14} />
             {t.label}
             {t.count > 0 && (
@@ -533,21 +829,24 @@ export default function Community() {
 
       {/* Feed */}
       {tab === "feed" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Composer user={currentUser} onPost={handlePost} />
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
             posts.length === 0 ? (
-              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid " + T.border, padding: "48px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
-                <p style={{ fontFamily: T.sans, fontWeight: 600, color: T.navy, margin: "0 0 4px" }}>No posts yet</p>
-                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share a civic thought.</p>
+              <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
+                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>No posts yet</p>
+                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share a civic thought with your community.</p>
               </div>
             ) : (
               <>
-                {posts.map((p) => <PostCard key={p.id} post={p} onLike={handleLike} onComment={handleComment} />)}
+                {posts.map((p) => <PostCard key={p.id} post={p} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
                 {hasMore && (
-                  <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "12px", background: "#fff", border: "1px solid " + T.border, borderRadius: 12, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer" }}>
-                    Load more
+                  <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
+                  >
+                    Load more posts
                   </button>
                 )}
               </>
@@ -561,9 +860,9 @@ export default function Community() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
             surveys.length === 0 ? (
-              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid " + T.border, padding: "48px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
-                <p style={{ fontFamily: T.sans, fontWeight: 600, color: T.navy, margin: "0 0 4px" }}>No active survey rooms</p>
+              <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>No active rooms</p>
                 <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Check back when surveys go live.</p>
               </div>
             ) : surveys.map((s) => <RoomCard key={s.id} survey={s} onEnter={setActiveRoom} />)
