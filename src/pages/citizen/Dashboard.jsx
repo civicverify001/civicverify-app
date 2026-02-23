@@ -105,6 +105,22 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
       }
 
       var allComments = cr.data || [];
+
+      // Fetch profiles for all comment authors
+      var userIds = [...new Set(allComments.map(function(c) { return c.user_id; }).filter(Boolean))];
+      var profileMap = {};
+      if (userIds.length) {
+        var pr = await supabase.from('profiles').select('id,full_name,identity_verified').in('id', userIds);
+        (pr.data || []).forEach(function(p) { profileMap[p.id] = p; });
+      }
+      allComments = allComments.map(function(c) {
+        var p = profileMap[c.user_id] || {};
+        return Object.assign({}, c, {
+          author_name: p.full_name || 'Citizen',
+          verified: !!(p.identity_verified),
+        });
+      });
+
       var map = {};
       allSurveys.forEach(function(s) { map[s.id] = { survey: s, comments: [] }; });
       allComments.forEach(function(c) { if (c.survey_id && map[c.survey_id]) map[c.survey_id].comments.push(c); });
