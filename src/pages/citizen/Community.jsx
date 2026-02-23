@@ -1043,7 +1043,9 @@ export default function Community() {
       .insert(insertData)
       .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
       .single();
-    if (error) console.error("Comment save error:", error);
+    if (error) { console.error("Comment save error:", error); return null; }
+    // Increment count in DB so it persists on refresh
+    await supabase.rpc("increment_comment_count", { post_id: postId });
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
     return data;
   };
