@@ -1,510 +1,310 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../../supabaseClient";
-import { useAuth } from "../../hooks/useAuth";
+// src/pages/org/MySurveys.jsx — Premium client-facing redesign
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../supabaseClient';
+import { useAuth } from '../../hooks/useAuth';
 
-const STATUS_CONFIG = {
-  pending_review: {
-    label: "Pending Review",
-    color: "bg-amber-100 text-amber-800 border-amber-200",
-    dot: "bg-amber-500",
-  },
-  active: {
-    label: "Active",
-    color: "bg-green-100 text-green-800 border-green-200",
-    dot: "bg-green-500",
-  },
-  completed: {
-    label: "Completed",
-    color: "bg-blue-100 text-blue-800 border-blue-200",
-    dot: "bg-blue-500",
-  },
-  rejected: {
-    label: "Rejected",
-    color: "bg-red-100 text-red-800 border-red-200",
-    dot: "bg-red-500",
-  },
-  draft: {
-    label: "Draft",
-    color: "bg-gray-100 text-gray-600 border-gray-200",
-    dot: "bg-gray-400",
-  },
+var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#2D9B5A' };
+
+var STATUS = {
+  pending_review: { label: 'Under Review',  dot: '#8B5CF6', ring: 'rgba(139,92,246,0.12)', text: '#6D28D9',  desc: 'Being reviewed by our team' },
+  active:         { label: 'Live',           dot: '#2D9B5A', ring: 'rgba(45,155,90,0.12)',  text: '#1A6E3C',  desc: 'Collecting responses now' },
+  completed:      { label: 'Completed',      dot: '#3B82F6', ring: 'rgba(59,130,246,0.12)', text: '#1D4ED8',  desc: 'Survey has closed' },
+  rejected:       { label: 'Needs Changes',  dot: '#B8352E', ring: 'rgba(184,53,46,0.12)',  text: '#B8352E',  desc: 'See rejection reason below' },
+  draft:          { label: 'Draft',          dot: '#9CA3AF', ring: 'rgba(156,163,175,0.12)',text: '#6B7280',  desc: 'Not yet submitted' },
+  closed:         { label: 'Closed',         dot: '#9CA3AF', ring: 'rgba(156,163,175,0.12)',text: '#6B7280',  desc: 'Survey ended' },
 };
 
-const TABS = ["All", "Pending Review", "Active", "Completed", "Rejected"];
+var TABS = [
+  { k: 'all',            l: 'All' },
+  { k: 'pending_review', l: 'Under Review' },
+  { k: 'active',         l: 'Live' },
+  { k: 'completed',      l: 'Completed' },
+  { k: 'rejected',       l: 'Needs Changes' },
+];
 
-function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
+function StatusPill({ status }) {
+  var s = STATUS[status] || STATUS.draft;
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
+    <span style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:30, background:s.ring, border:'1px solid '+s.dot+'30', fontSize:12, fontWeight:700, color:s.text, letterSpacing:0.3 }}>
+      <span style={{ width:7, height:7, borderRadius:'50%', background:s.dot, flexShrink:0, boxShadow:status==='active'?'0 0 0 3px '+s.dot+'40':'none', animation:status==='active'?'cvpulse 2s infinite':'none' }} />
+      {s.label}
     </span>
   );
 }
 
-function ProgressBar({ value, max }) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+function CircleProgress({ value, max, size=56, sw=4 }) {
+  var pct = max > 0 ? Math.min(1, value / max) : 0;
+  var r = (size - sw * 2) / 2;
+  var circ = 2 * Math.PI * r;
+  var color = pct >= 1 ? C.green : pct > 0.5 ? C.gold : '#94A3B8';
   return (
-    <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-      <div
-        className="h-1.5 rounded-full transition-all duration-500"
-        style={{
-          width: `${pct}%`,
-          backgroundColor: pct >= 100 ? "#22863A" : "#C5960C",
-        }}
-      />
-    </div>
+    <svg width={size} height={size} style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(11,37,69,0.06)" strokeWidth={sw} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={sw} strokeDasharray={pct*circ+' '+circ} strokeLinecap="round" style={{ transition:'stroke-dasharray 0.8s ease' }} />
+    </svg>
   );
 }
 
-function SurveyCard({ survey, onViewResults }) {
-  const navigate = useNavigate();
-  const responseCount = survey.response_count ?? 0;
-  const targetResponses = survey.target_responses ?? 0;
-  const pct =
-    targetResponses > 0 ? Math.round((responseCount / targetResponses) * 100) : 0;
+export default function MySurveys() {
+  var navigate = useNavigate();
+  var auth = useAuth(); var user = auth.user;
+  var [surveys, setSurveys] = useState([]);
+  var [loading, setLoading] = useState(true);
+  var [tab, setTab] = useState('all');
+  var [search, setSearch] = useState('');
+  var [expanded, setExpanded] = useState(null);
 
-  const filterCount =
-    survey.demographic_filters
-      ? Object.keys(survey.demographic_filters).filter(
-          (k) => survey.demographic_filters[k]?.length > 0
-        ).length
-      : 0;
+  useEffect(function() {
+    if (!user) return;
+    supabase.from('surveys').select('*').eq('created_by', user.id).order('created_at', { ascending: false })
+      .then(function(r) { setSurveys(r.data || []); setLoading(false); });
+  }, [user]);
 
-  const createdDate = new Date(survey.created_at).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+  var filtered = surveys.filter(function(s) {
+    if (tab !== 'all' && s.status !== tab) return false;
+    if (search && !s.title?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
   });
 
-  const estimatedCost =
-    survey.estimated_cost != null
-      ? `$${Number(survey.estimated_cost).toFixed(2)}`
-      : "—";
+  var counts = surveys.reduce(function(a, s) { a[s.status] = (a[s.status]||0)+1; return a; }, {});
+  var totalResp = surveys.reduce(function(a,s){return a+(s.response_count||0);},0);
+
+  if (loading) return (
+    <div style={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:300 }}>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ width:40, height:40, border:'3px solid rgba(197,150,12,0.2)', borderTopColor:C.gold, borderRadius:'50%', animation:'cvspin 0.8s linear infinite', margin:'0 auto 12px' }} />
+        <p style={{ fontSize:13, color:'rgba(11,37,69,0.3)', margin:0, fontFamily:'DM Sans, sans-serif' }}>Loading your surveys...</p>
+      </div>
+      <style>{'@keyframes cvspin{to{transform:rotate(360deg)}} @keyframes cvpulse{0%,100%{opacity:1}50%{opacity:0.4}} @keyframes cvfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}'}</style>
+    </div>
+  );
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow duration-200">
+    <div style={{ fontFamily:'DM Sans, sans-serif', maxWidth:920 }}>
+      <style>{'@keyframes cvspin{to{transform:rotate(360deg)}} @keyframes cvpulse{0%,100%{opacity:1}50%{opacity:0.4}} @keyframes cvfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} .cv-card{transition:all 0.2s ease} .cv-card:hover{transform:translateY(-2px)!important;box-shadow:0 10px 36px rgba(11,37,69,0.09)!important} .cv-tab:hover{background:rgba(11,37,69,0.04)!important;color:rgba(11,37,69,0.7)!important} .cv-btn:hover{opacity:0.88!important;transform:translateY(-1px)!important}'}</style>
+
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1 min-w-0">
-          <h3
-            className="font-semibold text-base truncate"
-            style={{ color: "#0B2545", fontFamily: "Libre Baskerville, serif" }}
-          >
-            {survey.title || "Untitled Survey"}
-          </h3>
-          {survey.description && (
-            <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">
-              {survey.description}
-            </p>
-          )}
+      <div style={{ marginBottom:32 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:16 }}>
+          <div>
+            <h1 style={{ fontSize:28, fontWeight:700, color:C.navy, margin:'0 0 6px', fontFamily:'Libre Baskerville, Georgia, serif' }}>My Surveys</h1>
+            <p style={{ fontSize:14, color:'rgba(11,37,69,0.4)', margin:0 }}>Track and manage all your survey requests</p>
+          </div>
+          <button onClick={function(){navigate('/org/request');}}
+            style={{ display:'flex', alignItems:'center', gap:8, padding:'11px 22px', background:C.gold, color:'#fff', border:'none', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 16px rgba(197,150,12,0.25)', letterSpacing:0.2 }}>
+            <span style={{fontSize:18,lineHeight:1}}>+</span> New Survey Request
+          </button>
         </div>
-        <StatusBadge status={survey.status} />
-      </div>
-
-      {/* Admin rejection reason */}
-      {survey.status === "rejected" && survey.rejection_reason && (
-        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          <span className="font-medium">Rejection reason: </span>
-          {survey.rejection_reason}
-        </div>
-      )}
-
-      {/* Progress (only for active/completed) */}
-      {(survey.status === "active" || survey.status === "completed") &&
-        targetResponses > 0 && (
-          <div className="mb-4">
-            <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
-              <span>Responses</span>
-              <span className="font-medium" style={{ color: "#0B2545" }}>
-                {responseCount.toLocaleString()} /{" "}
-                {targetResponses.toLocaleString()} ({pct}%)
-              </span>
-            </div>
-            <ProgressBar value={responseCount} max={targetResponses} />
+        {surveys.length > 0 && (
+          <div style={{ display:'flex', gap:6, marginTop:20, flexWrap:'wrap' }}>
+            {[{l:'Total Surveys',v:surveys.length},{l:'Live Now',v:counts['active']||0,c:C.green},{l:'Total Responses',v:totalResp.toLocaleString()}].map(function(stat,i){
+              return (
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px', background:'#fff', borderRadius:10, border:'1px solid rgba(11,37,69,0.06)' }}>
+                  <span style={{ fontSize:20, fontWeight:800, color:stat.c||C.navy, fontFamily:'Libre Baskerville,serif' }}>{stat.v}</span>
+                  <span style={{ fontSize:12, color:'rgba(11,37,69,0.4)', fontWeight:600 }}>{stat.l}</span>
+                </div>
+              );
+            })}
           </div>
         )}
-
-      {/* Meta row */}
-      <div className="flex flex-wrap gap-4 text-xs text-gray-500 mb-4">
-        <span className="flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          {createdDate}
-        </span>
-        {targetResponses > 0 && (
-          <span className="flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {targetResponses.toLocaleString()} target responses
-          </span>
-        )}
-        {filterCount > 0 && (
-          <span className="flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-            </svg>
-            {filterCount} demographic filter{filterCount !== 1 ? "s" : ""}
-          </span>
-        )}
-        {survey.estimated_cost != null && (
-          <span className="flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Est. {estimatedCost}
-          </span>
-        )}
       </div>
 
-      {/* Question count chips */}
-      {survey.questions && survey.questions.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {["multiple_choice", "rating", "text", "yes_no"].map((type) => {
-            const count = survey.questions.filter((q) => q.type === type).length;
-            if (!count) return null;
-            const labels = {
-              multiple_choice: "Multiple Choice",
-              rating: "Rating",
-              text: "Open-ended",
-              yes_no: "Yes / No",
-            };
+      {/* Controls */}
+      <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap', alignItems:'center' }}>
+        <div style={{ position:'relative', flex:'1', minWidth:200 }}>
+          <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', opacity:0.25 }}>🔍</span>
+          <input value={search} onChange={function(e){setSearch(e.target.value);}} placeholder="Search surveys..."
+            style={{ width:'100%', padding:'10px 14px 10px 36px', fontSize:13, border:'1px solid rgba(11,37,69,0.08)', borderRadius:10, outline:'none', fontFamily:'inherit', background:'#fff', color:C.navy, boxSizing:'border-box' }} />
+        </div>
+        <div style={{ display:'flex', background:'#fff', border:'1px solid rgba(11,37,69,0.07)', borderRadius:12, padding:4, gap:2, flexWrap:'wrap' }}>
+          {TABS.map(function(t){
+            var isA = tab===t.k;
+            var cnt = t.k==='all' ? surveys.length : (counts[t.k]||0);
             return (
-              <span
-                key={type}
-                className="px-2 py-0.5 text-xs rounded-full border"
-                style={{
-                  borderColor: "#C5960C",
-                  color: "#8B6A0A",
-                  backgroundColor: "#FFFBF0",
-                }}
-              >
-                {count} {labels[type]}
-              </span>
+              <button key={t.k} className="cv-tab"
+                onClick={function(){setTab(t.k);}}
+                style={{ padding:'7px 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:600, whiteSpace:'nowrap', background:isA?C.navy:'transparent', color:isA?'#fff':'rgba(11,37,69,0.4)', transition:'all 0.15s' }}>
+                {t.l} <span style={{opacity:0.5,marginLeft:2}}>{cnt}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Cards */}
+      {filtered.length === 0 ? (
+        <div style={{ background:'#fff', borderRadius:20, border:'1px solid rgba(11,37,69,0.06)', padding:'64px 32px', textAlign:'center' }}>
+          <div style={{ fontSize:48, marginBottom:16 }}>📋</div>
+          <p style={{ fontSize:18, fontWeight:700, color:C.navy, margin:'0 0 8px', fontFamily:'Libre Baskerville,serif' }}>
+            {search ? `No results for "${search}"` : 'No surveys yet'}
+          </p>
+          <p style={{ fontSize:14, color:'rgba(11,37,69,0.35)', margin:'0 0 24px' }}>
+            {tab==='all'&&!search ? 'Submit your first survey request to get started' : 'Try adjusting your filters'}
+          </p>
+          {tab==='all'&&!search && (
+            <button onClick={function(){navigate('/org/request');}} style={{ padding:'12px 24px', background:C.gold, color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>
+              Request Your First Survey →
+            </button>
+          )}
+        </div>
+      ) : (
+        <div style={{ display:'grid', gap:16 }}>
+          {filtered.map(function(s, idx) {
+            var st = STATUS[s.status]||STATUS.draft;
+            var resp = s.response_count||0;
+            var target = s.target_responses||0;
+            var pct = target>0 ? Math.min(100, Math.round((resp/target)*100)) : null;
+            var qCount = Array.isArray(s.questions) ? s.questions.length : 0;
+            var isOpen = expanded===s.id;
+            var fCount = [s.target_state,s.target_race,s.target_sex,s.target_education,s.target_employment,s.target_income,s.target_party,s.target_housing,s.target_voter_registered,s.target_veteran,s.target_age_min,s.target_age_max].filter(Boolean).length;
+
+            return (
+              <div key={s.id} className="cv-card"
+                style={{ background:'#fff', borderRadius:18, border:s.status==='active'?'1.5px solid rgba(45,155,90,0.2)':'1px solid rgba(11,37,69,0.06)', overflow:'hidden', animation:'cvfade 0.35s ease both', animationDelay:idx*40+'ms', boxShadow:s.status==='active'?'0 4px 24px rgba(45,155,90,0.06)':'0 2px 8px rgba(11,37,69,0.04)' }}>
+
+                {/* Accent top bar */}
+                {s.status==='active' && <div style={{ height:3, background:'linear-gradient(90deg,'+C.green+','+C.gold+')' }} />}
+                {s.status==='pending_review' && <div style={{ height:3, background:'linear-gradient(90deg,#8B5CF6,#EC4899)' }} />}
+                {s.status==='rejected' && <div style={{ height:3, background:C.red }} />}
+
+                {/* Body */}
+                <div style={{ padding:'22px 26px' }}>
+                  <div style={{ display:'flex', gap:16, alignItems:'flex-start' }}>
+                    {/* Circle progress */}
+                    {target > 0 && (
+                      <div style={{ position:'relative', flexShrink:0 }}>
+                        <CircleProgress value={resp} max={target} size={56} sw={4} />
+                        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          <span style={{ fontSize:11, fontWeight:800, color:C.navy }}>{pct}%</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, marginBottom:8 }}>
+                        <h3 style={{ fontSize:17, fontWeight:700, color:C.navy, margin:0, fontFamily:'Libre Baskerville,Georgia,serif', lineHeight:1.3 }}>{s.title}</h3>
+                        <StatusPill status={s.status} />
+                      </div>
+
+                      {s.description && <p style={{ fontSize:13, color:'rgba(11,37,69,0.45)', margin:'0 0 12px', lineHeight:1.5 }}>{s.description}</p>}
+
+                      {/* Meta */}
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:14 }}>
+                        {[
+                          { icon:'📅', text: new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) },
+                          target>0 ? { icon:'👥', text: resp.toLocaleString()+' / '+target.toLocaleString()+' responses' } : null,
+                          qCount>0 ? { icon:'📋', text: qCount+' question'+(qCount!==1?'s':'') } : null,
+                          fCount>0 ? { icon:'🎯', text: fCount+' filter'+(fCount!==1?'s':'') } : null,
+                        ].filter(Boolean).map(function(m,i){
+                          return <span key={i} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'rgba(11,37,69,0.4)' }}><span style={{opacity:0.6}}>{m.icon}</span>{m.text}</span>;
+                        })}
+                      </div>
+
+                      {/* Rejection reason */}
+                      {s.status==='rejected' && s.rejection_reason && (
+                        <div style={{ marginTop:12, padding:'10px 14px', background:'rgba(184,53,46,0.05)', border:'1px solid rgba(184,53,46,0.15)', borderRadius:10 }}>
+                          <p style={{ fontSize:12, fontWeight:700, color:C.red, margin:'0 0 3px' }}>⚠ Feedback from CivicVerify</p>
+                          <p style={{ fontSize:12, color:'rgba(11,37,69,0.55)', margin:0, lineHeight:1.5 }}>{s.rejection_reason}</p>
+                        </div>
+                      )}
+
+                      {/* Live progress bar */}
+                      {s.status==='active' && target>0 && (
+                        <div style={{ marginTop:14 }}>
+                          <div style={{ width:'100%', height:6, background:'rgba(11,37,69,0.05)', borderRadius:3, overflow:'hidden' }}>
+                            <div style={{ height:'100%', borderRadius:3, background:pct>=100?C.green:'linear-gradient(90deg,'+C.gold+','+C.green+')', width:pct+'%', transition:'width 0.8s ease' }} />
+                          </div>
+                          <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
+                            <span style={{ fontSize:11, color:'rgba(11,37,69,0.3)' }}>{resp.toLocaleString()} collected</span>
+                            <span style={{ fontSize:11, color:pct>=100?C.green:'rgba(11,37,69,0.3)', fontWeight:pct>=100?700:400 }}>
+                              {pct>=100 ? '✓ Goal reached!' : (target-resp).toLocaleString()+' remaining'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div style={{ padding:'12px 26px 14px', borderTop:'1px solid rgba(11,37,69,0.04)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(245,241,236,0.3)' }}>
+                  <span style={{ fontSize:11, color:'rgba(11,37,69,0.2)', fontFamily:'monospace' }}>ID: {s.id.slice(0,8)}…</span>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {qCount > 0 && (
+                      <button className="cv-btn"
+                        onClick={function(){setExpanded(isOpen?null:s.id);}}
+                        style={{ padding:'7px 14px', borderRadius:8, border:'1px solid rgba(11,37,69,0.1)', background:isOpen?C.navy:'#fff', color:isOpen?'#fff':'rgba(11,37,69,0.5)', fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                        {isOpen ? '▲ Hide' : '▼ View Questions'}
+                      </button>
+                    )}
+                    {(s.status==='active'||s.status==='completed') && (
+                      <button className="cv-btn"
+                        onClick={function(){navigate('/org/results/'+s.id);}}
+                        style={{ padding:'7px 18px', borderRadius:8, border:'none', background:C.gold, color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', boxShadow:'0 2px 8px rgba(197,150,12,0.2)', transition:'all 0.15s' }}>
+                        View Results →
+                      </button>
+                    )}
+                    {s.status==='rejected' && (
+                      <button className="cv-btn"
+                        onClick={function(){navigate('/org/request');}}
+                        style={{ padding:'7px 18px', borderRadius:8, border:'none', background:C.navy, color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
+                        Submit New Request →
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Expandable questions */}
+                {isOpen && (
+                  <div style={{ borderTop:'1px solid rgba(11,37,69,0.06)', background:'rgba(245,241,236,0.35)', padding:'18px 26px' }}>
+                    <p style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1.5, color:'rgba(11,37,69,0.3)', margin:'0 0 12px' }}>Survey Questions</p>
+                    <div style={{ display:'grid', gap:8 }}>
+                      {(s.questions||[]).map(function(q,qi){
+                        var icon = {multiple_choice:'◉',checkbox:'☑',text:'✏️',rating:'★'}[q.type]||'?';
+                        return (
+                          <div key={q.id||qi} style={{ display:'flex', gap:12, alignItems:'flex-start', padding:'10px 14px', background:'#fff', borderRadius:10, border:'1px solid rgba(11,37,69,0.05)' }}>
+                            <span style={{ fontSize:13, color:C.gold, flexShrink:0, marginTop:1 }}>{icon}</span>
+                            <div style={{ flex:1 }}>
+                              <p style={{ fontSize:13, color:C.navy, margin:'0 0 3px', fontWeight:500 }}>Q{qi+1}. {q.text}</p>
+                              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                                <span style={{ fontSize:10, color:'rgba(11,37,69,0.3)', textTransform:'capitalize' }}>{(q.type||'').replace('_',' ')}</span>
+                                {q.required && <span style={{ fontSize:10, color:'rgba(184,53,46,0.7)', fontWeight:600 }}>Required</span>}
+                                {Array.isArray(q.options)&&q.options.length>0 && <span style={{ fontSize:10, color:'rgba(11,37,69,0.25)' }}>{q.options.join(' · ')}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Targeting tags */}
+                    {fCount > 0 && (
+                      <div style={{ marginTop:14, padding:'12px 14px', background:C.gold+'06', borderRadius:10, border:'1px solid '+C.gold+'15' }}>
+                        <p style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1.5, color:'rgba(11,37,69,0.3)', margin:'0 0 8px' }}>Audience Targeting</p>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                          {[s.target_state,s.target_county,s.target_city,s.target_race,s.target_sex,s.target_education,s.target_employment,s.target_income,s.target_party,s.target_housing,
+                            s.target_age_min?'Age '+s.target_age_min+'+':null, s.target_age_max?'Under '+s.target_age_max:null,
+                            s.target_voter_registered==='Yes'?'Registered Voter':null, s.target_veteran==='Yes'?'Veteran':null,
+                          ].filter(Boolean).map(function(tag,i){
+                            return <span key={i} style={{ padding:'3px 10px', background:'#fff', border:'1px solid rgba(197,150,12,0.2)', borderRadius:20, fontSize:11, fontWeight:600, color:C.navy }}>{tag}</span>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <div className="flex gap-2">
-          {(survey.status === "active" || survey.status === "completed") && (
-            <button
-              onClick={() => onViewResults(survey.id)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#0B2545" }}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              View Results
-            </button>
-          )}
-          {survey.status === "rejected" && (
-            <button
-              onClick={() => navigate("/org/request-survey")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: "#F5F1EC",
-                color: "#0B2545",
-              }}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Resubmit
-            </button>
-          )}
-        </div>
-        <span className="text-xs text-gray-400">ID: {survey.id.slice(0, 8)}…</span>
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ activeTab }) {
-  const navigate = useNavigate();
-  const messages = {
-    All: "You haven't requested any surveys yet.",
-    "Pending Review": "No surveys are currently under review.",
-    Active: "You have no active surveys running.",
-    Completed: "No completed surveys yet.",
-    Rejected: "No rejected surveys.",
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-      <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-        style={{ backgroundColor: "#F5F1EC" }}
-      >
-        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#C5960C">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      </div>
-      <p className="text-gray-600 mb-1">{messages[activeTab]}</p>
-      {activeTab === "All" && (
-        <p className="text-sm text-gray-400 mb-5">
-          Request a survey to start collecting verified civic data.
+      {filtered.length > 0 && (
+        <p style={{ marginTop:20, textAlign:'center', fontSize:12, color:'rgba(11,37,69,0.25)' }}>
+          Showing {filtered.length} of {surveys.length} survey{surveys.length!==1?'s':''}
         </p>
       )}
-      {activeTab === "All" && (
-        <button
-          onClick={() => navigate("/org/request-survey")}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "#C5960C" }}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Request a Survey
-        </button>
-      )}
-    </div>
-  );
-}
-
-export default function MySurveys() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [surveys, setSurveys] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    if (!user) return;
-    fetchSurveys();
-  }, [user]);
-
-  async function fetchSurveys() {
-    setLoading(true);
-    setError(null);
-    try {
-      // Fetch surveys created by this org user
-      const { data, error: err } = await supabase
-        .from("surveys")
-        .select(
-          `
-          id, title, description, status, created_at,
-          target_responses, estimated_cost, demographic_filters,
-          rejection_reason, questions
-        `
-        )
-        .eq("created_by", user.id)
-        .order("created_at", { ascending: false });
-
-      if (err) throw err;
-
-      // Fetch response counts in a separate query
-      const surveyIds = (data || []).map((s) => s.id);
-      let responseCounts = {};
-
-      if (surveyIds.length > 0) {
-        const { data: responsesData } = await supabase
-          .from("responses")
-          .select("survey_id")
-          .in("survey_id", surveyIds);
-
-        if (responsesData) {
-          responsesData.forEach((r) => {
-            responseCounts[r.survey_id] =
-              (responseCounts[r.survey_id] || 0) + 1;
-          });
-        }
-      }
-
-      const enriched = (data || []).map((s) => ({
-        ...s,
-        response_count: responseCounts[s.id] || 0,
-      }));
-
-      setSurveys(enriched);
-    } catch (err) {
-      console.error("Error fetching surveys:", err);
-      setError("Failed to load surveys. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const tabStatusMap = {
-    All: null,
-    "Pending Review": "pending_review",
-    Active: "active",
-    Completed: "completed",
-    Rejected: "rejected",
-  };
-
-  const filteredSurveys = surveys.filter((s) => {
-    const statusMatch =
-      !tabStatusMap[activeTab] || s.status === tabStatusMap[activeTab];
-    const searchMatch =
-      !searchQuery ||
-      s.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return statusMatch && searchMatch;
-  });
-
-  const tabCounts = TABS.reduce((acc, tab) => {
-    const statusFilter = tabStatusMap[tab];
-    acc[tab] = statusFilter
-      ? surveys.filter((s) => s.status === statusFilter).length
-      : surveys.length;
-    return acc;
-  }, {});
-
-  const handleViewResults = (surveyId) => {
-    navigate(`/org/results/${surveyId}`);
-  };
-
-  return (
-    <div className="min-h-screen" style={{ backgroundColor: "#F5F1EC" }}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h1
-              className="text-2xl font-bold"
-              style={{ color: "#0B2545", fontFamily: "Libre Baskerville, serif" }}
-            >
-              My Surveys
-            </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Track and manage all your survey requests
-            </p>
-          </div>
-          <button
-            onClick={() => navigate("/org/request-survey")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 whitespace-nowrap"
-            style={{ backgroundColor: "#C5960C" }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Survey Request
-          </button>
-        </div>
-
-        {/* Search bar */}
-        <div className="relative mb-4">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search surveys…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:border-transparent"
-            style={{ "--tw-ring-color": "#C5960C" }}
-          />
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 mb-6 overflow-x-auto">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150 ${
-                activeTab === tab
-                  ? "text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-              }`}
-              style={
-                activeTab === tab ? { backgroundColor: "#0B2545" } : {}
-              }
-            >
-              {tab}
-              {tabCounts[tab] > 0 && (
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                    activeTab === tab
-                      ? "bg-white/20 text-white"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  {tabCounts[tab]}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-3">
-              <div
-                className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
-                style={{ borderColor: "#C5960C", borderTopColor: "transparent" }}
-              />
-              <p className="text-sm text-gray-500">Loading your surveys…</p>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
-              <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-gray-600 text-sm">{error}</p>
-            <button
-              onClick={fetchSurveys}
-              className="text-sm font-medium underline"
-              style={{ color: "#0B2545" }}
-            >
-              Try again
-            </button>
-          </div>
-        ) : filteredSurveys.length === 0 ? (
-          <EmptyState activeTab={searchQuery ? "All" : activeTab} />
-        ) : (
-          <div className="grid gap-4">
-            {filteredSurveys.map((survey) => (
-              <SurveyCard
-                key={survey.id}
-                survey={survey}
-                onViewResults={handleViewResults}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Summary footer */}
-        {!loading && !error && surveys.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-500 justify-center">
-            <span>
-              {surveys.filter((s) => s.status === "active").length} active
-            </span>
-            <span className="text-gray-300">•</span>
-            <span>
-              {surveys.filter((s) => s.status === "completed").length} completed
-            </span>
-            <span className="text-gray-300">•</span>
-            <span>
-              {surveys
-                .reduce((sum, s) => sum + (s.response_count || 0), 0)
-                .toLocaleString()}{" "}
-              total responses collected
-            </span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
