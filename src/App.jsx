@@ -27,7 +27,7 @@ import AdminReviewQueue from './pages/admin/ReviewQueue'
 import AdminUsers from './pages/admin/Users'
 import AdminAnalytics from './pages/admin/Analytics'
 import AdminExport from './pages/admin/Export'
-
+import OrgReview from './pages/admin/OrgReview'
 // Org pages
 import OrgDashboard from './pages/org/Dashboard'
 import OrgRequestSurvey from './pages/org/RequestSurvey'
@@ -89,6 +89,7 @@ export default function App() {
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="export" element={<AdminExport />} />
+<Route path="org-review" element={<OrgReview />} />
           </Route>
 
           <Route path="/org" element={
