@@ -91,7 +91,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
       var ids = allSurveys.map(function(s) { return s.id; });
 
       // Try to get comments with survey_id column
-      var cr = await supabase.from('discussion_comments')
+      var cr = await supabase.from('comments')
         .select('*')
         .in('survey_id', ids)
         .order('created_at', { ascending: false })
@@ -132,7 +132,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
     var text = (newComment[surveyId] || '').trim();
     if (!text || !currentUser) return;
     setPosting(surveyId);
-    var r = await supabase.from('discussion_comments').insert({
+    var r = await supabase.from('comments').insert({
       survey_id: surveyId,
       user_id: currentUser.id,
       author_name: currentProfile ? (currentProfile.full_name || 'Citizen') : 'Citizen',
@@ -156,7 +156,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
     var likes = comment.likes || [];
     var liked = likes.includes(currentUser.id);
     var updated = liked ? likes.filter(function(id) { return id !== currentUser.id; }) : likes.concat([currentUser.id]);
-    await supabase.from('discussion_comments').update({ likes: updated }).eq('id', comment.id);
+    await supabase.from('comments').update({ likes: updated }).eq('id', comment.id);
     loadFeed(true);
   }
 
@@ -168,12 +168,12 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         Run this SQL in your Supabase SQL Editor to enable poll comments:
       </p>
       <pre style={{ background: 'rgba(11,37,69,0.03)', border: '1px solid rgba(11,37,69,0.08)', borderRadius: 8, padding: '12px 14px', fontSize: 12, color: C.navy, margin: '0 0 14px', overflowX: 'auto', lineHeight: 1.7 }}>
-{`alter table discussion_comments
+{`alter table comments
   add column if not exists survey_id uuid
   references surveys(id) on delete cascade;
 
 create index if not exists idx_dc_survey
-  on discussion_comments(survey_id);`}
+  on comments(survey_id);`}
       </pre>
       <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)', margin: 0 }}>After running the SQL, refresh this page.</p>
     </div>
