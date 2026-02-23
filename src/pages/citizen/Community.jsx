@@ -530,9 +530,9 @@ const ReplyBox = ({ postId, onComment }) => {
   );
 };
 const PostCard = ({ post, onLike, onComment, onReact }) => {
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(post.my_vote === "like");
   const [likes, setLikes] = useState(post.likes_count || 0);
-  const [disliked, setDisliked] = useState(false);
+  const [disliked, setDisliked] = useState(post.my_vote === "dislike");
   const [dislikes, setDislikes] = useState(post.dislikes_count || 0);
   const [showReply, setShowReply] = useState(false);
   const [reply, setReply] = useState("");
@@ -548,16 +548,19 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const replyEmojiRef = useRef(null);
 
   const toggleLike = async () => {
+    const next = !liked;
     if (disliked) { setDisliked(false); setDislikes((d) => d - 1); }
-    setLiked((l) => !l);
-    setLikes((l) => l + (liked ? -1 : 1));
-    await onLike(post.id);
+    setLiked(next);
+    setLikes((l) => l + (next ? 1 : -1));
+    await onLike(post.id, "like", next, disliked);
   };
 
   const toggleDislike = async () => {
+    const next = !disliked;
     if (liked) { setLiked(false); setLikes((l) => l - 1); }
-    setDisliked((d) => !d);
-    setDislikes((d) => d + (disliked ? -1 : 1));
+    setDisliked(next);
+    setDislikes((d) => d + (next ? 1 : -1));
+    await onLike(post.id, "dislike", next, liked);
   };
 
   const loadComments = async () => {
@@ -1007,9 +1010,24 @@ export default function Community() {
     const from = p * PAGE;
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, created_at, likes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
       .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
-    const shaped = (data || []).map((x) => ({ ...x, author_name: x.users?.full_name, author_verified: x.users?.identity_verified, linked_survey: x.linked_survey_data }));
+    // Load this user's votes for these posts
+    const ids = (data || []).map((x) => x.id);
+    let myVotes = {};
+    if (ids.length && user?.id) {
+      const { data: votes } = await supabase
+        .from("community_post_likes")
+        .select("post_id, type").eq("user_id", user.id).in("post_id", ids);
+      (votes || []).forEach((v) => { myVotes[v.post_id] = v.type; });
+    }
+    const shaped = (data || []).map((x) => ({
+      ...x,
+      author_name: x.users?.full_name,
+      author_verified: x.users?.identity_verified,
+      linked_survey: x.linked_survey_data,
+      my_vote: myVotes[x.id] || null,
+    }));
     if (p === 0) setPosts(shaped); else setPosts((prev) => [...prev, ...shaped]);
     setHasMore((data || []).length === PAGE);
     setPage(p);
@@ -1031,8 +1049,19 @@ export default function Community() {
     if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
   };
 
-  const handleLike = async (id) => {
-    await supabase.from("community_posts").update({ likes_count: supabase.rpc("increment", { x: 1 }) }).eq("id", id);
+  const handleLike = async (postId, type, active, removingOpposite) => {
+    if (!user?.id) return;
+    if (!active) {
+      // Remove vote
+      await supabase.from("community_post_likes")
+        .delete().eq("post_id", postId).eq("user_id", user.id);
+    } else {
+      // Upsert vote (handles switching from like->dislike automatically)
+      await supabase.from("community_post_likes")
+        .upsert({ post_id: postId, user_id: user.id, type }, { onConflict: "post_id,user_id" });
+    }
+    // Sync counts in DB
+    await supabase.rpc("sync_post_like_counts", { p_post_id: postId });
   };
 
   const handleComment = async (postId, content, imageUrl) => {
