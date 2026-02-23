@@ -532,6 +532,8 @@ const ReplyBox = ({ postId, onComment }) => {
 const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(post.likes_count || 0);
+  const [disliked, setDisliked] = useState(false);
+  const [dislikes, setDislikes] = useState(post.dislikes_count || 0);
   const [showReply, setShowReply] = useState(false);
   const [reply, setReply] = useState("");
   const [showEmojiReply, setShowEmojiReply] = useState(false);
@@ -546,9 +548,16 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const replyEmojiRef = useRef(null);
 
   const toggleLike = async () => {
+    if (disliked) { setDisliked(false); setDislikes((d) => d - 1); }
     setLiked((l) => !l);
     setLikes((l) => l + (liked ? -1 : 1));
     await onLike(post.id);
+  };
+
+  const toggleDislike = async () => {
+    if (liked) { setLiked(false); setLikes((l) => l - 1); }
+    setDisliked((d) => !d);
+    setDislikes((d) => d + (disliked ? -1 : 1));
   };
 
   const loadComments = async () => {
@@ -656,40 +665,72 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
         )}
 
         {/* Action bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 10, borderTop: "1px solid " + T.border }}>
-          <button onClick={toggleLike} style={{
-            display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
-            borderRadius: 20, background: liked ? "#fee2e2" : "none",
-            border: "1px solid " + (liked ? "#fca5a5" : T.border),
-            cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 600,
-            color: liked ? "#e53e3e" : T.muted, transition: "all 0.15s",
-          }}>
-            <Ico d={ICONS.heart} size={14} fill={liked ? "#e53e3e" : "none"} />
-            {likes > 0 ? likes : "Like"}
-          </button>
+        <div style={{ paddingTop: 10, borderTop: "1px solid " + T.border }}>
+          {/* Stats row */}
+          {(likes > 0 || commentCount > 0) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid " + T.border }}>
+              {likes > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: T.muted }}>
+                  <span style={{ fontSize: 14 }}>❤️</span> <strong style={{ color: T.ink }}>{likes}</strong> {likes === 1 ? "like" : "likes"}
+                </span>
+              )}
+              {commentCount > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: T.muted }}>
+                  <span style={{ fontSize: 14 }}>💬</span> <strong style={{ color: T.ink }}>{commentCount}</strong> {commentCount === 1 ? "reply" : "replies"}
+                </span>
+              )}
+            </div>
+          )}
+          {/* Buttons row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {/* Thumbs up */}
+            <button onClick={toggleLike} style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+              borderRadius: 20, background: liked ? "#fee2e2" : "none",
+              border: "1px solid " + (liked ? "#fca5a5" : T.border),
+              cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
+              color: liked ? "#e53e3e" : T.muted, transition: "all 0.15s",
+            }}>
+              <span style={{ fontSize: 15 }}>{liked ? "👍" : "👍"}</span>
+              <span>{likes > 0 ? likes : ""}</span>
+            </button>
 
-          <button onClick={toggleReplies} style={{
-            display: "flex", alignItems: "center", gap: 5, padding: "6px 10px",
-            borderRadius: 20, background: showReply ? T.navy + "08" : "none",
-            border: "1px solid " + (showReply ? T.navy + "22" : T.border),
-            cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 600,
-            color: showReply ? T.navy : T.muted, transition: "all 0.15s",
-          }}>
-            <Ico d={ICONS.chat} size={14} />
-            {commentCount > 0 ? commentCount + (commentCount === 1 ? " Reply" : " Replies") : "Reply"}
-          </button>
+            {/* Thumbs down */}
+            <button onClick={toggleDislike} style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+              borderRadius: 20, background: disliked ? "#fef3c7" : "none",
+              border: "1px solid " + (disliked ? "#fcd34d" : T.border),
+              cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
+              color: disliked ? "#d97706" : T.muted, transition: "all 0.15s",
+            }}>
+              <span style={{ fontSize: 15 }}>👎</span>
+              <span>{dislikes > 0 ? dislikes : ""}</span>
+            </button>
 
-          {/* Quick reactions */}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
-            {["❤️","👍","🔥","😂"].map((e) => (
-              <button key={e} onClick={() => onReact(post.id, e)} style={{
-                width: 30, height: 30, fontSize: 15, background: "none", border: "none",
-                cursor: "pointer", borderRadius: 8, transition: "all 0.15s", opacity: 0.7,
-              }}
-                onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; el.currentTarget.style.opacity = "1"; el.currentTarget.style.transform = "scale(1.2)"; }}
-                onMouseLeave={(el) => { el.currentTarget.style.background = "none"; el.currentTarget.style.opacity = "0.7"; el.currentTarget.style.transform = "none"; }}
-              >{e}</button>
-            ))}
+            {/* Reply */}
+            <button onClick={toggleReplies} style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+              borderRadius: 20, background: showReply ? T.navy + "08" : "none",
+              border: "1px solid " + (showReply ? T.navy + "22" : T.border),
+              cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
+              color: showReply ? T.navy : T.muted, transition: "all 0.15s",
+            }}>
+              <Ico d={ICONS.chat} size={14} />
+              {commentCount > 0 ? commentCount : "Reply"}
+            </button>
+
+            {/* Quick emoji reactions */}
+            <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
+              {["❤️","🔥","😂"].map((e) => (
+                <button key={e} onClick={() => onReact(post.id, e)} style={{
+                  width: 30, height: 30, fontSize: 15, background: "none", border: "none",
+                  cursor: "pointer", borderRadius: 8, transition: "all 0.15s",
+                }}
+                  onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; el.currentTarget.style.transform = "scale(1.2)"; }}
+                  onMouseLeave={(el) => { el.currentTarget.style.background = "none"; el.currentTarget.style.transform = "none"; }}
+                >{e}</button>
+              ))}
+            </div>
           </div>
         </div>
 
