@@ -360,7 +360,10 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [reply, setReply] = useState("");
   const [showEmojiReply, setShowEmojiReply] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [replyImageFile, setReplyImageFile] = useState(null);
+  const [replyImagePreview, setReplyImagePreview] = useState(null);
   const replyRef = useRef(null);
+  const replyFileRef = useRef(null);
 
   const toggleLike = async () => {
     setLiked((l) => !l);
@@ -369,9 +372,22 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   };
 
   const submitReply = async () => {
-    if (!reply.trim()) return;
-    await onComment(post.id, reply.trim());
+    if (!reply.trim() && !replyImageFile) return;
+    let imageUrl = null;
+    if (replyImageFile) {
+      const ext = replyImageFile.name.split(".").pop();
+      const path = "community/" + Date.now() + "-reply." + ext;
+      const { data: upData, error: upErr } = await supabase.storage
+        .from("community-images").upload(path, replyImageFile, { cacheControl: "3600", upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
+        imageUrl = urlData?.publicUrl;
+      }
+    }
+    await onComment(post.id, reply.trim(), imageUrl);
     setReply("");
+    setReplyImageFile(null);
+    setReplyImagePreview(null);
     setShowReply(false);
   };
 
@@ -474,40 +490,56 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
 
         {/* Reply box */}
         {showReply && (
-          <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "flex-end" }}>
-            <div style={{ flex: 1, position: "relative" }}>
-              <input
-                ref={replyRef}
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submitReply()}
-                placeholder="Write a thoughtful reply..."
-                style={{
-                  width: "100%", padding: "10px 40px 10px 14px", borderRadius: 20,
-                  border: "1px solid " + T.border, background: T.cream,
-                  fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-              <div style={{ position: "relative", display: "inline-block" }}>
-                <button onClick={() => setShowEmojiReply(!showEmojiReply)} style={{
-                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                  background: "none", border: "none", cursor: "pointer", fontSize: 16,
-                }}>😊</button>
-                {showEmojiReply && (
-                  <div style={{ position: "absolute", bottom: "calc(100% + 8px)", right: 0 }}>
-                    <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} />
-                  </div>
-                )}
+          <div style={{ marginTop: 12, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
+            <textarea
+              ref={replyRef}
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && submitReply()}
+              placeholder="Write a thoughtful reply..."
+              rows={2}
+              style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
+            />
+            {/* Reply image preview */}
+            {replyImagePreview && (
+              <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
+                <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
+                <button onClick={() => { setReplyImageFile(null); setReplyImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                  <Ico d={ICONS.x} size={10} />
+                </button>
+              </div>
+            )}
+            {/* Reply toolbar */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                {/* Image upload */}
+                <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
+                  <Ico d={ICONS.image} size={14} />
+                </button>
+                <input ref={replyFileRef} type="file" accept="image/*" onChange={(e) => {
+                  const file = e.target.files[0]; if (!file) return;
+                  setReplyImageFile(file);
+                  const reader = new FileReader();
+                  reader.onload = (ev) => setReplyImagePreview(ev.target.result);
+                  reader.readAsDataURL(file);
+                }} style={{ display: "none" }} />
+                {/* Emoji picker */}
+                <div style={{ position: "relative" }}>
+                  <button onClick={() => setShowEmojiReply(!showEmojiReply)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
+                  {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} />}
+                </div>
+                {/* Quick emojis */}
+                {["❤️","👍","🔥","😂"].map((e) => (
+                  <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter to send</span>
+                <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: (reply.trim() || replyImageFile) ? "pointer" : "default", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
+                  Reply
+                </button>
               </div>
             </div>
-            <button onClick={submitReply} disabled={!reply.trim()} style={{
-              width: 38, height: 38, borderRadius: "50%", background: T.navy, border: "none",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              color: T.gold, opacity: reply.trim() ? 1 : 0.35, transition: "opacity 0.15s", flexShrink: 0,
-            }}>
-              <Ico d={ICONS.send} size={14} />
-            </button>
           </div>
         )}
       </div>
