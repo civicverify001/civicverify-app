@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../supabaseClient";
-import useAuth from "../../hooks/useAuth";
+import { useAuth } from ../../hooks/useAuth";
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 const Icon = ({ name, size = 16, className = "" }) => {
@@ -886,3 +886,4 @@ export default function Community() {
     </div>
   );
 }
+
