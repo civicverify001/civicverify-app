@@ -567,9 +567,7 @@ export default function Landing() {
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function () { window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: body }}>CV</span>
-            </div>
+            <img src="/civicverifyicon.png" alt="CivicVerify" style={{ width: 36, height: 36, borderRadius: 10 }} />
             <span style={{ fontSize: 18, fontWeight: 700, color: scrolled ? C.navy : '#fff', fontFamily: heading, transition: 'color 0.3s' }}>CivicVerify</span>
           </div>
           <div style={{ display: 'none', alignItems: 'center', gap: 28 }} className="cv-nav-links">
@@ -939,7 +937,7 @@ export default function Landing() {
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 32 }}>
             <div style={{ maxWidth: 280 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: '#fff', fontWeight: 800, fontSize: 11, fontFamily: body }}>CV</span></div>
+                <div style={{ width: 32, height: 32, borderRadius: 8, overflow: 'hidden' }}><img src="/civicverifyicon.png" alt="CivicVerify" style={{ width: 32, height: 32 }} /></div>
                 <span style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: heading }}>CivicVerify</span>
               </div>
               <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.35)', lineHeight: 1.6, margin: 0, fontFamily: body }}>The trusted platform for verified civic engagement. Every voice matters when it's real.</p>
