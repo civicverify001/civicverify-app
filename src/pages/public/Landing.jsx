@@ -1,4 +1,4 @@
-// src/pages/public/Landing.jsx — Complete Overhaul v2
+// src/pages/public/Landing.jsx \u2014 Complete Overhaul v2 (Fixed SVGs + Footer Links)
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -65,7 +65,7 @@ function timeAgo(d) {
 /* ======== SHARE MODAL ======== */
 function ShareModal({ title, surveyId, onClose }) {
   var url = window.location.origin + (surveyId ? '/?survey=' + surveyId : '');
-  var text = '"' + title + '" on CivicVerify — Your Voice, Verified';
+  var text = '"' + title + '" on CivicVerify \u2014 Your Voice, Verified';
   var [copied, setCopied] = useState(false);
   var copy = function () { navigator.clipboard.writeText(url); setCopied(true); setTimeout(function () { setCopied(false); }, 2000); };
   var links = [
@@ -73,7 +73,9 @@ function ShareModal({ title, surveyId, onClose }) {
     { label: 'Facebook', abbr: 'Fb', bg: '#1877F2', href: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url) },
     { label: 'LinkedIn', abbr: 'In', bg: '#0A66C2', href: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url) },
     { label: 'WhatsApp', abbr: 'Wa', bg: '#25D366', href: 'https://wa.me/?text=' + encodeURIComponent(text + ' ' + url) },
-    { label: 'Email', abbr: '\u2709', bg: '#6B7280', href: 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url) },
+    { label: 'Email', abbr: '\u2709', bg: '#6B7280', href: 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\
+\
+' + url) },
   ];
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -286,7 +288,7 @@ function LiveSurveyCard({ survey, user }) {
           {firstQ ? (
             <>
               <InlinePoll question={firstQ} surveyId={survey.id} user={user} existingAnswer={existingAnswer} onVoted={function () { setResponseCount(function (r) { return r + 1; }); }} responseCount={responseCount} />
-              {extraQs > 0 ? <button onClick={function () { navigate(user ? '/citizen/surveys/' + survey.id : '/login'); }} style={{ width: '100%', padding: 10, background: C.goldGlow, border: '1px dashed ' + C.gold + '40', borderRadius: 10, fontSize: 13, fontWeight: 600, color: C.gold, cursor: 'pointer', marginTop: 6, fontFamily: body }}>+ {extraQs} more question{extraQs !== 1 ? 's' : ''} — Full Survey</button> : null}
+              {extraQs > 0 ? <button onClick={function () { navigate(user ? '/citizen/surveys/' + survey.id : '/login'); }} style={{ width: '100%', padding: 10, background: C.goldGlow, border: '1px dashed ' + C.gold + '40', borderRadius: 10, fontSize: 13, fontWeight: 600, color: C.gold, cursor: 'pointer', marginTop: 6, fontFamily: body }}>+ {extraQs} more question{extraQs !== 1 ? 's' : ''} {'\u2014'} Full Survey</button> : null}
             </>
           ) : <button onClick={function () { navigate(user ? '/citizen/surveys/' + survey.id : '/login'); }} style={{ width: '100%', padding: 12, background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: body }}>{user ? 'Take Survey' : 'Sign In to Vote'}</button>}
         </div>
@@ -319,101 +321,43 @@ function LiveSurveyCard({ survey, user }) {
 /* ======== COMMUNITY DISCUSSIONS ======== */
 function CommunityDiscussions({ user }) {
   var navigate = useNavigate();
-  var [discussions, setDiscussions] = useState([]);
+  var [posts, setPosts] = useState([]);
   var [newTopic, setNewTopic] = useState('');
   var [posting, setPosting] = useState(false);
-  var [replyTo, setReplyTo] = useState(null);
-  var [replyText, setReplyText] = useState('');
-  var [replyPosting, setReplyPosting] = useState(false);
   var [loading, setLoading] = useState(true);
 
-  async function loadDiscussions() {
-    var res = await supabase.from('comments').select('*, users(full_name)').is('survey_id', null).is('parent_id', null).order('created_at', { ascending: false }).limit(20);
-    var list = (res.data || []).map(function (c) { return Object.assign({}, c, { user_name: c.users ? c.users.full_name : null, replies: [], showReplies: false }); });
-    if (user && user.id) {
-      var allIds = list.map(function (c) { return c.id; });
-      if (allIds.length > 0) {
-        var vr = await supabase.from('comment_votes').select('comment_id, vote_type').eq('user_id', user.id).in('comment_id', allIds);
-        var vm = {}; (vr.data || []).forEach(function (v) { vm[v.comment_id] = v.vote_type; });
-        list = list.map(function (c) { return Object.assign({}, c, { userVote: vm[c.id] || null }); });
-      }
-    }
-    list.sort(function (a, b) { return ((b.likes || 0) - (b.dislikes || 0)) - ((a.likes || 0) - (a.dislikes || 0)); });
-    setDiscussions(list);
+  async function loadPosts() {
+    var res = await supabase.from('community_posts')
+      .select('id, content, image_url, created_at, likes_count, dislikes_count, comments_count, users:user_id(full_name, identity_verified, avatar_url)')
+      .order('created_at', { ascending: false }).limit(10);
+    setPosts((res.data || []).map(function (p) {
+      return Object.assign({}, p, {
+        author_name: p.users ? p.users.full_name : null,
+        author_verified: p.users ? p.users.identity_verified : false,
+        author_avatar: p.users ? p.users.avatar_url : null,
+      });
+    }));
     setLoading(false);
   }
 
-  useEffect(function () { loadDiscussions(); }, [user]);
+  useEffect(function () { loadPosts(); }, []);
 
   async function postTopic() {
     if (!newTopic.trim() || !user) return;
     setPosting(true);
-    var res = await supabase.from('comments').insert({ user_id: user.id, content: newTopic.trim(), survey_id: null, parent_id: null }).select('*, users(full_name)').single();
+    var res = await supabase.from('community_posts')
+      .insert({ user_id: user.id, content: newTopic.trim(), likes_count: 0, comments_count: 0 })
+      .select('id, content, created_at, likes_count, comments_count, users:user_id(full_name, identity_verified, avatar_url)')
+      .single();
     if (!res.error && res.data) {
-      setDiscussions([Object.assign({}, res.data, { user_name: res.data.users ? res.data.users.full_name : null, userVote: null, replies: [], showReplies: false })].concat(discussions));
+      setPosts([Object.assign({}, res.data, {
+        author_name: res.data.users ? res.data.users.full_name : null,
+        author_verified: res.data.users ? res.data.users.identity_verified : false,
+        author_avatar: res.data.users ? res.data.users.avatar_url : null,
+      })].concat(posts));
       setNewTopic('');
     }
     setPosting(false);
-  }
-
-  async function postReply(parentId) {
-    if (!replyText.trim() || !user) return;
-    setReplyPosting(true);
-    var res = await supabase.from('comments').insert({ user_id: user.id, content: replyText.trim(), survey_id: null, parent_id: parentId }).select('*, users(full_name)').single();
-    if (!res.error && res.data) {
-      setDiscussions(function (prev) { return prev.map(function (d) { if (d.id !== parentId) return d; return Object.assign({}, d, { replies: d.replies.concat([Object.assign({}, res.data, { user_name: res.data.users ? res.data.users.full_name : null, userVote: null })]), showReplies: true }); }); });
-      setReplyText(''); setReplyTo(null);
-    }
-    setReplyPosting(false);
-  }
-
-  async function loadReplies(parentId) {
-    var res = await supabase.from('comments').select('*, users(full_name)').eq('parent_id', parentId).order('created_at', { ascending: true });
-    var list = (res.data || []).map(function (c) { return Object.assign({}, c, { user_name: c.users ? c.users.full_name : null }); });
-    if (user && user.id) {
-      var ids = list.map(function (c) { return c.id; });
-      if (ids.length > 0) {
-        var vr = await supabase.from('comment_votes').select('comment_id, vote_type').eq('user_id', user.id).in('comment_id', ids);
-        var vm = {}; (vr.data || []).forEach(function (v) { vm[v.comment_id] = v.vote_type; });
-        list = list.map(function (c) { return Object.assign({}, c, { userVote: vm[c.id] || null }); });
-      }
-    }
-    list.sort(function (a, b) { return ((b.likes || 0) - (b.dislikes || 0)) - ((a.likes || 0) - (a.dislikes || 0)); });
-    setDiscussions(function (prev) { return prev.map(function (d) { if (d.id !== parentId) return d; return Object.assign({}, d, { replies: list, showReplies: true }); }); });
-  }
-
-  async function handleVote(commentId, type, isReply, parentId) {
-    if (!user) { navigate('/login'); return; }
-    function updateList(list) {
-      return list.map(function (x) {
-        if (x.id !== commentId) return x;
-        var ex = x.userVote;
-        var o = Object.assign({}, x);
-        if (ex === type) { o[type + 's'] = Math.max((x[type + 's'] || 1) - 1, 0); o.userVote = null; }
-        else { o[type + 's'] = (x[type + 's'] || 0) + 1; if (ex) o[ex + 's'] = Math.max((x[ex + 's'] || 1) - 1, 0); o.userVote = type; }
-        return o;
-      }).sort(function (a, b) { return ((b.likes || 0) - (b.dislikes || 0)) - ((a.likes || 0) - (a.dislikes || 0)); });
-    }
-    var c = null;
-    if (isReply && parentId) {
-      var parent = discussions.find(function (d) { return d.id === parentId; });
-      if (parent) c = parent.replies.find(function (x) { return x.id === commentId; });
-    } else { c = discussions.find(function (x) { return x.id === commentId; }); }
-    if (!c) return;
-    var existing = c.userVote;
-    if (existing === type) {
-      await supabase.from('comment_votes').delete().eq('comment_id', commentId).eq('user_id', user.id);
-      var upd = {}; upd[type + 's'] = Math.max((c[type + 's'] || 1) - 1, 0);
-      await supabase.from('comments').update(upd).eq('id', commentId);
-    } else {
-      await supabase.from('comment_votes').upsert({ comment_id: commentId, user_id: user.id, vote_type: type }, { onConflict: 'comment_id,user_id' });
-      var updates = {}; updates[type + 's'] = (c[type + 's'] || 0) + 1;
-      if (existing) updates[existing + 's'] = Math.max((c[existing + 's'] || 1) - 1, 0);
-      await supabase.from('comments').update(updates).eq('id', commentId);
-    }
-    if (isReply && parentId) {
-      setDiscussions(function (prev) { return prev.map(function (d) { if (d.id !== parentId) return d; return Object.assign({}, d, { replies: updateList(d.replies) }); }); });
-    } else { setDiscussions(function (prev) { return updateList(prev); }); }
   }
 
   return (
@@ -423,7 +367,7 @@ function CommunityDiscussions({ user }) {
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ width: 38, height: 38, borderRadius: '50%', background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: C.gold, flexShrink: 0, fontFamily: body }}>{(user.full_name || 'U').charAt(0).toUpperCase()}</div>
             <div style={{ flex: 1 }}>
-              <textarea value={newTopic} onChange={function (e) { setNewTopic(e.target.value); }} placeholder="What civic issue is on your mind?" rows={3} style={{ width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid ' + C.light, borderRadius: 12, outline: 'none', color: C.navy, background: '#fff', resize: 'vertical', lineHeight: 1.6, fontFamily: body }} />
+              <textarea value={newTopic} onChange={function (e) { setNewTopic(e.target.value); }} placeholder="What civic issue is on your mind?" rows={3} style={{ width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid ' + C.light, borderRadius: 12, outline: 'none', color: C.navy, background: '#fff', resize: 'vertical', lineHeight: 1.6, fontFamily: body, boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
                 <button onClick={postTopic} disabled={!newTopic.trim() || posting} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: (!newTopic.trim() || posting) ? 0.3 : 1, fontFamily: body }}>{posting ? 'Posting...' : 'Start Discussion'}</button>
               </div>
@@ -435,68 +379,46 @@ function CommunityDiscussions({ user }) {
       )}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}><div className="cv-spinner" /></div>
-      ) : discussions.length > 0 ? (
+      ) : posts.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {discussions.map(function (d) {
-            var netScore = (d.likes || 0) - (d.dislikes || 0);
+          {posts.map(function (p) {
             return (
-              <div key={d.id} className="cv-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid ' + C.light, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', gap: 14, padding: 18 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minWidth: 40 }}>
-                    <button onClick={function () { handleVote(d.id, 'like', false); }} style={{ width: 34, height: 30, borderRadius: 8, border: 'none', background: d.userVote === 'like' ? C.green + '15' : 'transparent', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>{'\u25B2'}</button>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: netScore > 0 ? C.green : netScore < 0 ? C.red : 'rgba(11,37,69,0.2)', fontFamily: body }}>{netScore}</span>
-                    <button onClick={function () { handleVote(d.id, 'dislike', false); }} style={{ width: 34, height: 30, borderRadius: 8, border: 'none', background: d.userVote === 'dislike' ? C.red + '15' : 'transparent', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>{'\u25BC'}</button>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(11,37,69,0.08), rgba(11,37,69,0.03))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.3)', fontFamily: body }}>{(d.user_name || 'A').charAt(0).toUpperCase()}</div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: C.navy, fontFamily: body }}>{d.user_name || 'Anonymous'}</span>
-                      <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', fontFamily: body }}>{timeAgo(d.created_at)}</span>
+              <div key={p.id} className="cv-card" style={{ background: '#fff', borderRadius: 16, border: '1px solid ' + C.light, overflow: 'hidden', padding: 18 }}>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                  {p.author_avatar ? (
+                    <img src={p.author_avatar} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, ' + C.navy + ', rgba(11,37,69,0.7))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: C.gold, flexShrink: 0, fontFamily: body }}>{(p.author_name || 'A').charAt(0).toUpperCase()}</div>
+                  )}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: C.navy, fontFamily: body }}>{p.author_name || 'Citizen'}</span>
+                      {p.author_verified && <span style={{ fontSize: 10, fontWeight: 700, color: C.gold, background: C.goldGlow, padding: '2px 8px', borderRadius: 20, fontFamily: body }}>VERIFIED</span>}
                     </div>
-                    <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.65)', margin: 0, lineHeight: 1.6, fontFamily: body }}>{d.content}</p>
-                    <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
-                      <button onClick={function () { if (d.showReplies) { setDiscussions(function (prev) { return prev.map(function (x) { if (x.id !== d.id) return x; return Object.assign({}, x, { showReplies: false }); }); }); } else { loadReplies(d.id); } }} style={{ fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.25)', border: 'none', background: 'none', cursor: 'pointer', padding: '4px 0', fontFamily: body }}>{'\uD83D\uDCAC'} {d.showReplies ? 'Hide' : 'Replies'}</button>
-                      <button onClick={function () { setReplyTo(replyTo === d.id ? null : d.id); setReplyText(''); }} style={{ fontSize: 12, fontWeight: 600, color: C.gold, border: 'none', background: 'none', cursor: 'pointer', padding: '4px 0', fontFamily: body }}>Reply</button>
-                    </div>
+                    <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.25)', fontFamily: body }}>{timeAgo(p.created_at)}</span>
                   </div>
                 </div>
-                {replyTo === d.id && user ? (
-                  <div style={{ padding: '0 18px 14px 72px' }}>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input value={replyText} onChange={function (e) { setReplyText(e.target.value); }} placeholder="Write a reply..." onKeyDown={function (e) { if (e.key === 'Enter') postReply(d.id); }} style={{ flex: 1, padding: '9px 14px', fontSize: 13, border: '1px solid ' + C.light, borderRadius: 10, outline: 'none', color: C.navy, background: '#fff', fontFamily: body }} />
-                      <button onClick={function () { postReply(d.id); }} disabled={!replyText.trim() || replyPosting} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (!replyText.trim() || replyPosting) ? 0.3 : 1, fontFamily: body }}>Reply</button>
-                    </div>
+                <p style={{ fontSize: 15, color: 'rgba(11,37,69,0.7)', margin: '0 0 12px', lineHeight: 1.65, fontFamily: body }}>{p.content}</p>
+                {p.image_url && (
+                  <div style={{ marginBottom: 12, borderRadius: 12, overflow: 'hidden' }}>
+                    <img src={p.image_url} alt="post" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
                   </div>
-                ) : null}
-                {d.showReplies && d.replies.length > 0 ? (
-                  <div style={{ borderTop: '1px solid rgba(11,37,69,0.04)', padding: '12px 18px 12px 72px', background: 'rgba(245,241,236,0.15)' }}>
-                    {d.replies.map(function (r) {
-                      return (
-                        <div key={r.id} style={{ display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(11,37,69,0.03)' }}>
-                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(11,37,69,0.06), rgba(11,37,69,0.02))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.25)', flexShrink: 0, fontFamily: body }}>{(r.user_name || 'A').charAt(0).toUpperCase()}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: C.navy, fontFamily: body }}>{r.user_name || 'Anonymous'}</span>
-                              <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.2)', fontFamily: body }}>{timeAgo(r.created_at)}</span>
-                            </div>
-                            <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: '4px 0 0', lineHeight: 1.5, fontFamily: body }}>{r.content}</p>
-                            <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-                              <button onClick={function () { handleVote(r.id, 'like', true, d.id); }} style={{ fontSize: 11, border: 'none', background: 'none', cursor: 'pointer', color: r.userVote === 'like' ? C.green : 'rgba(11,37,69,0.2)', fontWeight: r.userVote === 'like' ? 600 : 400, display: 'flex', alignItems: 'center', gap: 3, fontFamily: body }}>{'\uD83D\uDC4D'} {r.likes || 0}</button>
-                              <button onClick={function () { handleVote(r.id, 'dislike', true, d.id); }} style={{ fontSize: 11, border: 'none', background: 'none', cursor: 'pointer', color: r.userVote === 'dislike' ? C.red : 'rgba(11,37,69,0.2)', fontWeight: r.userVote === 'dislike' ? 600 : 400, display: 'flex', alignItems: 'center', gap: 3, fontFamily: body }}>{'\uD83D\uDC4E'} {r.dislikes || 0}</button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null}
+                )}
+                <div style={{ display: 'flex', gap: 16, paddingTop: 10, borderTop: '1px solid rgba(11,37,69,0.05)' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: body }}>{'\uD83D\uDC4D'} {p.likes_count || 0}</span>
+                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: body }}>{'\uD83D\uDCAC'} {p.comments_count || 0}</span>
+                  <button onClick={function () { navigate('/citizen/community'); }} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: C.gold, border: 'none', background: 'none', cursor: 'pointer', fontFamily: body }}>Join Discussion {'\u2192'}</button>
+                </div>
               </div>
             );
           })}
+          <button onClick={function () { navigate('/citizen/community'); }} className="cv-card" style={{ width: '100%', padding: '14px', borderRadius: 12, border: '1px solid ' + C.light, background: '#fff', fontSize: 13, fontWeight: 600, color: C.navy, cursor: 'pointer', fontFamily: body, textAlign: 'center' }}>
+            View all discussions {'\u2192'}
+          </button>
         </div>
       ) : (
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(245,241,236,0.25)', borderRadius: 16 }}>
-          <span style={{ fontSize: 32, display: 'block', marginBottom: 10 }}>{'\uD83D\uDDE3\uFE0F'}</span>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ display: 'block', margin: '0 auto 10px' }}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="rgba(11,37,69,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           <p style={{ fontSize: 15, fontWeight: 600, color: 'rgba(11,37,69,0.2)', margin: '0 0 4px', fontFamily: body }}>No discussions yet</p>
           <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.15)', margin: 0, fontFamily: body }}>Be the first to start a civic conversation</p>
         </div>
@@ -535,7 +457,6 @@ export default function Landing() {
   var [scrolled, setScrolled] = useState(false);
 
   useEffect(function () {
-    // Real stats from DB
     supabase.from('surveys').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(6)
       .then(function (r) { setSurveys(r.data || []); setLoading(false); });
     supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'citizen')
@@ -543,7 +464,8 @@ export default function Landing() {
     supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'org')
       .then(function (r) { setOrgCount(r.count || 0); });
     supabase.from('responses').select('*', { count: 'exact', head: true })
-      .then(function (r) { setTotalResponses(r.count || 0); });
+      .then(function (r) { setTotalResponses(r.count || 0); })
+      .catch(function () { setTotalResponses(0); });
     supabase.from('surveys').select('*', { count: 'exact', head: true })
       .then(function (r) { setSurveyCount(r.count || 0); });
 
@@ -554,7 +476,6 @@ export default function Landing() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: body }}>
-      {/* ============ GOOGLE FONTS ============ */}
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* ============ NAVBAR ============ */}
@@ -566,11 +487,17 @@ export default function Landing() {
         transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function () { window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: body }}>CV</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={function () { window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none" style={{ flexShrink: 0 }}>
+              <rect width="38" height="38" rx="10" fill={C.gold} />
+              <text x="19" y="24.5" textAnchor="middle" fill="#fff" fontFamily="'Playfair Display', Georgia, serif" fontSize="18" fontWeight="700">CV</text>
+              <path d="M28 10 L30 12 L26 16" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontSize: 19, fontWeight: 700, color: scrolled ? C.navy : '#fff', fontFamily: heading, transition: 'color 0.3s', letterSpacing: '-0.01em' }}>
+                Civic<span style={{ color: C.gold }}>Verify</span>
+              </span>
             </div>
-            <span style={{ fontSize: 18, fontWeight: 700, color: scrolled ? C.navy : '#fff', fontFamily: heading, transition: 'color 0.3s' }}>CivicVerify</span>
           </div>
           <div style={{ display: 'none', alignItems: 'center', gap: 28 }} className="cv-nav-links">
             {['How It Works', 'Live Polls', 'Community', 'For Organizations'].map(function (item) {
@@ -593,14 +520,12 @@ export default function Landing() {
 
       {/* ============ HERO ============ */}
       <section style={{ background: 'linear-gradient(160deg, #091e38 0%, #0B2545 40%, #12325a 100%)', position: 'relative', overflow: 'hidden', paddingTop: 80 }}>
-        {/* Decorative elements */}
         <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -150, left: -150, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.04) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, opacity: 0.02, backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
 
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 28px 100px', position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 64 }} className="cv-hero-flex">
-            {/* Left column */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <Reveal>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 36 }}>
@@ -609,7 +534,7 @@ export default function Landing() {
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#34d399', fontFamily: body }}>{surveys.length} live poll{surveys.length !== 1 ? 's' : ''}</span>
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span style={{ fontSize: 12 }}>{'\uD83D\uDEE1\uFE0F'}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="rgba(255,255,255,0.45)" strokeWidth="2"/></svg>
                     <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontFamily: body }}>{userCount} verified citizen{userCount !== 1 ? 's' : ''}</span>
                   </span>
                 </div>
@@ -647,17 +572,21 @@ export default function Landing() {
               <Reveal delay={400}>
                 <div style={{ display: 'flex', gap: 36, paddingTop: 36, borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
                   {[
-                    { i: '\uD83D\uDEE1\uFE0F', t: 'Identity Verified' },
-                    { i: '\uD83D\uDC65', t: 'Real Citizens Only' },
-                    { i: '\uD83D\uDD12', t: 'End-to-End Encrypted' }
+                    { t: 'Identity Verified' },
+                    { t: 'Real Citizens Only' },
+                    { t: 'End-to-End Encrypted' },
                   ].map(function (x, i) {
-                    return <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 15 }}>{x.i}</span><span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.25)', fontFamily: body, letterSpacing: '0.02em' }}>{x.t}</span></div>;
+                    var trustIcons = [
+                      <svg key="t0" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/></svg>,
+                      <svg key="t1" width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="4" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/></svg>,
+                      <svg key="t2" width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/></svg>,
+                    ];
+                    return <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{trustIcons[i]}<span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.25)', fontFamily: body, letterSpacing: '0.02em' }}>{x.t}</span></div>;
                   })}
                 </div>
               </Reveal>
             </div>
 
-            {/* Right column — Live Activity Card */}
             <div style={{ width: 380, flexShrink: 0 }} className="cv-hero-right">
               <Reveal delay={300} direction="right">
                 <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
@@ -687,10 +616,12 @@ export default function Landing() {
                     {surveys.length > 0 ? surveys.slice(0, 3).map(function (s, i) {
                       return (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                          <div style={{ width: 30, height: 30, borderRadius: 8, background: [C.gold + '20', '#34d39920', '#60a5fa20'][i % 3], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>{['\uD83D\uDDF3\uFE0F', '\uD83D\uDCCA', '\uD83D\uDC65'][i % 3]}</div>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, background: [C.gold + '20', '#34d39920', '#60a5fa20'][i % 3], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d={['M9 12l2 2 4-4M3 3h18v18H3z','M18 20V10M12 20V4M6 20v-6','M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2'][i%3]} stroke={[C.gold,'#34d399','#60a5fa'][i%3]} strokeWidth="2" strokeLinecap="round"/></svg>
+                          </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.55)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: body }}>{s.title}</p>
-                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: '2px 0 0', fontFamily: body }}>{s.response_count || 0} votes · Active now</p>
+                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: '2px 0 0', fontFamily: body }}>{s.response_count || 0} votes {'\u00b7'} Active now</p>
                           </div>
                         </div>
                       );
@@ -705,7 +636,6 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Wave divider */}
         <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 80 }}>
           <path d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,50 1440,40 L1440,80 L0,80 Z" fill="#fff" />
         </svg>
@@ -722,11 +652,12 @@ export default function Landing() {
             </div>
           </Reveal>
 
-          {/* Problem vs Solution grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 48 }}>
             <Reveal delay={100}>
               <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1px solid rgba(184,53,46,0.1)', height: '100%' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.red + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 18 }}>{'\u274C'}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.red + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke={C.red} strokeWidth="2.5" strokeLinecap="round"/></svg>
+                </div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 14px', fontFamily: heading }}>The Problem</h3>
                 {['Bots & fake accounts manipulate results', 'Tiny sample sizes miss real communities', 'No way to verify if respondents are citizens', 'Results twisted for political agendas'].map(function (t, i) {
                   return <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}><span style={{ color: C.red, fontSize: 12, marginTop: 3, flexShrink: 0 }}>{'\u2022'}</span><p style={{ fontSize: 14, color: 'rgba(11,37,69,0.5)', margin: 0, lineHeight: 1.6, fontFamily: body }}>{t}</p></div>;
@@ -735,12 +666,14 @@ export default function Landing() {
             </Reveal>
             <Reveal delay={200}>
               <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '2px solid ' + C.gold + '20', height: '100%' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.green + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 18 }}>{'\u2705'}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.green + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 14px', fontFamily: heading }}>CivicVerify</h3>
                 {[
                   { t: 'One Person, One Verified Vote', d: 'Identity verification stops manipulation' },
                   { t: 'Community-Targeted Polls', d: 'Your local issues get local voices' },
-                  { t: 'Transparent Results', d: 'Auditable — what citizens say is what decision-makers see' },
+                  { t: 'Transparent Results', d: 'Auditable \u2014 what citizens say is what decision-makers see' },
                   { t: 'Civic Responsibility', d: 'Shape policy between election cycles' },
                 ].map(function (item, i) {
                   return <div key={i} style={{ marginBottom: 10, display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ color: C.green, fontSize: 13, marginTop: 2, flexShrink: 0 }}>{'\u2713'}</span><div><p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: 0, fontFamily: body }}>{item.t}</p><p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: '2px 0 0', lineHeight: 1.4, fontFamily: body }}>{item.d}</p></div></div>;
@@ -770,15 +703,20 @@ export default function Landing() {
           </Reveal>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
             {[
-              { s: '01', i: '\uD83D\uDCF1', t: 'Sign Up & Verify', d: 'Create your account and verify your identity with a quick ID scan. One-time, completely private.', color: '#60a5fa' },
-              { s: '02', i: '\uD83D\uDDF3\uFE0F', t: 'Vote on Live Polls', d: 'Vote directly on civic polls matched to your community. Discuss issues with fellow verified citizens.', color: '#34d399' },
-              { s: '03', i: '\uD83D\uDCC8', t: 'See Real Impact', d: 'Watch live results, see your community\'s voice, and track how opinions shape real decisions.', color: '#c084fc' },
+              { s: '01', t: 'Sign Up & Verify', d: 'Create your account and verify your identity with a quick ID scan. One-time, completely private.', color: '#60a5fa' },
+              { s: '02', t: 'Vote on Live Polls', d: 'Vote directly on civic polls matched to your community. Discuss issues with fellow verified citizens.', color: '#34d399' },
+              { s: '03', t: 'See Real Impact', d: 'Watch live results, see your community\'s voice, and track how opinions shape real decisions.', color: '#c084fc' },
             ].map(function (item, i) {
+              var stepIcons = [
+                <svg key="s0" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"/><circle cx="9" cy="7" r="4" stroke="#60a5fa" strokeWidth="2"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"/></svg>,
+                <svg key="s1" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="3" width="18" height="18" rx="3" stroke="#34d399" strokeWidth="2"/></svg>,
+                <svg key="s2" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="#c084fc" strokeWidth="2.5" strokeLinecap="round"/></svg>,
+              ];
               return (
                 <Reveal key={i} delay={i * 120}>
                   <div className="cv-card" style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 32, border: '1px solid ' + C.light, height: '100%', transition: 'all 0.35s' }}>
                     <span style={{ position: 'absolute', top: 16, right: 20, fontSize: 52, fontWeight: 900, color: 'rgba(11,37,69,0.025)', fontFamily: heading, lineHeight: 1 }}>{item.s}</span>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: item.color + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, marginBottom: 20, border: '1px solid ' + item.color + '15' }}>{item.i}</div>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: item.color + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, border: '1px solid ' + item.color + '15' }}>{stepIcons[i]}</div>
                     <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 10px', fontFamily: heading }}>{item.t}</h3>
                     <p style={{ fontSize: 14, color: C.muted, margin: 0, lineHeight: 1.7, fontFamily: body }}>{item.d}</p>
                   </div>
@@ -796,7 +734,7 @@ export default function Landing() {
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: C.gold, fontFamily: body }}>Vote Now</span>
               <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: C.navy, margin: '12px 0 8px', fontFamily: heading }}>Live Civic Polls</h2>
-              <p style={{ fontSize: 15, color: C.muted, margin: 0, fontFamily: body }}>Vote, comment, and share — right here, right now</p>
+              <p style={{ fontSize: 15, color: C.muted, margin: 0, fontFamily: body }}>Vote, comment, and share {'\u2014'} right here, right now</p>
             </div>
           </Reveal>
           {loading ? (
@@ -808,7 +746,9 @@ export default function Landing() {
           ) : (
             <Reveal>
               <div style={{ background: C.cream + '50', borderRadius: 20, padding: '64px 24px', textAlign: 'center' }}>
-                <div style={{ width: 64, height: 64, borderRadius: 16, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 20px' }}>{'\uD83D\uDDF3\uFE0F'}</div>
+                <div style={{ width: 64, height: 64, borderRadius: 16, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /><rect x="3" y="3" width="18" height="18" rx="3" stroke={C.gold} strokeWidth="2" /></svg>
+                </div>
                 <p style={{ fontSize: 18, fontWeight: 600, color: 'rgba(11,37,69,0.2)', margin: '0 0 8px', fontFamily: heading }}>No active polls right now</p>
                 <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.15)', margin: '0 0 24px', fontFamily: body }}>Check back soon or sign up to get notified</p>
                 <button onClick={function () { navigate('/signup'); }} style={{ padding: '12px 24px', background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: body }}>Sign Up</button>
@@ -842,16 +782,22 @@ export default function Landing() {
               <Reveal direction="left">
                 <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: C.gold, fontFamily: body }}>For Organizations</span>
                 <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: C.navy, margin: '14px 0 18px', fontFamily: heading, lineHeight: 1.2 }}>Reach Verified Citizens. <br />Get Trusted Data.</h2>
-                <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.7, margin: '0 0 32px', fontFamily: body }}>Whether you're a government agency, nonprofit, or research institution — CivicVerify gives you access to identity-verified respondents with demographic targeting.</p>
+                <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.7, margin: '0 0 32px', fontFamily: body }}>Whether you're a government agency, nonprofit, or research institution {'\u2014'} CivicVerify gives you access to identity-verified respondents with demographic targeting.</p>
                 {[
-                  { i: '\uD83C\uDFAF', t: 'Targeted Surveys', d: 'Reach citizens by age, location, and demographics' },
-                  { i: '\uD83D\uDCCA', t: 'Real-Time Analytics', d: 'Watch responses come in with live dashboards' },
-                  { i: '\uD83D\uDEE1\uFE0F', t: 'Verified Respondents', d: 'Every response from an identity-verified citizen' },
-                  { i: '\uD83D\uDCC4', t: 'Export & Report', d: 'Download data in CSV/PDF for analysis' },
+                  { t: 'Targeted Surveys', d: 'Reach citizens by age, location, and demographics' },
+                  { t: 'Real-Time Analytics', d: 'Watch responses come in with live dashboards' },
+                  { t: 'Verified Respondents', d: 'Every response from an identity-verified citizen' },
+                  { t: 'Export & Report', d: 'Download data in CSV/PDF for analysis' },
                 ].map(function (item, i) {
+                  var orgIcons = [
+                    <svg key="o0" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={C.gold} strokeWidth="2"/><circle cx="12" cy="12" r="6" stroke={C.gold} strokeWidth="2" opacity="0.5"/><circle cx="12" cy="12" r="2" fill={C.gold}/></svg>,
+                    <svg key="o1" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke={C.gold} strokeWidth="2" strokeLinecap="round"/></svg>,
+                    <svg key="o2" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke={C.gold} strokeWidth="2"/><path d="M9 12l2 2 4-4" stroke={C.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    <svg key="o3" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke={C.gold} strokeWidth="2"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke={C.gold} strokeWidth="2" strokeLinecap="round"/></svg>,
+                  ];
                   return (
                     <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, alignItems: 'flex-start' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{item.i}</div>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{orgIcons[i]}</div>
                       <div>
                         <p style={{ fontSize: 15, fontWeight: 600, color: C.navy, margin: 0, fontFamily: body }}>{item.t}</p>
                         <p style={{ fontSize: 13, color: C.muted, margin: '2px 0 0', fontFamily: body }}>{item.d}</p>
@@ -922,7 +868,12 @@ export default function Landing() {
       <section style={{ padding: '100px 0', background: '#fff' }}>
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 28px', textAlign: 'center' }}>
           <Reveal>
-            <div style={{ width: 68, height: 68, borderRadius: 18, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, margin: '0 auto 28px', border: '1px solid ' + C.gold + '20' }}>{'\uD83D\uDDF3\uFE0F'}</div>
+            <div style={{ width: 68, height: 68, borderRadius: 18, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', border: '1px solid ' + C.gold + '20' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <path d="M9 12l2 2 4-4" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="10" stroke={C.gold} strokeWidth="2" opacity="0.3" />
+              </svg>
+            </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: C.navy, margin: '0 0 16px', fontFamily: heading }}>Ready to Make Your Voice Count?</h2>
             <p style={{ fontSize: 16, color: C.muted, margin: '0 0 36px', lineHeight: 1.7, fontFamily: body }}>Join a growing community of verified citizens shaping the future of civic engagement.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14 }}>
@@ -939,8 +890,11 @@ export default function Landing() {
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 32 }}>
             <div style={{ maxWidth: 280 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: '#fff', fontWeight: 800, fontSize: 11, fontFamily: body }}>CV</span></div>
-                <span style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: heading }}>CivicVerify</span>
+                <svg width="32" height="32" viewBox="0 0 38 38" fill="none" style={{ flexShrink: 0 }}>
+                  <rect width="38" height="38" rx="10" fill={C.gold} />
+                  <text x="19" y="24.5" textAnchor="middle" fill="#fff" fontFamily="'Playfair Display', Georgia, serif" fontSize="18" fontWeight="700">CV</text>
+                </svg>
+                <span style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: heading }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
               </div>
               <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.35)', lineHeight: 1.6, margin: 0, fontFamily: body }}>The trusted platform for verified civic engagement. Every voice matters when it's real.</p>
             </div>
@@ -953,7 +907,9 @@ export default function Landing() {
               </div>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'rgba(11,37,69,0.2)', margin: '0 0 14px', fontFamily: body }}>Company</p>
-                {['About', 'Privacy', 'Terms', 'Contact'].map(function (t) { return <span key={t} style={{ display: 'block', padding: '4px 0', fontSize: 13, color: 'rgba(11,37,69,0.35)', fontFamily: body }}>{t}</span>; })}
+                {[{ t: 'About', a: '/about' }, { t: 'Privacy', a: '/privacy' }, { t: 'Terms', a: '/terms' }, { t: 'Contact', a: '/contact' }].map(function (link) {
+                  return <button key={link.t} onClick={function () { navigate(link.a); }} style={{ display: 'block', background: 'none', border: 'none', padding: '4px 0', fontSize: 13, color: 'rgba(11,37,69,0.4)', cursor: 'pointer', fontFamily: body, textAlign: 'left' }}>{link.t}</button>;
+                })}
               </div>
             </div>
           </div>
@@ -990,7 +946,6 @@ export default function Landing() {
 
         .cv-btn-subtle:hover { background: rgba(11,37,69,0.02) !important; }
 
-        /* Responsive */
         .cv-hero-right { display: none; }
         .cv-nav-links { display: none !important; }
         .cv-org-right { display: none; }
@@ -1005,7 +960,6 @@ export default function Landing() {
           .cv-org-flex { flex-direction: row !important; }
         }
 
-        /* Smooth scrolling */
         html { scroll-behavior: smooth; }
       `}</style>
     </div>
