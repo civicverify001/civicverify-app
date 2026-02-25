@@ -246,7 +246,7 @@ export default function CitizenLayout() {
       </aside>
 
       {/* Main content */}
-      <div style={{ flex: 1, marginLeft: 0 }} className="cv-main">
+      <div style={{ flex: 1, marginLeft: 0, overflowX: 'hidden' }} className="cv-main">
         {/* Mobile header */}
         <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '12px 16px', alignItems: 'center', justifyContent: 'space-between' }}>
           <button onClick={function(){setOpen(true)}} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u2630'}</button>
@@ -259,7 +259,7 @@ export default function CitizenLayout() {
           <NotificationBell userId={user?.id} />
         </div>
 
-        <div className="cv-content-area" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto' }}>
+        <div className="cv-content-area" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', boxSizing: 'border-box', width: '100%' }}>
           <Outlet />
         </div>
       </div>
