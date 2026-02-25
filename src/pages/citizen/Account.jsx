@@ -1,4 +1,3 @@
-// src/pages/citizen/Account.jsx — Profile & Avatar Management
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
@@ -14,6 +13,36 @@ function initials(name) {
   var parts = name.trim().split(' ');
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.charAt(0).toUpperCase();
+}
+
+// Compress image to max 800x800 and JPEG quality 0.8 — keeps file well under 2MB
+function compressImage(file, maxSize, quality) {
+  maxSize = maxSize || 800;
+  quality = quality || 0.8;
+  return new Promise(function (resolve) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.width;
+        var h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function (blob) {
+          resolve(blob);
+        }, 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function CitizenAccount() {
@@ -63,32 +92,43 @@ export default function CitizenAccount() {
     setSuccess('');
   }
 
-  // ── Avatar Upload ──
+  // — Avatar Upload with auto-compression —
   async function handleAvatarUpload(e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
 
-    // Validate
+    // Validate type
     if (!file.type.startsWith('image/')) {
       setError('Please upload an image file (JPG, PNG, GIF)');
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Image must be under 2MB');
       return;
     }
 
     setUploading(true);
     setError('');
 
-    // Delete old avatar if exists
-    var oldPath = user.id + '/avatar';
-    await supabase.storage.from('avatars').remove([oldPath]);
+    // Auto-compress: resize to max 800px and convert to JPEG
+    var blob;
+    try {
+      blob = await compressImage(file, 800, 0.8);
+    } catch (err) {
+      setError('Could not process image. Try a different photo.');
+      setUploading(false);
+      return;
+    }
 
-    // Upload new avatar
-    var ext = file.name.split('.').pop();
-    var path = user.id + '/avatar.' + ext;
-    var { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    // Delete old avatar if exists
+    var { data: oldFiles } = await supabase.storage.from('avatars').list(user.id);
+    if (oldFiles && oldFiles.length > 0) {
+      var oldPaths = oldFiles.map(function (f) { return user.id + '/' + f.name; });
+      await supabase.storage.from('avatars').remove(oldPaths);
+    }
+
+    // Upload compressed avatar (always .jpg now)
+    var path = user.id + '/avatar.jpg';
+    var { error: uploadErr } = await supabase.storage.from('avatars').upload(path, blob, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    });
 
     if (uploadErr) {
       setError('Upload failed: ' + uploadErr.message);
@@ -111,7 +151,6 @@ export default function CitizenAccount() {
 
   async function removeAvatar() {
     setUploading(true);
-    // List and delete all files in user's avatar folder
     var { data: files } = await supabase.storage.from('avatars').list(user.id);
     if (files && files.length > 0) {
       var paths = files.map(function (f) { return user.id + '/' + f.name; });
@@ -124,7 +163,7 @@ export default function CitizenAccount() {
     setTimeout(function () { setSuccess(''); }, 3000);
   }
 
-  // ── Save Profile ──
+  // — Save Profile —
   async function saveProfile() {
     if (!form.full_name.trim()) return setError('Name is required');
     setSaving(true);
@@ -139,7 +178,7 @@ export default function CitizenAccount() {
     setTimeout(function () { setSuccess(''); }, 3000);
   }
 
-  // ── Change Password ──
+  // — Change Password —
   async function changePassword() {
     setPwError('');
     setPwSuccess(false);
@@ -170,7 +209,7 @@ export default function CitizenAccount() {
         <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: 0 }}>Manage your profile and settings</p>
       </div>
 
-      {/* ── Avatar Section ── */}
+      {/* Avatar Section */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: 28, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 24 }}>
         {/* Avatar circle */}
         <div style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
@@ -251,7 +290,7 @@ export default function CitizenAccount() {
             <button onClick={function () { fileRef.current && fileRef.current.click(); }}
               disabled={uploading}
               style={{
-                padding: '7px 14px', borderRadius: 8, border: '1px solid ' + C.light,
+                padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(11,37,69,0.1)',
                 background: '#fff', fontSize: 12, fontWeight: 600, color: C.navy,
                 cursor: 'pointer', fontFamily: body,
               }}>
@@ -268,11 +307,11 @@ export default function CitizenAccount() {
               </button>
             )}
           </div>
-          <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', margin: '8px 0 0' }}>JPG, PNG or GIF. Max 2MB.</p>
+          <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', margin: '8px 0 0' }}>JPG, PNG or GIF. Auto-compressed for you.</p>
         </div>
       </div>
 
-      {/* ── Profile Details ── */}
+      {/* Profile Details */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: 24, marginBottom: 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: '0 0 18px', fontFamily: body }}>Profile Details</h2>
 
@@ -309,7 +348,7 @@ export default function CitizenAccount() {
         </button>
       </div>
 
-      {/* ── Verification Status ── */}
+      {/* Verification Status */}
       <div style={{
         background: verified ? C.green + '08' : C.gold + '08',
         borderRadius: 16, border: '1px solid ' + (verified ? C.green : C.gold) + '20',
@@ -346,7 +385,7 @@ export default function CitizenAccount() {
         )}
       </div>
 
-      {/* ── Change Password ── */}
+      {/* Change Password */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: 24, marginBottom: 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: '0 0 18px', fontFamily: body }}>Change Password</h2>
 
@@ -377,13 +416,13 @@ export default function CitizenAccount() {
         </button>
       </div>
 
-      {/* ── Account Info ── */}
+      {/* Account Info */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: '0 0 14px', fontFamily: body }}>Account Info</h2>
         <div style={{ display: 'grid', gap: 10 }}>
           {[
-            { label: 'Account ID', value: user ? user.id.slice(0, 8) + '...' : '—' },
-            { label: 'Member Since', value: profile && profile.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—' },
+            { label: 'Account ID', value: user ? user.id.slice(0, 8) + '...' : '\u2014' },
+            { label: 'Member Since', value: profile && profile.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '\u2014' },
             { label: 'Account Type', value: 'Citizen' },
             { label: 'Identity', value: verified ? 'Verified' : 'Unverified' },
           ].map(function (item) {
