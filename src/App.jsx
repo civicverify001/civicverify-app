@@ -42,7 +42,7 @@ import OrgResults from './pages/org/Results'
 // Remaining placeholders
 import {
   AdminOrganizations, AdminSettings,
-  ForgotPassword, Contact, PublicSurvey, PublicResults
+  ForgotPassword, PublicSurvey, PublicResults
 } from './pages/Placeholders'
 
 import OrgBilling from './pages/org/Billing'
