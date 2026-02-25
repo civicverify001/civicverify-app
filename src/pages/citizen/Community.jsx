@@ -65,13 +65,20 @@ const initials = (name) =>
   (name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
-const Avatar = ({ name, size = 38, verified = false }) => (
+const Avatar = ({ name, size = 38, verified = false, avatarUrl = null }) => (
   <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+    {avatarUrl ? (
+      <img src={avatarUrl} alt={name || "User"} style={{
+        width: size, height: size, borderRadius: "50%",
+        border: "2px solid " + T.gold + "33",
+        objectFit: "cover", display: "block",
+      }} onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
+    ) : null}
     <div style={{
       width: size, height: size, borderRadius: "50%",
       background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)",
       border: "2px solid " + T.gold + "33",
-      display: "flex", alignItems: "center", justifyContent: "center",
+      display: avatarUrl ? "none" : "flex", alignItems: "center", justifyContent: "center",
       fontFamily: T.serif, fontWeight: 700, fontSize: size * 0.33, color: T.gold,
     }}>
       {initials(name)}
@@ -280,7 +287,7 @@ const Composer = ({ user, onPost }) => {
       <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)", borderRadius: "20px 20px 0 0" }} />
       <div style={{ padding: "16px 20px 14px" }}>
         <div style={{ display: "flex", gap: 12 }}>
-          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} />
+          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} avatarUrl={user?.avatar_url} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
               ref={textRef}
@@ -377,7 +384,7 @@ const Composer = ({ user, onPost }) => {
 // ── Single comment row ────────────────────────────────────────────────────────
 const CommentRow = ({ c }) => (
   <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
-    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} />
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} avatarUrl={c.users?.avatar_url} />
     <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
       <div style={{
         background: T.cream, borderRadius: "12px 12px 12px 3px",
@@ -567,7 +574,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
     setLoadingComments(true);
     const { data } = await supabase
       .from("community_post_comments")
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified, avatar_url)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     setComments(data || []);
@@ -599,7 +606,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
       content: reply.trim(),
       image_url: imageUrl,
       created_at: new Date().toISOString(),
-      users: { full_name: post._currentUserName, identity_verified: post._currentUserVerified },
+      users: { full_name: post._currentUserName, identity_verified: post._currentUserVerified, avatar_url: post._currentUserAvatarUrl },
     };
     setComments((prev) => [...prev, newComment]);
     setCommentCount((c) => c + 1);
@@ -629,7 +636,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
       <div style={{ padding: "18px 20px 14px" }}>
         {/* Author */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-          <Avatar name={post.author_name} size={44} verified={post.author_verified} />
+          <Avatar name={post.author_name} size={44} verified={post.author_verified} avatarUrl={post.author_avatar_url} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
               <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy }}>
@@ -875,7 +882,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from("survey_chat_messages")
-      .select("id, content, created_at, user_id, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, user_id, users:user_id(full_name, identity_verified, avatar_url)")
       .eq("survey_id", survey.id).order("created_at", { ascending: true }).limit(100);
     setMsgs(data || []);
     setLoading(false);
@@ -928,7 +935,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
           const name = msg.users?.full_name || "Citizen";
           return (
             <div key={msg.id} style={{ display: "flex", gap: 8, flexDirection: isMe ? "row-reverse" : "row", alignItems: "flex-end" }}>
-              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} />}
+              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} avatarUrl={msg.users?.avatar_url} />}
               <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 3 }}>
                 {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4 }}>{name}</span>}
                 <div style={{ padding: "10px 14px", background: isMe ? T.navy : "#fff", color: isMe ? T.cream : T.ink, borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontFamily: T.sans, fontSize: 14, lineHeight: 1.5, boxShadow: "0 1px 4px rgba(11,37,69,0.08)", border: isMe ? "none" : "1px solid " + T.border }}>
@@ -944,7 +951,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
 
       <div style={{ background: "#fff", borderTop: "1px solid " + T.border, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 10, padding: "10px 14px", alignItems: "flex-end" }}>
-          <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} />
+          <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} avatarUrl={currentUser?.avatar_url} />
             <div style={{ flex: 1, position: "relative" }}>
             <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} placeholder="Message the room..." style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none", boxSizing: "border-box" }} />
               <button ref={chatEmojiRef} onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
@@ -1002,7 +1009,7 @@ export default function Community() {
   };
 
   const fetchProfile = async () => {
-    const { data } = await supabase.from("users").select("id, full_name, identity_verified").eq("id", user.id).single();
+    const { data } = await supabase.from("users").select("id, full_name, identity_verified, avatar_url").eq("id", user.id).single();
     setCurrentUser(data);
   };
 
@@ -1010,7 +1017,7 @@ export default function Community() {
     const from = p * PAGE;
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified, avatar_url)")
       .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
     // Load this user's votes for these posts
     const ids = (data || []).map((x) => x.id);
@@ -1025,6 +1032,7 @@ export default function Community() {
       ...x,
       author_name: x.users?.full_name,
       author_verified: x.users?.identity_verified,
+      author_avatar_url: x.users?.avatar_url,
       linked_survey: x.linked_survey_data,
       my_vote: myVotes[x.id] || null,
     }));
@@ -1045,8 +1053,8 @@ export default function Community() {
   const handlePost = async (content, imageUrl) => {
     const { data, error } = await supabase.from("community_posts")
       .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 })
-      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified)").single();
-    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
+      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified, avatar_url)").single();
+    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_avatar_url: data.users?.avatar_url }, ...prev]);
   };
 
   const handleLike = async (postId, type, active, removingOpposite) => {
@@ -1070,7 +1078,7 @@ export default function Community() {
     const { data, error } = await supabase
       .from("community_post_comments")
       .insert(insertData)
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified, avatar_url)")
       .single();
     if (error) { console.error("Comment save error:", error); return null; }
     // Increment count in DB so it persists on refresh
@@ -1165,7 +1173,7 @@ export default function Community() {
               </div>
             ) : (
               <>
-                {posts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified}} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
+                {posts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified, _currentUserAvatarUrl: currentUser?.avatar_url}} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
                 {hasMore && (
                   <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}

@@ -15,8 +15,13 @@ function timeAgo(iso) {
   if (d < 86400) return Math.floor(d / 3600) + 'h ago';
   return Math.floor(d / 86400) + 'd ago';
 }
-function Avatar({ name, size }) {
+function Avatar({ name, size, avatarUrl }) {
   size = size || 30;
+  if (avatarUrl) {
+    return (
+      <img src={avatarUrl} alt={name || 'User'} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block', flexShrink: 0, border: '2px solid rgba(197,150,12,0.2)' }} onError={function(e) { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex'); }} />
+    );
+  }
   var initials = (name || '?').split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
   var cols = [C.navy, C.gold, C.green, C.purple, '#0891b2', '#b45309'];
   var col = cols[(initials.charCodeAt(0) || 0) % cols.length];
@@ -110,7 +115,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
       var userIds = [...new Set(allComments.map(function(c) { return c.user_id; }).filter(Boolean))];
       var profileMap = {};
       if (userIds.length) {
-        var pr = await supabase.from('users').select('id,full_name,identity_verified').in('id', userIds);
+        var pr = await supabase.from('users').select('id,full_name,identity_verified,avatar_url').in('id', userIds);
         (pr.data || []).forEach(function(p) { profileMap[p.id] = p; });
       }
       allComments = allComments.map(function(c) {
@@ -118,6 +123,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         return Object.assign({}, c, {
           author_name: p.full_name || 'Citizen',
           verified: !!(p.identity_verified),
+          author_avatar_url: p.avatar_url || null,
         });
       });
 
@@ -248,7 +254,7 @@ create index if not exists idx_dc_survey
                 var isOwn = currentUser && c.user_id === currentUser.id;
                 return (
                   <div key={c.id} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                    <Avatar name={c.author_name} size={30} />
+                    <Avatar name={c.author_name} size={30} avatarUrl={c.author_avatar_url} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ background: 'rgba(11,37,69,0.03)', borderRadius: 11, padding: '9px 13px', marginBottom: 4, border: '1px solid rgba(11,37,69,0.05)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -282,7 +288,7 @@ create index if not exists idx_dc_survey
 
             {/* Comment input */}
             <div style={{ padding: '8px 20px 16px', display: 'flex', gap: 9, alignItems: 'center' }}>
-              <Avatar name={currentProfile ? currentProfile.full_name : 'You'} size={28} />
+              <Avatar name={currentProfile ? currentProfile.full_name : 'You'} size={28} avatarUrl={currentProfile?.avatar_url} />
               <input
                 value={inputText}
                 onChange={function(e) { setNewComment(function(p) { return Object.assign({}, p, { [survey.id]: e.target.value }); }); }}
