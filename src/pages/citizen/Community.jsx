@@ -40,6 +40,8 @@ const ICONS = {
   x:        "M6 18L18 6M6 6l12 12",
   smile:    "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   poll:     "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+  follow:   "M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z",
+  check:    "M5 13l4 4L19 7",
 };
 
 // Emoji sets
@@ -113,6 +115,94 @@ const VerifiedBadge = () => (
     Verified
   </span>
 );
+
+// ── Follow Button ─────────────────────────────────────────────────────────────
+const FollowButton = ({ isFollowing, onToggle, isSelf }) => {
+  const [hov, setHov] = useState(false);
+  if (isSelf) return null;
+  return (
+    <button onClick={(e) => { e.stopPropagation(); onToggle(); }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "3px 10px", borderRadius: 20, cursor: "pointer",
+        fontSize: 11, fontWeight: 700, fontFamily: T.sans,
+        transition: "all 0.2s", flexShrink: 0,
+        background: isFollowing ? (hov ? "#fee2e2" : T.navy + "08") : (hov ? T.gold : T.navy),
+        color: isFollowing ? (hov ? "#e53e3e" : T.muted) : "#fff",
+        border: "1px solid " + (isFollowing ? (hov ? "#fca5a5" : T.border) : "transparent"),
+      }}>
+      {isFollowing
+        ? (hov ? <><Ico d={ICONS.x} size={10} /> Unfollow</> : <><Ico d={ICONS.check} size={10} /> Following</>)
+        : <><Ico d={ICONS.follow} size={10} /> Follow</>
+      }
+    </button>
+  );
+};
+
+// ── Citizen Poll Card ─────────────────────────────────────────────────────────
+const PollCard = ({ poll, userId, onVote }) => {
+  const [voted, setVoted] = useState(poll.my_vote_index);
+  const [votes, setVotes] = useState(poll.vote_counts || []);
+  const [total, setTotal] = useState(poll.total_votes || 0);
+  const options = typeof poll.options === "string" ? JSON.parse(poll.options) : (poll.options || []);
+  const expired = poll.expires_at && new Date(poll.expires_at) < new Date();
+  const showResults = voted !== null && voted !== undefined || expired;
+
+  const castVote = async (idx) => {
+    if (voted !== null && voted !== undefined) return;
+    setVoted(idx);
+    const newVotes = votes.map((v, i) => i === idx ? v + 1 : v);
+    setVotes(newVotes);
+    setTotal((t) => t + 1);
+    if (onVote) onVote(poll.id, idx);
+  };
+
+  return (
+    <div style={{ background: T.cream, borderRadius: 14, padding: "14px 16px", border: "1px solid " + T.border, marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <Ico d={ICONS.poll} size={14} />
+        <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Citizen Poll</span>
+        {expired && <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", background: "#f1f5f9", padding: "2px 8px", borderRadius: 10 }}>Ended</span>}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {options.map((opt, i) => {
+          const count = votes[i] || 0;
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          const isMyVote = voted === i;
+          return (
+            <button key={i} onClick={() => castVote(i)} disabled={showResults}
+              style={{
+                position: "relative", width: "100%", textAlign: "left",
+                padding: "10px 14px", borderRadius: 10, border: "1.5px solid " + (isMyVote ? T.gold : T.border),
+                background: "#fff", cursor: showResults ? "default" : "pointer",
+                fontFamily: T.sans, fontSize: 13, fontWeight: isMyVote ? 700 : 500,
+                color: T.navy, overflow: "hidden", transition: "all 0.2s",
+              }}>
+              {showResults && (
+                <div style={{
+                  position: "absolute", top: 0, left: 0, height: "100%",
+                  width: pct + "%", background: isMyVote ? T.gold + "20" : T.navy + "08",
+                  borderRadius: 8, transition: "width 0.5s ease",
+                }} />
+              )}
+              <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>{isMyVote ? "✓ " : ""}{opt}</span>
+                {showResults && <span style={{ fontSize: 12, fontWeight: 700, color: isMyVote ? T.gold : T.muted }}>{pct}%</span>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{total} vote{total !== 1 ? "s" : ""}</span>
+        {poll.expires_at && !expired && (
+          <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>Ends {new Date(poll.expires_at).toLocaleDateString()}</span>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // ── Emoji Picker ──────────────────────────────────────────────────────────────
 const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
@@ -195,7 +285,7 @@ const ReactionBar = ({ reactions, onReact }) => {
         <button key={emoji} onClick={() => onReact(emoji)} style={{
           display: "inline-flex", alignItems: "center", gap: 4,
           padding: "3px 8px", borderRadius: 20, border: "1px solid " + T.border,
-          background: T.cream, cursor: "pointer", fontSize: 14,
+          background: T.cream, cursor: "pointer",
           fontFamily: T.sans, fontWeight: 600, color: T.navy, fontSize: 12,
           transition: "all 0.15s",
         }}>
@@ -227,13 +317,16 @@ const ReactionBar = ({ reactions, onReact }) => {
 };
 
 // ── Post Composer ─────────────────────────────────────────────────────────────
-const Composer = ({ user, onPost }) => {
+const Composer = ({ user, onPost, onCreatePoll }) => {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [showPollForm, setShowPollForm] = useState(false);
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [pollDays, setPollDays] = useState(3);
   const fileRef = useRef(null);
   const textRef = useRef(null);
   const emojiButtonRef = useRef(null);
@@ -262,7 +355,7 @@ const Composer = ({ user, onPost }) => {
   const removeImage = () => { setImageFile(null); setImagePreview(null); };
 
   const post = async () => {
-    if ((!text.trim() && !imageFile) || busy) return;
+    if ((!text.trim() && !imageFile && !showPollForm) || busy) return;
     setBusy(true);
     let imageUrl = null;
     if (imageFile) {
@@ -277,15 +370,26 @@ const Composer = ({ user, onPost }) => {
       }
       setUploading(false);
     }
-    await onPost(text.trim(), imageUrl);
+    if (showPollForm && onCreatePoll) {
+      const validOpts = pollOptions.filter((o) => o.trim());
+      if (validOpts.length >= 2 && text.trim()) {
+        const expires = new Date();
+        expires.setDate(expires.getDate() + pollDays);
+        await onCreatePoll(text.trim(), validOpts, expires.toISOString(), imageUrl);
+      }
+    } else {
+      await onPost(text.trim(), imageUrl);
+    }
     setText("");
     setImageFile(null);
     setImagePreview(null);
+    setShowPollForm(false);
+    setPollOptions(["", ""]);
     setBusy(false);
   };
 
   const left = MAX - text.length;
-  const hasContent = text.trim() || imageFile;
+  const hasContent = text.trim() || imageFile || showPollForm;
 
   return (
     <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, boxShadow: "0 2px 16px rgba(11,37,69,0.08)", overflow: "visible" }}>
@@ -298,7 +402,7 @@ const Composer = ({ user, onPost }) => {
               ref={textRef}
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, MAX))}
-              placeholder="What's on your civic mind? Share a thought, ask a question..."
+              placeholder={showPollForm ? "Ask your poll question..." : "What's on your civic mind? Share a thought, ask a question..."}
               rows={3}
               style={{
                 width: "100%", resize: "none", border: "none", outline: "none",
@@ -318,6 +422,37 @@ const Composer = ({ user, onPost }) => {
                 }}>
                   <Ico d={ICONS.x} size={12} />
                 </button>
+              </div>
+            )}
+
+            {/* Poll form */}
+            {showPollForm && (
+              <div style={{ marginBottom: 12, padding: "12px 14px", background: T.cream, borderRadius: 14, border: "1px solid " + T.border }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 700, color: T.navy, display: "flex", alignItems: "center", gap: 5 }}>
+                    <Ico d={ICONS.poll} size={14} /> Create Poll
+                  </span>
+                  <button onClick={() => { setShowPollForm(false); setPollOptions(["", ""]); }} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 14 }}>✕</button>
+                </div>
+                {pollOptions.map((opt, i) => (
+                  <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
+                    <input value={opt} onChange={(e) => { const next = [...pollOptions]; next[i] = e.target.value; setPollOptions(next); }}
+                      placeholder={"Option " + (i + 1)}
+                      style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 13, color: T.navy, outline: "none", background: "#fff" }} />
+                    {pollOptions.length > 2 && (
+                      <button onClick={() => setPollOptions((p) => p.filter((_, j) => j !== i))} style={{ width: 28, height: 28, borderRadius: 6, background: "none", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted, fontSize: 12 }}>✕</button>
+                    )}
+                  </div>
+                ))}
+                {pollOptions.length < 5 && (
+                  <button onClick={() => setPollOptions((p) => [...p, ""])} style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.gold, background: "none", border: "none", cursor: "pointer", padding: "4px 0", marginBottom: 8 }}>+ Add option</button>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>Expires in</span>
+                  <select value={pollDays} onChange={(e) => setPollDays(Number(e.target.value))} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, color: T.navy }}>
+                    <option value={1}>1 day</option><option value={3}>3 days</option><option value={7}>7 days</option><option value={14}>14 days</option>
+                  </select>
+                </div>
               </div>
             )}
 
@@ -349,6 +484,20 @@ const Composer = ({ user, onPost }) => {
                   {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={emojiButtonRef} />}
                 </div>
 
+                {/* Poll button */}
+                <button onClick={() => setShowPollForm(!showPollForm)} style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: showPollForm ? T.gold + "15" : "none",
+                  border: "1px solid " + (showPollForm ? T.gold + "44" : T.border), cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: showPollForm ? T.gold : T.muted, transition: "all 0.15s",
+                }}
+                  onMouseEnter={(e) => { if (!showPollForm) { e.currentTarget.style.background = T.cream; e.currentTarget.style.color = T.navy; } }}
+                  onMouseLeave={(e) => { if (!showPollForm) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; } }}
+                >
+                  <Ico d={ICONS.poll} size={16} />
+                </button>
+
                 {/* Quick emojis */}
                 <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>
                   {["❤️","👍","🔥","🎉"].map((e) => (
@@ -375,7 +524,7 @@ const Composer = ({ user, onPost }) => {
                   cursor: hasContent ? "pointer" : "default", transition: "all 0.2s",
                   boxShadow: hasContent ? "0 2px 8px " + T.navy + "40" : "none",
                 }}>
-                  {uploading ? "Uploading..." : busy ? "Posting..." : "Post"}
+                  {uploading ? "Uploading..." : busy ? "Posting..." : showPollForm ? "Post Poll" : "Post"}
                 </button>
               </div>
             </div>
@@ -541,7 +690,9 @@ const ReplyBox = ({ postId, onComment }) => {
     </div>
   );
 };
-const PostCard = ({ post, onLike, onComment, onReact, currentUserId, onDelete, onEdit, editingPost, setEditingPost }) => {
+
+// ── PostCard ──────────────────────────────────────────────────────────────────
+const PostCard = ({ post, onLike, onComment, onReact, currentUserId, onDelete, onEdit, editingPost, setEditingPost, onFollow, onPollVote }) => {
   const [liked, setLiked] = useState(post.my_vote === "like");
   const [likes, setLikes] = useState(post.likes_count || 0);
   const [disliked, setDisliked] = useState(post.my_vote === "dislike");
@@ -666,6 +817,10 @@ const PostCard = ({ post, onLike, onComment, onReact, currentUserId, onDelete, o
                   <Ico d={ICONS.hash} size={8} /> {post.survey_tag}
                 </span>
               )}
+              {/* Follow button */}
+              {onFollow && post.user_id && (
+                <FollowButton isFollowing={post.is_following} onToggle={() => onFollow(post.user_id)} isSelf={post.user_id === currentUserId} />
+              )}
             </div>
             <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{timeAgo(post.created_at)}</span>
           </div>
@@ -778,6 +933,9 @@ const PostCard = ({ post, onLike, onComment, onReact, currentUserId, onDelete, o
           </div>
         )}
 
+        {/* Citizen Poll */}
+        {post.poll_data && <PollCard poll={post.poll_data} userId={currentUserId} onVote={onPollVote} />}
+
         {/* Reactions */}
         {(post.reactions && post.reactions.length > 0) && (
           <div style={{ marginBottom: 10 }}>
@@ -812,7 +970,7 @@ const PostCard = ({ post, onLike, onComment, onReact, currentUserId, onDelete, o
               cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
               color: liked ? "#e53e3e" : T.muted, transition: "all 0.15s",
             }}>
-              <span style={{ fontSize: 15 }}>{liked ? "👍" : "👍"}</span>
+              <span style={{ fontSize: 15 }}>👍</span>
               <span>{likes > 0 ? likes : ""}</span>
             </button>
 
@@ -1111,13 +1269,15 @@ export default function Community() {
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingPost, setEditingPost] = useState(null);
+  const [followingMap, setFollowingMap] = useState({});
+  const [feedMode, setFeedMode] = useState("trending");
   const PAGE = 15;
 
   useEffect(() => { if (user?.id) init(); }, [user?.id]);
 
   const init = async () => {
     setLoading(true);
-    await Promise.all([fetchProfile(), fetchPosts(0), fetchSurveys()]);
+    await Promise.all([fetchProfile(), fetchFollowing(), fetchPosts(0), fetchSurveys()]);
     setLoading(false);
   };
 
@@ -1126,12 +1286,41 @@ export default function Community() {
     setCurrentUser(data);
   };
 
-  const fetchPosts = async (p) => {
+  const fetchFollowing = async () => {
+    const { data } = await supabase.from("user_follows").select("following_id").eq("follower_id", user.id);
+    const map = {};
+    (data || []).forEach((f) => { map[f.following_id] = true; });
+    setFollowingMap(map);
+  };
+
+  const fetchPosts = async (p, mode) => {
+    const currentMode = mode || feedMode;
     const from = p * PAGE;
-    const { data } = await supabase
-      .from("community_posts")
-      .select("id, user_id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified, avatar_url)")
-      .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+    let data = null;
+
+    // Try ranked feed for trending mode
+    if (currentMode === "trending") {
+      const r = await supabase.rpc("get_ranked_feed", { p_user_id: user.id, p_limit: PAGE, p_offset: from });
+      if (!r.error && r.data && r.data.length) data = r.data;
+    }
+
+    // Fallback / latest mode: simple chronological query
+    if (!data) {
+      const r = await supabase
+        .from("community_posts")
+        .select("id, user_id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, poll_id, linked_survey_data, users:user_id(full_name, identity_verified, avatar_url)")
+        .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+      data = (r.data || []).map((x) => ({
+        ...x, author_name: x.users?.full_name, author_verified: x.users?.identity_verified,
+        author_avatar: x.users?.avatar_url,
+      }));
+    }
+
+    // Filter for following mode
+    if (currentMode === "following") {
+      data = data.filter((x) => followingMap[x.user_id]);
+    }
+
     // Load this user's votes for these posts
     const ids = (data || []).map((x) => x.id);
     let myVotes = {};
@@ -1141,13 +1330,33 @@ export default function Community() {
         .select("post_id, type").eq("user_id", user.id).in("post_id", ids);
       (votes || []).forEach((v) => { myVotes[v.post_id] = v.type; });
     }
+
+    // Load polls attached to posts
+    const pollIds = (data || []).map((x) => x.poll_id).filter(Boolean);
+    let pollMap = {};
+    if (pollIds.length) {
+      const { data: polls } = await supabase.from("citizen_polls").select("*").in("id", pollIds);
+      const { data: allVotes } = await supabase.from("citizen_poll_votes").select("poll_id, option_index").in("poll_id", pollIds);
+      const { data: myPollVotes } = await supabase.from("citizen_poll_votes").select("poll_id, option_index").eq("user_id", user.id).in("poll_id", pollIds);
+      const myPollVoteMap = {};
+      (myPollVotes || []).forEach((v) => { myPollVoteMap[v.poll_id] = v.option_index; });
+      (polls || []).forEach((poll) => {
+        const opts = typeof poll.options === "string" ? JSON.parse(poll.options) : (poll.options || []);
+        const voteCounts = opts.map(() => 0);
+        (allVotes || []).filter((v) => v.poll_id === poll.id).forEach((v) => { voteCounts[v.option_index] = (voteCounts[v.option_index] || 0) + 1; });
+        pollMap[poll.id] = { ...poll, options: opts, vote_counts: voteCounts, my_vote_index: myPollVoteMap[poll.id] !== undefined ? myPollVoteMap[poll.id] : null };
+      });
+    }
+
     const shaped = (data || []).map((x) => ({
       ...x,
-      author_name: x.users?.full_name,
-      author_verified: x.users?.identity_verified,
-      author_avatar: x.users?.avatar_url,
+      author_name: x.author_name || x.users?.full_name,
+      author_verified: x.author_verified !== undefined ? x.author_verified : x.users?.identity_verified,
+      author_avatar: x.author_avatar || x.users?.avatar_url,
       linked_survey: x.linked_survey_data,
       my_vote: myVotes[x.id] || null,
+      is_following: followingMap[x.user_id] || false,
+      poll_data: x.poll_id ? pollMap[x.poll_id] || null : null,
     }));
     if (p === 0) setPosts(shaped); else setPosts((prev) => [...prev, ...shaped]);
     setHasMore((data || []).length === PAGE);
@@ -1163,11 +1372,56 @@ export default function Community() {
     setSurveys(data.map((s) => ({ ...s, participant_count: s.participant_count?.[0]?.count || 0, message_count: cmap[s.id] || 0 })));
   };
 
+  // Refetch when feed mode changes
+  const changeFeedMode = (mode) => {
+    setFeedMode(mode);
+    fetchPosts(0, mode);
+  };
+
+  // ── Follow ────────────────────────────────────────────────────────────────
+  const handleFollow = async (targetUserId) => {
+    if (!user?.id || targetUserId === user.id) return;
+    const isFollowing = followingMap[targetUserId];
+    if (isFollowing) {
+      await supabase.from("user_follows").delete().eq("follower_id", user.id).eq("following_id", targetUserId);
+      setFollowingMap((m) => { const next = { ...m }; delete next[targetUserId]; return next; });
+    } else {
+      await supabase.from("user_follows").insert({ follower_id: user.id, following_id: targetUserId });
+      setFollowingMap((m) => ({ ...m, [targetUserId]: true }));
+    }
+    // Sync counts (silent fail if RPC doesn't exist yet)
+    try { await supabase.rpc("sync_follow_counts", { p_user_id: targetUserId }); } catch(e) {}
+    try { await supabase.rpc("sync_follow_counts", { p_user_id: user.id }); } catch(e) {}
+    // Update posts in-place
+    setPosts((prev) => prev.map((p) => p.user_id === targetUserId ? { ...p, is_following: !isFollowing } : p));
+  };
+
+  // ── Create Poll ───────────────────────────────────────────────────────────
+  const handleCreatePoll = async (question, options, expiresAt, imageUrl) => {
+    const { data: poll, error } = await supabase.from("citizen_polls")
+      .insert({ user_id: user.id, question, options: JSON.stringify(options), expires_at: expiresAt })
+      .select("id").single();
+    if (error || !poll) return;
+    const { data: postData } = await supabase.from("community_posts")
+      .insert({ user_id: user.id, content: question, image_url: imageUrl, poll_id: poll.id, likes_count: 0, comments_count: 0 })
+      .select("id, user_id, content, created_at, likes_count, comments_count, image_url, poll_id, users:user_id(full_name, identity_verified, avatar_url)").single();
+    if (postData) {
+      const pollData = { id: poll.id, question, options, total_votes: 0, vote_counts: options.map(() => 0), my_vote_index: null, expires_at: expiresAt };
+      setPosts((prev) => [{ ...postData, author_name: postData.users?.full_name, author_verified: postData.users?.identity_verified, author_avatar: postData.users?.avatar_url, is_following: false, poll_data: pollData }, ...prev]);
+    }
+  };
+
+  // ── Vote on Poll ──────────────────────────────────────────────────────────
+  const handlePollVote = async (pollId, optionIndex) => {
+    await supabase.from("citizen_poll_votes").insert({ poll_id: pollId, user_id: user.id, option_index: optionIndex });
+    try { await supabase.rpc("sync_poll_votes", { p_poll_id: pollId }); } catch(e) {}
+  };
+
   const handlePost = async (content, imageUrl) => {
     const { data, error } = await supabase.from("community_posts")
       .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 })
-      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified)").single();
-    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
+      .select("id, user_id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified, avatar_url)").single();
+    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_avatar: data.users?.avatar_url, is_following: false }, ...prev]);
   };
 
   const handleLike = async (postId, type, active, removingOpposite) => {
@@ -1302,7 +1556,24 @@ export default function Community() {
       {/* Feed */}
       {tab === "feed" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Composer user={currentUser} onPost={handlePost} />
+          <Composer user={currentUser} onPost={handlePost} onCreatePoll={handleCreatePoll} />
+
+          {/* Feed mode selector */}
+          <div style={{ display: "flex", gap: 6, padding: "2px", background: T.navy + "06", borderRadius: 12, border: "1px solid " + T.border }}>
+            {[
+              { id: "trending", label: "🔥 Trending" },
+              { id: "following", label: "👥 Following" },
+              { id: "latest", label: "🕐 Latest" },
+            ].map((m) => (
+              <button key={m.id} onClick={() => changeFeedMode(m.id)} style={{
+                flex: 1, padding: "8px 10px", borderRadius: 10, border: "none", cursor: "pointer",
+                fontFamily: T.sans, fontSize: 12, fontWeight: 600, transition: "all 0.2s",
+                background: feedMode === m.id ? "#fff" : "transparent",
+                color: feedMode === m.id ? T.navy : T.muted,
+                boxShadow: feedMode === m.id ? "0 1px 4px rgba(11,37,69,0.08)" : "none",
+              }}>{m.label}</button>
+            ))}
+          </div>
 
           {/* Search bar */}
           <div style={{ position: "relative" }}>
@@ -1337,13 +1608,17 @@ export default function Community() {
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
             filteredPosts.length === 0 ? (
               <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>{searchQuery ? "🔍" : "💬"}</div>
-                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>{searchQuery ? "No matching posts" : "No posts yet"}</p>
-                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>{searchQuery ? "Try a different search term." : "Be the first to share a civic thought with your community."}</p>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>{searchQuery ? "🔍" : feedMode === "following" ? "👥" : "💬"}</div>
+                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>
+                  {searchQuery ? "No matching posts" : feedMode === "following" ? "No posts from people you follow" : "No posts yet"}
+                </p>
+                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>
+                  {searchQuery ? "Try a different search term." : feedMode === "following" ? "Follow citizens to see their posts here." : "Be the first to share a civic thought with your community."}
+                </p>
               </div>
             ) : (
               <>
-                {filteredPosts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified, _currentUserAvatar: currentUser?.avatar_url}} currentUserId={currentUser?.id} onLike={handleLike} onComment={handleComment} onReact={handleReact} onDelete={handleDelete} onEdit={handleEdit} editingPost={editingPost} setEditingPost={setEditingPost} />)}
+                {filteredPosts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified, _currentUserAvatar: currentUser?.avatar_url}} currentUserId={currentUser?.id} onLike={handleLike} onComment={handleComment} onReact={handleReact} onDelete={handleDelete} onEdit={handleEdit} editingPost={editingPost} setEditingPost={setEditingPost} onFollow={handleFollow} onPollVote={handlePollVote} />)}
                 {hasMore && (
                   <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
