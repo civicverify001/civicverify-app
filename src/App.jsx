@@ -3,7 +3,8 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 
 // Public pages
 import Landing from './pages/public/Landing' 
-import Contact from './pages/public/Contact' import ScrollToTop from './components/ScrollToTop'
+import Contact from './pages/public/Contact' 
+import ScrollToTop from './components/ScrollToTop'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
 import About from './pages/public/About'
