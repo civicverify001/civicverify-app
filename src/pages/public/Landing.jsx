@@ -566,9 +566,17 @@ export default function Landing() {
         transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function () { window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <img src="/civicverifyicon.png" alt="CivicVerify" style={{ width: 36, height: 36, borderRadius: 10 }} />
-            <span style={{ fontSize: 18, fontWeight: 700, color: scrolled ? C.navy : '#fff', fontFamily: heading, transition: 'color 0.3s' }}>CivicVerify</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={function () { window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none" style={{ flexShrink: 0 }}>
+              <rect width="38" height="38" rx="10" fill={C.gold} />
+              <text x="19" y="24.5" textAnchor="middle" fill="#fff" fontFamily="'Playfair Display', Georgia, serif" fontSize="18" fontWeight="700">CV</text>
+              <path d="M28 10 L30 12 L26 16" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontSize: 19, fontWeight: 700, color: scrolled ? C.navy : '#fff', fontFamily: heading, transition: 'color 0.3s', letterSpacing: '-0.01em' }}>
+                Civic<span style={{ color: C.gold }}>Verify</span>
+              </span>
+            </div>
           </div>
           <div style={{ display: 'none', alignItems: 'center', gap: 28 }} className="cv-nav-links">
             {['How It Works', 'Live Polls', 'Community', 'For Organizations'].map(function (item) {
@@ -937,8 +945,11 @@ export default function Landing() {
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 32 }}>
             <div style={{ maxWidth: 280 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, overflow: 'hidden' }}><img src="/civicverifyicon.png" alt="CivicVerify" style={{ width: 32, height: 32 }} /></div>
-                <span style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: heading }}>CivicVerify</span>
+                <svg width="32" height="32" viewBox="0 0 38 38" fill="none" style={{ flexShrink: 0 }}>
+                  <rect width="38" height="38" rx="10" fill={C.gold} />
+                  <text x="19" y="24.5" textAnchor="middle" fill="#fff" fontFamily="'Playfair Display', Georgia, serif" fontSize="18" fontWeight="700">CV</text>
+                </svg>
+                <span style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: heading }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
               </div>
               <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.35)', lineHeight: 1.6, margin: 0, fontFamily: body }}>The trusted platform for verified civic engagement. Every voice matters when it's real.</p>
             </div>
