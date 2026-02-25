@@ -32,6 +32,10 @@ const ICONS = {
   trending: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
   users:    "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
   back:     "M15 18l-6-6 6-6",
+  search:   "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  edit:     "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
+  trash:    "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16",
+  more:     "M12 5v.01M12 12v.01M12 19v.01",
   image:    "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
   x:        "M6 18L18 6M6 6l12 12",
   smile:    "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
@@ -65,20 +69,13 @@ const initials = (name) =>
   (name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
-const Avatar = ({ name, size = 38, verified = false, avatarUrl = null }) => (
+const Avatar = ({ name, size = 38, verified = false }) => (
   <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-    {avatarUrl ? (
-      <img src={avatarUrl} alt={name || "User"} style={{
-        width: size, height: size, borderRadius: "50%",
-        border: "2px solid " + T.gold + "33",
-        objectFit: "cover", display: "block",
-      }} onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
-    ) : null}
     <div style={{
       width: size, height: size, borderRadius: "50%",
       background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)",
       border: "2px solid " + T.gold + "33",
-      display: avatarUrl ? "none" : "flex", alignItems: "center", justifyContent: "center",
+      display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: T.serif, fontWeight: 700, fontSize: size * 0.33, color: T.gold,
     }}>
       {initials(name)}
@@ -287,7 +284,7 @@ const Composer = ({ user, onPost }) => {
       <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)", borderRadius: "20px 20px 0 0" }} />
       <div style={{ padding: "16px 20px 14px" }}>
         <div style={{ display: "flex", gap: 12 }}>
-          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} avatarUrl={user?.avatar_url} />
+          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
               ref={textRef}
@@ -384,7 +381,7 @@ const Composer = ({ user, onPost }) => {
 // ── Single comment row ────────────────────────────────────────────────────────
 const CommentRow = ({ c }) => (
   <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
-    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} avatarUrl={c.users?.avatar_url} />
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} />
     <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
       <div style={{
         background: T.cream, borderRadius: "12px 12px 12px 3px",
@@ -536,7 +533,7 @@ const ReplyBox = ({ postId, onComment }) => {
     </div>
   );
 };
-const PostCard = ({ post, onLike, onComment, onReact }) => {
+const PostCard = ({ post, onLike, onComment, onReact, currentUserId, onDelete, onEdit, editingPost, setEditingPost }) => {
   const [liked, setLiked] = useState(post.my_vote === "like");
   const [likes, setLikes] = useState(post.likes_count || 0);
   const [disliked, setDisliked] = useState(post.my_vote === "dislike");
@@ -550,9 +547,22 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentCount, setCommentCount] = useState(post.comments_count || 0);
+  const [showMenu, setShowMenu] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editText, setEditText] = useState(post.content || "");
+  const menuRef = useRef(null);
   const replyRef = useRef(null);
   const replyFileRef = useRef(null);
   const replyEmojiRef = useRef(null);
+  const isOwner = post.user_id === currentUserId;
+  const isEditing = editingPost === post.id;
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [showMenu]);
 
   const toggleLike = async () => {
     const next = !liked;
@@ -574,7 +584,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
     setLoadingComments(true);
     const { data } = await supabase
       .from("community_post_comments")
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified, avatar_url)")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     setComments(data || []);
@@ -606,7 +616,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
       content: reply.trim(),
       image_url: imageUrl,
       created_at: new Date().toISOString(),
-      users: { full_name: post._currentUserName, identity_verified: post._currentUserVerified, avatar_url: post._currentUserAvatarUrl },
+      users: { full_name: post._currentUserName, identity_verified: post._currentUserVerified },
     };
     setComments((prev) => [...prev, newComment]);
     setCommentCount((c) => c + 1);
@@ -636,7 +646,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
       <div style={{ padding: "18px 20px 14px" }}>
         {/* Author */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-          <Avatar name={post.author_name} size={44} verified={post.author_verified} avatarUrl={post.author_avatar_url} />
+          <Avatar name={post.author_name} size={44} verified={post.author_verified} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
               <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy }}>
@@ -651,14 +661,107 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
             </div>
             <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{timeAgo(post.created_at)}</span>
           </div>
+          {/* Three-dot menu for own posts */}
+          {isOwner && (
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button onClick={() => { setShowMenu(!showMenu); setConfirmDelete(false); }} style={{
+                width: 32, height: 32, borderRadius: 8, background: showMenu ? T.navy + "08" : "transparent",
+                border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                color: T.muted, transition: "all 0.15s",
+              }}
+                onMouseEnter={(e) => { if (!showMenu) e.currentTarget.style.background = T.cream; }}
+                onMouseLeave={(e) => { if (!showMenu) e.currentTarget.style.background = "transparent"; }}
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                </svg>
+              </button>
+              {showMenu && (
+                <div style={{
+                  position: "absolute", top: "100%", right: 0, marginTop: 4, zIndex: 50,
+                  background: "#fff", borderRadius: 12, border: "1px solid " + T.border,
+                  boxShadow: "0 8px 30px rgba(11,37,69,0.15)", overflow: "hidden", minWidth: 160,
+                  animation: "fadeIn 0.15s ease",
+                }}>
+                  {!confirmDelete ? (
+                    <>
+                      <button onClick={() => { setEditingPost(post.id); setEditText(post.content || ""); setShowMenu(false); }} style={{
+                        width: "100%", padding: "10px 14px", background: "none", border: "none",
+                        cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                        fontFamily: T.sans, fontSize: 13, fontWeight: 500, color: T.navy, transition: "background 0.1s",
+                      }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                      >
+                        <Ico d={ICONS.edit} size={14} /> Edit post
+                      </button>
+                      <div style={{ height: 1, background: T.border }} />
+                      <button onClick={() => setConfirmDelete(true)} style={{
+                        width: "100%", padding: "10px 14px", background: "none", border: "none",
+                        cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                        fontFamily: T.sans, fontSize: 13, fontWeight: 500, color: "#e53e3e", transition: "background 0.1s",
+                      }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                      >
+                        <Ico d={ICONS.trash} size={14} /> Delete post
+                      </button>
+                    </>
+                  ) : (
+                    <div style={{ padding: "12px 14px" }}>
+                      <p style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.navy, margin: "0 0 10px" }}>Delete this post?</p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => { onDelete(post.id); setShowMenu(false); }} style={{
+                          flex: 1, padding: "7px 12px", borderRadius: 8, background: "#e53e3e",
+                          border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12,
+                          fontWeight: 700, color: "#fff",
+                        }}>Delete</button>
+                        <button onClick={() => setConfirmDelete(false)} style={{
+                          flex: 1, padding: "7px 12px", borderRadius: 8, background: T.navy + "08",
+                          border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12,
+                          fontWeight: 600, color: T.navy,
+                        }}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
-        {post.content && (
+        {isEditing ? (
+          <div style={{ marginBottom: 12 }}>
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value.slice(0, 280))}
+              rows={3}
+              style={{
+                width: "100%", padding: "10px 12px", borderRadius: 12,
+                border: "1px solid " + T.gold + "44", background: T.cream,
+                fontFamily: T.sans, fontSize: 15, lineHeight: 1.65, color: T.ink,
+                outline: "none", resize: "none", boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 8, justifyContent: "flex-end", alignItems: "center" }}>
+              <span style={{ fontSize: 11, fontFamily: T.sans, color: T.muted }}>{280 - editText.length}</span>
+              <button onClick={() => setEditingPost(null)} style={{
+                padding: "6px 14px", borderRadius: 8, background: T.navy + "08",
+                border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.navy,
+              }}>Cancel</button>
+              <button onClick={() => onEdit(post.id, editText)} disabled={!editText.trim()} style={{
+                padding: "6px 14px", borderRadius: 8, background: T.navy,
+                border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700, color: T.gold,
+                opacity: editText.trim() ? 1 : 0.5,
+              }}>Save</button>
+            </div>
+          </div>
+        ) : post.content ? (
           <p style={{ fontFamily: T.sans, fontSize: 15, lineHeight: 1.65, color: T.ink, margin: "0 0 12px" }}>
             {post.content}
           </p>
-        )}
+        ) : null}
 
         {/* Image */}
         {post.image_url && (
@@ -882,7 +985,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from("survey_chat_messages")
-      .select("id, content, created_at, user_id, users:user_id(full_name, identity_verified, avatar_url)")
+      .select("id, content, created_at, user_id, users:user_id(full_name, identity_verified)")
       .eq("survey_id", survey.id).order("created_at", { ascending: true }).limit(100);
     setMsgs(data || []);
     setLoading(false);
@@ -935,7 +1038,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
           const name = msg.users?.full_name || "Citizen";
           return (
             <div key={msg.id} style={{ display: "flex", gap: 8, flexDirection: isMe ? "row-reverse" : "row", alignItems: "flex-end" }}>
-              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} avatarUrl={msg.users?.avatar_url} />}
+              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} />}
               <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 3 }}>
                 {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4 }}>{name}</span>}
                 <div style={{ padding: "10px 14px", background: isMe ? T.navy : "#fff", color: isMe ? T.cream : T.ink, borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontFamily: T.sans, fontSize: 14, lineHeight: 1.5, boxShadow: "0 1px 4px rgba(11,37,69,0.08)", border: isMe ? "none" : "1px solid " + T.border }}>
@@ -951,7 +1054,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
 
       <div style={{ background: "#fff", borderTop: "1px solid " + T.border, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 10, padding: "10px 14px", alignItems: "flex-end" }}>
-          <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} avatarUrl={currentUser?.avatar_url} />
+          <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} />
             <div style={{ flex: 1, position: "relative" }}>
             <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} placeholder="Message the room..." style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none", boxSizing: "border-box" }} />
               <button ref={chatEmojiRef} onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
@@ -998,6 +1101,8 @@ export default function Community() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingPost, setEditingPost] = useState(null);
   const PAGE = 15;
 
   useEffect(() => { if (user?.id) init(); }, [user?.id]);
@@ -1009,7 +1114,7 @@ export default function Community() {
   };
 
   const fetchProfile = async () => {
-    const { data } = await supabase.from("users").select("id, full_name, identity_verified, avatar_url").eq("id", user.id).single();
+    const { data } = await supabase.from("users").select("id, full_name, identity_verified").eq("id", user.id).single();
     setCurrentUser(data);
   };
 
@@ -1017,7 +1122,7 @@ export default function Community() {
     const from = p * PAGE;
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified, avatar_url)")
+      .select("id, user_id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
       .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
     // Load this user's votes for these posts
     const ids = (data || []).map((x) => x.id);
@@ -1032,7 +1137,6 @@ export default function Community() {
       ...x,
       author_name: x.users?.full_name,
       author_verified: x.users?.identity_verified,
-      author_avatar_url: x.users?.avatar_url,
       linked_survey: x.linked_survey_data,
       my_vote: myVotes[x.id] || null,
     }));
@@ -1053,8 +1157,8 @@ export default function Community() {
   const handlePost = async (content, imageUrl) => {
     const { data, error } = await supabase.from("community_posts")
       .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 })
-      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified, avatar_url)").single();
-    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_avatar_url: data.users?.avatar_url }, ...prev]);
+      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified)").single();
+    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
   };
 
   const handleLike = async (postId, type, active, removingOpposite) => {
@@ -1078,7 +1182,7 @@ export default function Community() {
     const { data, error } = await supabase
       .from("community_post_comments")
       .insert(insertData)
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified, avatar_url)")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
       .single();
     if (error) { console.error("Comment save error:", error); return null; }
     // Increment count in DB so it persists on refresh
@@ -1091,6 +1195,32 @@ export default function Community() {
     await supabase.from("community_post_reactions").insert({ post_id: postId, user_id: user.id, emoji }).select();
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, reactions: [...(p.reactions || []), { emoji, user_id: user.id }] } : p));
   };
+
+  const handleDelete = async (postId) => {
+    // Delete comments, likes, reactions first, then the post
+    await supabase.from("community_post_comments").delete().eq("post_id", postId);
+    await supabase.from("community_post_likes").delete().eq("post_id", postId);
+    await supabase.from("community_post_reactions").delete().eq("post_id", postId);
+    const { error } = await supabase.from("community_posts").delete().eq("id", postId).eq("user_id", user.id);
+    if (!error) setPosts((prev) => prev.filter((p) => p.id !== postId));
+  };
+
+  const handleEdit = async (postId, newContent) => {
+    const { error } = await supabase.from("community_posts").update({ content: newContent }).eq("id", postId).eq("user_id", user.id);
+    if (!error) {
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, content: newContent } : p));
+      setEditingPost(null);
+    }
+  };
+
+  const filteredPosts = searchQuery.trim()
+    ? posts.filter((p) => {
+        const q = searchQuery.toLowerCase();
+        return (p.content || "").toLowerCase().includes(q) ||
+               (p.author_name || "").toLowerCase().includes(q) ||
+               (p.survey_tag || "").toLowerCase().includes(q);
+      })
+    : posts;
 
   if (activeRoom) {
     return (
@@ -1164,16 +1294,47 @@ export default function Community() {
       {tab === "feed" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Composer user={currentUser} onPost={handlePost} />
+
+          {/* Search bar */}
+          <div style={{ position: "relative" }}>
+            <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.muted, pointerEvents: "none" }}>
+              <Ico d={ICONS.search} size={16} />
+            </div>
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search posts, people, topics..."
+              style={{
+                width: "100%", padding: "11px 14px 11px 42px", borderRadius: 14,
+                border: "1px solid " + T.border, background: "#fff",
+                fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none",
+                boxSizing: "border-box", transition: "border-color 0.2s",
+              }}
+              onFocus={(e) => { e.target.style.borderColor = T.gold + "66"; }}
+              onBlur={(e) => { e.target.style.borderColor = T.border; }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: T.muted, padding: 4 }}>
+                <Ico d={ICONS.x} size={14} />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p style={{ fontFamily: T.sans, fontSize: 12, color: T.muted, margin: "-8px 0 0 4px" }}>
+              {filteredPosts.length} result{filteredPosts.length !== 1 ? "s" : ""} for "{searchQuery}"
+            </p>
+          )}
+
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
-            posts.length === 0 ? (
+            filteredPosts.length === 0 ? (
               <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>No posts yet</p>
-                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share a civic thought with your community.</p>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>{searchQuery ? "🔍" : "💬"}</div>
+                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>{searchQuery ? "No matching posts" : "No posts yet"}</p>
+                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>{searchQuery ? "Try a different search term." : "Be the first to share a civic thought with your community."}</p>
               </div>
             ) : (
               <>
-                {posts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified, _currentUserAvatarUrl: currentUser?.avatar_url}} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
+                {filteredPosts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified}} currentUserId={currentUser?.id} onLike={handleLike} onComment={handleComment} onReact={handleReact} onDelete={handleDelete} onEdit={handleEdit} editingPost={editingPost} setEditingPost={setEditingPost} />)}
                 {hasMore && (
                   <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
