@@ -60,7 +60,7 @@ function AuthRedirect() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter>       <ScrollToTop />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
