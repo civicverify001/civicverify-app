@@ -5,6 +5,9 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
+import About from './pages/public/About'
+import Privacy from './pages/public/Privacy'
+import Terms from './pages/public/Terms'
 
 // Layouts
 import CitizenLayout from './pages/citizen/CitizenLayout'
@@ -62,6 +65,9 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/survey/:id" element={<PublicSurvey />} />
