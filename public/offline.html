@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0B2545">
+  <title>CivicVerify — Offline</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=DM+Sans:wght@400;600&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: linear-gradient(180deg, #0B2545 0%, #122e56 40%, #F5F1EC 40%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      text-align: center;
+      padding: 48px 24px;
+      max-width: 400px;
+    }
+    .icon {
+      width: 80px; height: 80px; border-radius: 20px;
+      background: #C5960C; display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 24px;
+      box-shadow: 0 8px 32px rgba(197,150,12,0.3);
+    }
+    .icon span { color: #fff; font-weight: 700; font-size: 24px; }
+    h1 {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 28px; color: #0B2545; margin-bottom: 12px;
+    }
+    p { color: rgba(11,37,69,0.5); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    button {
+      padding: 14px 32px; border-radius: 12px; border: none;
+      background: #0B2545; color: #C5960C; font-size: 14px;
+      font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    }
+    button:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon"><span>CV</span></div>
+    <h1>You're Offline</h1>
+    <p>It looks like you've lost your internet connection. CivicVerify needs a connection to load surveys and community posts.</p>
+    <button onclick="window.location.reload()">Try Again</button>
+  </div>
+</body>
+</html>
