@@ -820,7 +820,7 @@ export default function Landing() {
               <div>
                 <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'rgba(11,37,69,0.2)', margin: '0 0 12px' }}>Company</p>
                 <button onClick={function(){navigate('/about')}} style={{ display: 'block', background: 'none', border: 'none', padding: '4px 0', fontSize: 13, color: 'rgba(11,37,69,0.35)', cursor: 'pointer' }}>About</button>
-                <span style={{ display: 'block', padding: '4px 0', fontSize: 13, color: 'rgba(11,37,69,0.35)' }}>Privacy</span>
+                <button onClick={function(){navigate('/privacy')}} style={{ display: 'block', background: 'none', border: 'none', padding: '4px 0', fontSize: 13, color: 'rgba(11,37,69,0.35)', cursor: 'pointer' }}>Privacy</button>
                 <span style={{ display: 'block', padding: '4px 0', fontSize: 13, color: 'rgba(11,37,69,0.35)' }}>Terms</span>
               </div>
             </div>
