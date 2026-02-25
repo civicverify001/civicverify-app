@@ -496,7 +496,7 @@ function CommunityDiscussions({ user }) {
         </div>
       ) : (
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(245,241,236,0.25)', borderRadius: 16 }}>
-          <span style={{ fontSize: 32, display: 'block', marginBottom: 10 }}>{'\uD83D\uDDE3\uFE0F'}</span>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ display: 'block', margin: '0 auto 10px' }}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="rgba(11,37,69,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           <p style={{ fontSize: 15, fontWeight: 600, color: 'rgba(11,37,69,0.2)', margin: '0 0 4px', fontFamily: body }}>No discussions yet</p>
           <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.15)', margin: 0, fontFamily: body }}>Be the first to start a civic conversation</p>
         </div>
@@ -615,7 +615,7 @@ export default function Landing() {
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#34d399', fontFamily: body }}>{surveys.length} live poll{surveys.length !== 1 ? 's' : ''}</span>
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span style={{ fontSize: 12 }}>{'\uD83D\uDEE1\uFE0F'}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="rgba(255,255,255,0.45)" strokeWidth="2"/></svg>
                     <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontFamily: body }}>{userCount} verified citizen{userCount !== 1 ? 's' : ''}</span>
                   </span>
                 </div>
@@ -653,11 +653,11 @@ export default function Landing() {
               <Reveal delay={400}>
                 <div style={{ display: 'flex', gap: 36, paddingTop: 36, borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
                   {[
-                    { i: '\uD83D\uDEE1\uFE0F', t: 'Identity Verified' },
-                    { i: '\uD83D\uDC65', t: 'Real Citizens Only' },
-                    { i: '\uD83D\uDD12', t: 'End-to-End Encrypted' }
+                    { t: 'Identity Verified', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="rgba(255,255,255,0.5)" stroke-width="2"/></svg>' },
+                    { t: 'Real Citizens Only', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="4" stroke="rgba(255,255,255,0.5)" stroke-width="2"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2" stroke="rgba(255,255,255,0.5)" stroke-width="2"/></svg>' },
+                    { t: 'End-to-End Encrypted', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="rgba(255,255,255,0.5)" stroke-width="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="rgba(255,255,255,0.5)" stroke-width="2"/></svg>' }
                   ].map(function (x, i) {
-                    return <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 15 }}>{x.i}</span><span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.25)', fontFamily: body, letterSpacing: '0.02em' }}>{x.t}</span></div>;
+                    return <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span dangerouslySetInnerHTML={{ __html: x.icon }} /><span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.25)', fontFamily: body, letterSpacing: '0.02em' }}>{x.t}</span></div>;
                   })}
                 </div>
               </Reveal>
@@ -693,7 +693,9 @@ export default function Landing() {
                     {surveys.length > 0 ? surveys.slice(0, 3).map(function (s, i) {
                       return (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                          <div style={{ width: 30, height: 30, borderRadius: 8, background: [C.gold + '20', '#34d39920', '#60a5fa20'][i % 3], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>{['\uD83D\uDDF3\uFE0F', '\uD83D\uDCCA', '\uD83D\uDC65'][i % 3]}</div>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, background: [C.gold + '20', '#34d39920', '#60a5fa20'][i % 3], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d={['M9 12l2 2 4-4M3 3h18v18H3z','M18 20V10M12 20V4M6 20v-6','M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2'][i%3]} stroke={[C.gold,'#34d399','#60a5fa'][i%3]} strokeWidth="2" strokeLinecap="round"/></svg>
+                          </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.55)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: body }}>{s.title}</p>
                             <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', margin: '2px 0 0', fontFamily: body }}>{s.response_count || 0} votes · Active now</p>
@@ -732,7 +734,9 @@ export default function Landing() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 48 }}>
             <Reveal delay={100}>
               <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1px solid rgba(184,53,46,0.1)', height: '100%' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.red + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 18 }}>{'\u274C'}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.red + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke={C.red} strokeWidth="2.5" strokeLinecap="round"/></svg>
+                </div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 14px', fontFamily: heading }}>The Problem</h3>
                 {['Bots & fake accounts manipulate results', 'Tiny sample sizes miss real communities', 'No way to verify if respondents are citizens', 'Results twisted for political agendas'].map(function (t, i) {
                   return <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}><span style={{ color: C.red, fontSize: 12, marginTop: 3, flexShrink: 0 }}>{'\u2022'}</span><p style={{ fontSize: 14, color: 'rgba(11,37,69,0.5)', margin: 0, lineHeight: 1.6, fontFamily: body }}>{t}</p></div>;
@@ -741,7 +745,9 @@ export default function Landing() {
             </Reveal>
             <Reveal delay={200}>
               <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '2px solid ' + C.gold + '20', height: '100%' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.green + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 18 }}>{'\u2705'}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.green + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 14px', fontFamily: heading }}>CivicVerify</h3>
                 {[
                   { t: 'One Person, One Verified Vote', d: 'Identity verification stops manipulation' },
@@ -776,15 +782,15 @@ export default function Landing() {
           </Reveal>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
             {[
-              { s: '01', i: '\uD83D\uDCF1', t: 'Sign Up & Verify', d: 'Create your account and verify your identity with a quick ID scan. One-time, completely private.', color: '#60a5fa' },
-              { s: '02', i: '\uD83D\uDDF3\uFE0F', t: 'Vote on Live Polls', d: 'Vote directly on civic polls matched to your community. Discuss issues with fellow verified citizens.', color: '#34d399' },
-              { s: '03', i: '\uD83D\uDCC8', t: 'See Real Impact', d: 'Watch live results, see your community\'s voice, and track how opinions shape real decisions.', color: '#c084fc' },
+              { s: '01', t: 'Sign Up & Verify', d: 'Create your account and verify your identity with a quick ID scan. One-time, completely private.', color: '#60a5fa', icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="#60a5fa" stroke-width="2"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/></svg>' },
+              { s: '02', t: 'Vote on Live Polls', d: 'Vote directly on civic polls matched to your community. Discuss issues with fellow verified citizens.', color: '#34d399', icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="3" width="18" height="18" rx="3" stroke="#34d399" stroke-width="2"/></svg>' },
+              { s: '03', t: 'See Real Impact', d: 'Watch live results, see your community\'s voice, and track how opinions shape real decisions.', color: '#c084fc', icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"/></svg>' },
             ].map(function (item, i) {
               return (
                 <Reveal key={i} delay={i * 120}>
                   <div className="cv-card" style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 32, border: '1px solid ' + C.light, height: '100%', transition: 'all 0.35s' }}>
                     <span style={{ position: 'absolute', top: 16, right: 20, fontSize: 52, fontWeight: 900, color: 'rgba(11,37,69,0.025)', fontFamily: heading, lineHeight: 1 }}>{item.s}</span>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: item.color + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, marginBottom: 20, border: '1px solid ' + item.color + '15' }}>{item.i}</div>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: item.color + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, border: '1px solid ' + item.color + '15' }} dangerouslySetInnerHTML={{ __html: item.icon }} />
                     <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 10px', fontFamily: heading }}>{item.t}</h3>
                     <p style={{ fontSize: 14, color: C.muted, margin: 0, lineHeight: 1.7, fontFamily: body }}>{item.d}</p>
                   </div>
@@ -814,7 +820,9 @@ export default function Landing() {
           ) : (
             <Reveal>
               <div style={{ background: C.cream + '50', borderRadius: 20, padding: '64px 24px', textAlign: 'center' }}>
-                <div style={{ width: 64, height: 64, borderRadius: 16, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 20px' }}>{'\uD83D\uDDF3\uFE0F'}</div>
+                <div style={{ width: 64, height: 64, borderRadius: 16, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /><rect x="3" y="3" width="18" height="18" rx="3" stroke={C.gold} strokeWidth="2" /></svg>
+                </div>
                 <p style={{ fontSize: 18, fontWeight: 600, color: 'rgba(11,37,69,0.2)', margin: '0 0 8px', fontFamily: heading }}>No active polls right now</p>
                 <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.15)', margin: '0 0 24px', fontFamily: body }}>Check back soon or sign up to get notified</p>
                 <button onClick={function () { navigate('/signup'); }} style={{ padding: '12px 24px', background: C.gold, color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: body }}>Sign Up</button>
@@ -850,14 +858,14 @@ export default function Landing() {
                 <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: C.navy, margin: '14px 0 18px', fontFamily: heading, lineHeight: 1.2 }}>Reach Verified Citizens. <br />Get Trusted Data.</h2>
                 <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.7, margin: '0 0 32px', fontFamily: body }}>Whether you're a government agency, nonprofit, or research institution — CivicVerify gives you access to identity-verified respondents with demographic targeting.</p>
                 {[
-                  { i: '\uD83C\uDFAF', t: 'Targeted Surveys', d: 'Reach citizens by age, location, and demographics' },
-                  { i: '\uD83D\uDCCA', t: 'Real-Time Analytics', d: 'Watch responses come in with live dashboards' },
-                  { i: '\uD83D\uDEE1\uFE0F', t: 'Verified Respondents', d: 'Every response from an identity-verified citizen' },
-                  { i: '\uD83D\uDCC4', t: 'Export & Report', d: 'Download data in CSV/PDF for analysis' },
+                  { t: 'Targeted Surveys', d: 'Reach citizens by age, location, and demographics', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="'+C.gold+'" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke="'+C.gold+'" stroke-width="2" opacity="0.5"/><circle cx="12" cy="12" r="2" fill="'+C.gold+'"/></svg>' },
+                  { t: 'Real-Time Analytics', d: 'Watch responses come in with live dashboards', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="'+C.gold+'" stroke-width="2" stroke-linecap="round"/></svg>' },
+                  { t: 'Verified Respondents', d: 'Every response from an identity-verified citizen', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="'+C.gold+'" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="'+C.gold+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+                  { t: 'Export & Report', d: 'Download data in CSV/PDF for analysis', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="'+C.gold+'" stroke-width="2"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="'+C.gold+'" stroke-width="2" stroke-linecap="round"/></svg>' },
                 ].map(function (item, i) {
                   return (
                     <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, alignItems: 'flex-start' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{item.i}</div>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: item.icon }} />
                       <div>
                         <p style={{ fontSize: 15, fontWeight: 600, color: C.navy, margin: 0, fontFamily: body }}>{item.t}</p>
                         <p style={{ fontSize: 13, color: C.muted, margin: '2px 0 0', fontFamily: body }}>{item.d}</p>
@@ -928,7 +936,12 @@ export default function Landing() {
       <section style={{ padding: '100px 0', background: '#fff' }}>
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 28px', textAlign: 'center' }}>
           <Reveal>
-            <div style={{ width: 68, height: 68, borderRadius: 18, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, margin: '0 auto 28px', border: '1px solid ' + C.gold + '20' }}>{'\uD83D\uDDF3\uFE0F'}</div>
+            <div style={{ width: 68, height: 68, borderRadius: 18, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', border: '1px solid ' + C.gold + '20' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <path d="M9 12l2 2 4-4" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="10" stroke={C.gold} strokeWidth="2" opacity="0.3" />
+              </svg>
+            </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: C.navy, margin: '0 0 16px', fontFamily: heading }}>Ready to Make Your Voice Count?</h2>
             <p style={{ fontSize: 16, color: C.muted, margin: '0 0 36px', lineHeight: 1.7, fontFamily: body }}>Join a growing community of verified citizens shaping the future of civic engagement.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14 }}>
