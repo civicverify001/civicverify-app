@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 
 // Public pages
-import Landing from './pages/public/Landing'
+import Landing from './pages/public/Landing' import Contact from './pages/public/Contact'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
 import About from './pages/public/About'
