@@ -34,7 +34,6 @@ function NotificationBell({ userId }) {
 
   useEffect(function () {
     if (userId) fetchCount();
-    // Poll every 30 seconds for new notifications
     var interval = setInterval(function () { if (userId) fetchCount(); }, 30000);
     return function () { clearInterval(interval); };
   }, [userId]);
@@ -115,7 +114,7 @@ function NotificationBell({ userId }) {
 
       {showDropdown && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 340, maxHeight: 440,
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 340, maxWidth: 'calc(100vw - 32px)', maxHeight: 440,
           background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.1)',
           boxShadow: '0 12px 40px rgba(11,37,69,0.2)', zIndex: 100, overflow: 'hidden',
         }}>
@@ -189,6 +188,7 @@ export default function CitizenLayout() {
     navigate('/');
   }
 
+  var isVerified = profile && (profile.is_verified || profile.identity_verified);
   var activeStyle = { background: 'rgba(197,150,12,0.12)', color: '#C5960C', fontWeight: 700 };
   var normalStyle = { color: 'rgba(255,255,255,0.5)' };
 
@@ -237,8 +237,8 @@ export default function CitizenLayout() {
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile ? profile.full_name : '...'}</p>
             <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile ? profile.email : ''}</p>
-            <span style={{ fontSize: 10, fontWeight: 700, color: profile && profile.is_verified ? '#34d399' : '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>
-              {profile && profile.is_verified ? '\u25CF VERIFIED' : '\u25CB UNVERIFIED'}
+            <span style={{ fontSize: 10, fontWeight: 700, color: isVerified ? '#34d399' : '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>
+              {isVerified ? '\u25CF VERIFIED' : '\u25CB UNVERIFIED'}
             </span>
           </div>
           <button onClick={logout} style={{ width: '100%', marginTop: 8, padding: '10px', background: 'rgba(184,53,46,0.1)', border: 'none', borderRadius: 8, color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Sign Out</button>
@@ -259,7 +259,7 @@ export default function CitizenLayout() {
           <NotificationBell userId={user?.id} />
         </div>
 
-        <div style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto' }}>
+        <div className="cv-content-area" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto' }}>
           <Outlet />
         </div>
       </div>
@@ -277,6 +277,10 @@ export default function CitizenLayout() {
           .cv-close-btn { display: flex !important; }\
           .cv-main { margin-left: 0 !important; }\
           .cv-desktop-topbar { display: none !important; }\
+          .cv-content-area { padding: 20px 16px !important; }\
+        }\
+        @media (max-width: 420px) {\
+          .cv-content-area { padding: 16px 12px !important; }\
         }\
       '}</style>
     </div>
