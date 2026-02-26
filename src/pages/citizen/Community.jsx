@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -1143,67 +1144,11 @@ const TOPICS = [
   { tag: "Healthcare", n: "489" }, { tag: "HousingCrisis", n: "391" },
 ];
 
-// ── Main ──────────────────────────────────────────────────────────────────────
-/* ── Notification Panel ───────────────────────────────────── */
-const NotificationPanel = ({ notifications, onClose, onClickNotif, panelRef }) => {
-  const unread = notifications.filter((n) => !n.read);
-  return (
-    <div ref={panelRef} style={{
-      position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 200,
-      width: 360, maxHeight: 440, background: "#fff", borderRadius: 16,
-      border: "1px solid " + T.border, boxShadow: "0 12px 40px rgba(11,37,69,0.18)",
-      display: "flex", flexDirection: "column", animation: "fadeIn 0.15s ease",
-      overflow: "hidden",
-    }}>
-      <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + T.border, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy }}>Notifications</span>
-        {unread.length > 0 && (
-          <span style={{ fontFamily: T.sans, fontSize: 11, color: T.gold, fontWeight: 600 }}>{unread.length} new</span>
-        )}
-      </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
-        {notifications.length === 0 ? (
-          <div style={{ padding: "40px 20px", textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🔔</div>
-            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>No notifications yet</p>
-            <p style={{ fontFamily: T.sans, fontSize: 11, color: T.muted, margin: "4px 0 0" }}>When someone replies, reacts, or follows you, you'll see it here.</p>
-          </div>
-        ) : notifications.map((n, i) => (
-          <button key={n.id || i} onClick={() => onClickNotif(n)} style={{
-            width: "100%", display: "flex", alignItems: "flex-start", gap: 10,
-            padding: "10px 16px", background: n.read ? "transparent" : T.gold + "08",
-            border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.15s",
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = n.read ? "transparent" : T.gold + "08"; }}
-          >
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: n.type === "reply" ? "#3b82f6" + "18" : n.type === "reaction" ? "#f59e0b" + "18" : n.type === "follow" ? "#10b981" + "18" : T.navy + "10", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-              {n.type === "reply" ? "💬" : n.type === "reaction" ? (n.emoji || "❤️") : n.type === "follow" ? "👤" : "🔔"}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontFamily: T.sans, fontSize: 13, color: T.navy, margin: 0, lineHeight: 1.4 }}>
-                <strong>{n.actor_name || "Someone"}</strong>{" "}
-                {n.type === "reply" ? "replied to your post" : n.type === "reaction" ? `reacted ${n.emoji || "❤️"} to your post` : n.type === "follow" ? "started following you" : n.message || "interacted with your content"}
-              </p>
-              {n.preview && (
-                <p style={{ fontFamily: T.sans, fontSize: 11, color: T.muted, margin: "3px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  "{n.preview}"
-                </p>
-              )}
-              <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted + "aa", marginTop: 3, display: "block" }}>{timeAgo(n.created_at)}</span>
-            </div>
-            {!n.read && (
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.gold, flexShrink: 0, marginTop: 6 }} />
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
+// Notification bell is now global in CitizenLayout — no local panel needed here
 
 export default function Community() {
   const { user } = useAuth();
+  const location = useLocation();
   const [tab, setTab] = useState("feed");
   const [posts, setPosts] = useState([]);
   const [surveys, setSurveys] = useState([]);
@@ -1216,31 +1161,33 @@ export default function Community() {
   const [editingPost, setEditingPost] = useState(null);
   const [followingMap, setFollowingMap] = useState({});
   const [feedMode, setFeedMode] = useState("trending");
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const notifRef = useRef(null);
-  const notifBtnRef = useRef(null);
-  const highlightedPostRef = useRef(null);
   const PAGE = 15;
 
   useEffect(() => { if (user?.id) init(); }, [user?.id]);
 
-  // Close notif panel on click outside
+  // Handle scrollToPost from global notification bell navigation
   useEffect(() => {
-    const handler = (e) => {
-      if (showNotifications && notifRef.current && !notifRef.current.contains(e.target) && notifBtnRef.current && !notifBtnRef.current.contains(e.target)) {
-        setShowNotifications(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showNotifications]);
+    if (location.state?.scrollToPost && !loading) {
+      const postId = location.state.scrollToPost;
+      setTimeout(() => {
+        const el = document.getElementById("post-" + postId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.style.transition = "box-shadow 0.3s, border-color 0.3s";
+          el.style.boxShadow = "0 0 0 3px " + T.gold + "44";
+          el.style.borderColor = T.gold;
+          setTimeout(() => { el.style.boxShadow = ""; el.style.borderColor = ""; }, 2000);
+        }
+      }, 200);
+      // Clear the state so it doesn't re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, loading]);
 
   const init = async () => {
     setLoading(true);
     try {
-      await Promise.all([fetchProfile(), fetchFollowing(), fetchPosts(0), fetchSurveys(), fetchNotifications()]);
+      await Promise.all([fetchProfile(), fetchFollowing(), fetchPosts(0), fetchSurveys()]);
     } catch (e) {
       console.error("Community init error:", e);
       try { await fetchPosts(0); } catch (e2) {}
@@ -1253,133 +1200,6 @@ export default function Community() {
     setCurrentUser(data);
   };
 
-  const fetchNotifications = async () => {
-    try {
-      const notifs = [];
-      const lastRead = localStorage.getItem("cv_notif_read_" + user.id) || "1970-01-01T00:00:00Z";
-
-      // 1. Replies on my posts
-      try {
-        const { data: myPostIds } = await supabase
-          .from("community_posts").select("id").eq("user_id", user.id);
-        const ids = (myPostIds || []).map((p) => p.id);
-        if (ids.length > 0) {
-          const { data: replies } = await supabase
-            .from("comments")
-            .select("id, post_id, content, created_at, user_id, users:user_id(full_name)")
-            .in("post_id", ids)
-            .neq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(20);
-          (replies || []).forEach((r) => {
-            notifs.push({
-              id: "reply_" + r.id,
-              type: "reply",
-              post_id: r.post_id,
-              actor_name: r.users?.full_name || "Someone",
-              preview: (r.content || "").slice(0, 80),
-              created_at: r.created_at,
-              read: r.created_at <= lastRead,
-            });
-          });
-        }
-      } catch (e) { /* comments table might use different name */ }
-
-      // 2. Reactions on my posts
-      try {
-        const { data: myPostIds } = await supabase
-          .from("community_posts").select("id").eq("user_id", user.id);
-        const ids = (myPostIds || []).map((p) => p.id);
-        if (ids.length > 0) {
-          const { data: reactions } = await supabase
-            .from("community_post_likes")
-            .select("id, post_id, type, created_at, user_id, users:user_id(full_name)")
-            .in("post_id", ids)
-            .neq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(20);
-          (reactions || []).forEach((r) => {
-            notifs.push({
-              id: "react_" + r.id,
-              type: "reaction",
-              post_id: r.post_id,
-              actor_name: r.users?.full_name || "Someone",
-              emoji: r.type === "like" ? "👍" : r.type === "dislike" ? "👎" : r.type,
-              created_at: r.created_at,
-              read: r.created_at <= lastRead,
-            });
-          });
-        }
-      } catch (e) {}
-
-      // 3. New followers
-      try {
-        const { data: followers } = await supabase
-          .from("user_follows")
-          .select("id, follower_id, created_at, users:follower_id(full_name)")
-          .eq("following_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(10);
-        (followers || []).forEach((f) => {
-          notifs.push({
-            id: "follow_" + f.id,
-            type: "follow",
-            actor_name: f.users?.full_name || "Someone",
-            created_at: f.created_at,
-            read: f.created_at <= lastRead,
-          });
-        });
-      } catch (e) { /* follows table may not exist */ }
-
-      // Sort by created_at desc
-      notifs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setNotifications(notifs.slice(0, 30));
-      setUnreadCount(notifs.filter((n) => !n.read).length);
-    } catch (e) {
-      console.error("Notifications fetch error:", e);
-    }
-  };
-
-  const handleNotifClick = (notif) => {
-    // Mark all as read up to now
-    localStorage.setItem("cv_notif_read_" + user.id, new Date().toISOString());
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
-    setShowNotifications(false);
-
-    if (notif.post_id) {
-      // Switch to feed tab if not already
-      if (tab !== "feed") setTab("feed");
-
-      // Scroll to the post
-      setTimeout(() => {
-        const el = document.getElementById("post-" + notif.post_id);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          // Flash highlight
-          el.style.transition = "box-shadow 0.3s, border-color 0.3s";
-          el.style.boxShadow = "0 0 0 3px " + T.gold + "44";
-          el.style.borderColor = T.gold;
-          setTimeout(() => {
-            el.style.boxShadow = "";
-            el.style.borderColor = "";
-          }, 2000);
-        }
-      }, 150);
-    }
-  };
-
-  const toggleNotifications = () => {
-    setShowNotifications((prev) => {
-      if (!prev) {
-        // Mark as read when opening
-        localStorage.setItem("cv_notif_read_" + user.id, new Date().toISOString());
-        setNotifications((n) => n.map((x) => ({ ...x, read: true })));
-        setUnreadCount(0);
-      }
-      return !prev;
-    });
-  };
 
   const fetchFollowing = async () => {
     try {
@@ -1593,7 +1413,7 @@ export default function Community() {
 
   return (
     <div className="cv-community" style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans, overflowX: "hidden" }}>
-      <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } } @keyframes bellShake { 0%,100%{transform:rotate(0)} 15%{transform:rotate(12deg)} 30%{transform:rotate(-10deg)} 45%{transform:rotate(6deg)} 60%{transform:rotate(-4deg)} 75%{transform:rotate(2deg)} } @media (max-width: 768px) { .cv-community h1 { font-size: 24px !important; } .cv-composer-wrap { border-radius: 16px !important; } .cv-feed-tabs button { font-size: 11px !important; padding: 7px 8px !important; } .cv-post-card { border-radius: 16px !important; } .cv-post-inner { padding: 14px 14px 10px !important; } .cv-quick-emojis { display: none !important; } .cv-notif-panel { width: 320px !important; right: -60px !important; } } @media (max-width: 420px) { .cv-community h1 { font-size: 20px !important; } .cv-feed-tabs button { font-size: 10px !important; } .cv-post-inner { padding: 12px 12px 8px !important; } .cv-notif-panel { width: 290px !important; right: -80px !important; } }"}</style>
+<style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } } @media (max-width: 768px) { .cv-community h1 { font-size: 24px !important; } .cv-composer-wrap { border-radius: 16px !important; } .cv-feed-tabs button { font-size: 11px !important; padding: 7px 8px !important; } .cv-post-card { border-radius: 16px !important; } .cv-post-inner { padding: 14px 14px 10px !important; } .cv-quick-emojis { display: none !important; } } @media (max-width: 420px) { .cv-community h1 { font-size: 20px !important; } .cv-feed-tabs button { font-size: 10px !important; } .cv-post-inner { padding: 12px 12px 8px !important; } }"}</style>
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
@@ -1603,40 +1423,6 @@ export default function Community() {
             <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Verified civic voices — discuss, react, and engage.</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Notification Bell */}
-            <div style={{ position: "relative" }}>
-              <button ref={notifBtnRef} onClick={toggleNotifications} style={{
-                width: 40, height: 40, borderRadius: 12, background: showNotifications ? T.navy + "10" : "#fff",
-                border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                color: T.navy, position: "relative", transition: "all 0.15s",
-              }}
-                onMouseEnter={(e) => { if (!showNotifications) e.currentTarget.style.background = T.cream; }}
-                onMouseLeave={(e) => { if (!showNotifications) e.currentTarget.style.background = "#fff"; }}
-              >
-                <Ico d={ICONS.bell} size={18} />
-                {unreadCount > 0 && (
-                  <span style={{
-                    position: "absolute", top: -4, right: -4,
-                    minWidth: 18, height: 18, borderRadius: 9,
-                    background: "#e53e3e", color: "#fff",
-                    fontFamily: T.sans, fontSize: 10, fontWeight: 700,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    padding: "0 4px", border: "2px solid #fff",
-                    animation: "fadeIn 0.2s ease",
-                  }}>
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotifications && (
-                <NotificationPanel
-                  notifications={notifications}
-                  onClose={() => setShowNotifications(false)}
-                  onClickNotif={handleNotifClick}
-                  panelRef={notifRef}
-                />
-              )}
-            </div>
             <div style={{ padding: "7px 14px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, color: T.navy, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
               <Ico d={ICONS.users} size={12} />
               {surveys.length} Live Rooms
