@@ -73,7 +73,8 @@ export default function Billing() {
   );
 
   return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 900 }}>
+    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 900, width: '100%', overflowX: 'hidden' }}>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:768px){.cv-billing-cards{grid-template-columns:1fr!important}}'}</style>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: font }}>Billing</h1>
         <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: 0 }}>Survey progress and estimated costs</p>
@@ -87,7 +88,7 @@ export default function Billing() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div className="cv-billing-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
         <SummaryCard label="Total Estimated" value={fmt(totalEst)} sub={surveys.length + ' survey' + (surveys.length !== 1 ? 's' : '')} color={C.navy} />
         <SummaryCard label="Currently Active" value={fmt(activeCost)} sub="In progress" color={C.green} />
         <SummaryCard label="Completed" value={fmt(completedCost)} sub="Invoiced" color="#6366f1" />
@@ -142,7 +143,7 @@ export default function Billing() {
                 )}
 
                 {/* Cost grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                <div className="cv-billing-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                   {[
                     { label: 'Rate / Response', value: rate ? '$' + rate.toFixed(2) : '—', color: rate ? C.gold : null },
                     { label: 'Estimated Total', value: cost > 0 ? fmt(cost) : '—', color: cost > 0 ? C.navy : null },
@@ -174,7 +175,7 @@ export default function Billing() {
       {/* Pricing reference */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.06)', padding: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: '0 0 16px' }}>Pricing Reference</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        <div className="cv-billing-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
           {[
             { tier: 'General Audience', desc: 'No demographic filters', price: '$3.50/response' },
             { tier: 'Basic Targeting',  desc: '1–2 demographic filters', price: '$4.50/response' },
@@ -197,3 +198,4 @@ export default function Billing() {
     </div>
   );
 }
+
