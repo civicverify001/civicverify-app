@@ -13,6 +13,7 @@ var links = [
   { to: '/citizen', icon: '\uD83D\uDCCA', label: 'Dashboard', end: true },
   { to: '/citizen/surveys', icon: '\u2630', label: 'Surveys' },
   { to: '/citizen/community', icon: '\uD83D\uDCAC', label: 'Community' },
+  { to: '/citizen/debates', icon: '🎙', label: 'Debates' },
   { to: '/citizen/verify', icon: '\u2713', label: 'Verify ID' },
   { to: '/citizen/impact', icon: '\uD83D\uDE80', label: 'My Impact' },
   { to: '/citizen/account', icon: '\u2699\uFE0F', label: 'Account' },
