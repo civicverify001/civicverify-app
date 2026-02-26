@@ -180,6 +180,67 @@ function PollCard({ poll, onVote }) {
   );
 }
 
+// ─── Live Audience Vote Bar ───
+function LiveVoteBar({ debate, debaterA, debaterB, votesA, votesB, userVote, onVote, currentUser }) {
+  var total = votesA + votesB;
+  var pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
+  var pctB = total > 0 ? 100 - pctA : 50;
+  var nameA = debaterA ? debaterA.full_name : 'Proposition';
+  var nameB = debaterB ? debaterB.full_name : 'Opposition';
+  var isDebater = currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id);
+
+  return (
+    <div style={{ padding: '18px 22px', borderRadius: 18, background: 'linear-gradient(135deg, rgba(11,37,69,0.03), rgba(197,150,12,0.04))', border: '1px solid rgba(11,37,69,0.08)', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: 0 }}>🗳️ Who's winning?</p>
+        <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.5)', fontWeight: 600 }}>{total} vote{total !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* Vote bar */}
+      <div style={{ display: 'flex', height: 36, borderRadius: 12, overflow: 'hidden', marginBottom: 14, border: '1px solid rgba(11,37,69,0.08)' }}>
+        <div style={{ width: pctA + '%', background: 'linear-gradient(135deg, #16a34a, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'width 0.6s ease', minWidth: total > 0 ? '8%' : '50%' }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{total > 0 ? pctA + '%' : '-'}</span>
+        </div>
+        <div style={{ width: pctB + '%', background: 'linear-gradient(135deg, #C5960C, #a07a0a)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'width 0.6s ease', minWidth: total > 0 ? '8%' : '50%' }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{total > 0 ? pctB + '%' : '-'}</span>
+        </div>
+      </div>
+
+      {/* Vote buttons */}
+      {currentUser && !isDebater && (
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={function() { onVote(debate.creator_id); }}
+            style={{
+              flex: 1, padding: '10px 14px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'DM Sans, sans-serif', transition: 'all 0.2s',
+              background: userVote === debate.creator_id ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'rgba(22,163,74,0.08)',
+              color: userVote === debate.creator_id ? '#fff' : '#16a34a',
+              border: userVote === debate.creator_id ? 'none' : '1px solid rgba(22,163,74,0.2)',
+            }}>
+            {userVote === debate.creator_id ? '✓ ' : ''}👍 {nameA}
+          </button>
+          <button onClick={function() { onVote(debate.opponent_id); }}
+            style={{
+              flex: 1, padding: '10px 14px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'DM Sans, sans-serif', transition: 'all 0.2s',
+              background: userVote === debate.opponent_id ? 'linear-gradient(135deg, #C5960C, #a07a0a)' : 'rgba(197,150,12,0.08)',
+              color: userVote === debate.opponent_id ? '#fff' : C.darkGold,
+              border: userVote === debate.opponent_id ? 'none' : '1px solid rgba(197,150,12,0.2)',
+            }}>
+            {userVote === debate.opponent_id ? '✓ ' : ''}👍 {nameB}
+          </button>
+        </div>
+      )}
+      {currentUser && isDebater && (
+        <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.45)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>Debaters cannot vote</p>
+      )}
+      {!currentUser && (
+        <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.45)', margin: 0, textAlign: 'center' }}>Sign in to vote</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Audio Controls Panel ───
 function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected, setAudioConnected, isMuted, setIsMuted }) {
   var [joining, setJoining] = useState(false);
@@ -435,11 +496,19 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
 }
 
 // ─── Live Transcript Panel ───
-function TranscriptPanel({ debateId, transcriptSegments }) {
+function TranscriptPanel({ debateId, transcriptSegments, isLive, isActiveSpeaker }) {
   if (transcriptSegments.length === 0) {
     return (
       <div style={{ padding: '30px 16px', textAlign: 'center' }}>
-        <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.45)', margin: 0 }}>📝 Live transcript will appear here when debaters speak</p>
+        <div style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px', background: 'rgba(197,150,12,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 24 }}>📝</span></div>
+        <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: '0 0 8px', fontWeight: 500 }}>
+          {isLive ? 'Live transcript will appear here when debaters speak' : 'No transcript segments recorded yet'}
+        </p>
+        {isLive && (
+          <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.35)', margin: 0, lineHeight: 1.5 }}>
+            Transcription requires Chrome, Edge, or Safari. The active speaker's browser auto-transcribes their speech.
+          </p>
+        )}
       </div>
     );
   }
@@ -448,16 +517,19 @@ function TranscriptPanel({ debateId, transcriptSegments }) {
       {transcriptSegments.map(function(seg, i) {
         return (
           <div key={seg.id || i} style={{
-            marginBottom: 8, padding: '8px 12px', borderRadius: 10,
-            background: seg.is_final ? 'rgba(11,37,69,0.03)' : 'rgba(197,150,12,0.06)',
-            borderLeft: '3px solid ' + (seg.is_final ? C.navy : C.gold),
-            opacity: seg.is_final ? 1 : 0.7,
+            marginBottom: 8, padding: '10px 14px', borderRadius: 12,
+            background: 'rgba(11,37,69,0.03)',
+            borderLeft: '3px solid ' + C.gold,
+            animation: 'slideUp 0.3s ease',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: C.gold }}>{seg.speaker_name || 'Speaker'}</span>
-              {seg.section && <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.4)' }}>{seg.section}</span>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.gold }}>{seg.speaker_name || 'Speaker'}</span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {seg.section && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(197,150,12,0.1)', color: C.darkGold, fontWeight: 600 }}>{seg.section}</span>}
+                {seg.created_at && <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.35)' }}>{timeAgo(seg.created_at)}</span>}
+              </div>
             </div>
-            <p style={{ fontSize: 13, color: C.navy, margin: 0, lineHeight: 1.5, fontStyle: seg.is_final ? 'normal' : 'italic' }}>{seg.content}</p>
+            <p style={{ fontSize: 13, color: C.navy, margin: 0, lineHeight: 1.6 }}>"{seg.content}"</p>
           </div>
         );
       })}
@@ -498,6 +570,12 @@ export default function DebateSpace() {
   var [isTranscribing, setIsTranscribing] = useState(false);
   var autoTimerFired = useRef(false);
   var debateStartTimeRef = useRef(null);
+
+  // Phase 5 state: live voting + listeners
+  var [audienceVotes, setAudienceVotes] = useState({ a: 0, b: 0 });
+  var [userVote, setUserVote] = useState(null);
+  var [listenerCount, setListenerCount] = useState(0);
+  var presenceChannelRef = useRef(null);
 
   var loadDebate = useCallback(async function() {
     var { data } = await supabase.from('debates').select('*').eq('id', id).single();
@@ -560,7 +638,82 @@ export default function DebateSpace() {
     }
   }, [id]);
 
+  // Load audience votes
+  var loadAudienceVotes = useCallback(async function() {
+    var { data } = await supabase.from('debate_audience_votes').select('voted_for').eq('debate_id', id);
+    if (data) {
+      var a = 0, b = 0;
+      data.forEach(function(v) {
+        if (debate && v.voted_for === debate.creator_id) a++;
+        else b++;
+      });
+      setAudienceVotes({ a: a, b: b });
+    }
+    // Load current user's vote
+    if (currentUser) {
+      var { data: mv } = await supabase.from('debate_audience_votes').select('voted_for').eq('debate_id', id).eq('user_id', currentUser.id).single();
+      if (mv) setUserVote(mv.voted_for);
+      else setUserVote(null);
+    }
+  }, [id, currentUser, debate]);
+
+  // Cast or change audience vote
+  async function castAudienceVote(votedFor) {
+    if (!currentUser) return;
+    if (userVote === votedFor) return; // Same vote, do nothing
+    if (userVote) {
+      // Update existing vote
+      await supabase.from('debate_audience_votes').update({
+        voted_for: votedFor,
+        section: debate ? debate.current_section : null,
+        updated_at: new Date().toISOString(),
+      }).eq('debate_id', id).eq('user_id', currentUser.id);
+    } else {
+      // Insert new vote
+      await supabase.from('debate_audience_votes').insert({
+        debate_id: id,
+        user_id: currentUser.id,
+        voted_for: votedFor,
+        section: debate ? debate.current_section : null,
+      });
+    }
+    setUserVote(votedFor);
+    loadAudienceVotes();
+  }
+
+  // Presence tracking for listener count
+  useEffect(function() {
+    var channel = supabase.channel('presence-debate-' + id, { config: { presence: { key: currentUser ? currentUser.id : 'anon-' + Math.random().toString(36).substr(2, 9) } } });
+
+    channel.on('presence', { event: 'sync' }, function() {
+      var state = channel.presenceState();
+      var count = Object.keys(state).length;
+      setListenerCount(count);
+    });
+
+    channel.subscribe(async function(status) {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({ user_id: currentUser ? currentUser.id : null, joined_at: new Date().toISOString() });
+      }
+    });
+
+    presenceChannelRef.current = channel;
+    return function() { supabase.removeChannel(channel); };
+  }, [id, currentUser]);
+
+  // Subscribe to audience vote changes
+  useEffect(function() {
+    var ch = supabase.channel('av-' + id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'debate_audience_votes', filter: 'debate_id=eq.' + id }, function() {
+        loadAudienceVotes();
+      }).subscribe();
+    return function() { supabase.removeChannel(ch); };
+  }, [id, loadAudienceVotes]);
+
   useEffect(function() { loadDebate(); loadModLog(); loadChat(); loadPolls(); loadTranscript(); }, [loadDebate, loadModLog, loadChat, loadPolls, loadTranscript]);
+
+  // Load audience votes once debate is loaded
+  useEffect(function() { if (debate) loadAudienceVotes(); }, [debate, loadAudienceVotes]);
 
   // Realtime subscriptions
   useEffect(function() {
@@ -652,7 +805,10 @@ export default function DebateSpace() {
 
   function startTranscription() {
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return; // Browser doesn't support
+    if (!SpeechRecognition) {
+      console.log('[CivicVerify] Speech recognition not supported in this browser');
+      return;
+    }
 
     var recognition = new SpeechRecognition();
     recognition.continuous = true;
@@ -663,7 +819,7 @@ export default function DebateSpace() {
       for (var i = event.resultIndex; i < event.results.length; i++) {
         var result = event.results[i];
         if (result.isFinal && result[0].transcript.trim()) {
-          // Save final transcript segment to database
+          console.log('[CivicVerify Transcript]', result[0].transcript.trim());
           supabase.from('debate_transcript_segments').insert({
             debate_id: id,
             speaker_id: currentUser.id,
@@ -671,25 +827,30 @@ export default function DebateSpace() {
             content: result[0].transcript.trim(),
             is_final: true,
             start_time: debateStartTimeRef.current ? (Date.now() - debateStartTimeRef.current) / 1000 : null,
+          }).then(function(res) {
+            if (res.error) console.error('[CivicVerify Transcript] Insert error:', res.error);
           });
         }
       }
     };
 
     recognition.onerror = function(e) {
-      if (e.error !== 'no-speech' && e.error !== 'aborted') console.error('Speech recognition error:', e.error);
+      console.log('[CivicVerify Transcript] Error:', e.error);
+      if (e.error === 'not-allowed') {
+        console.error('[CivicVerify Transcript] Mic permission denied for transcription');
+      }
     };
 
     recognition.onend = function() {
-      // Auto-restart if still active speaker
-      if (debate && debate.active_speaker_id === currentUser.id && recognitionRef.current) {
-        try { recognition.start(); } catch (e) { /* ignore */ }
+      // Auto-restart if recognition ref still exists (meaning we haven't stopped)
+      if (recognitionRef.current) {
+        try { setTimeout(function() { if (recognitionRef.current) recognitionRef.current.start(); }, 200); } catch (e) { /* ignore */ }
       }
     };
 
     recognitionRef.current = recognition;
     if (!debateStartTimeRef.current) debateStartTimeRef.current = Date.now();
-    try { recognition.start(); setIsTranscribing(true); } catch (e) { /* ignore */ }
+    try { recognition.start(); setIsTranscribing(true); console.log('[CivicVerify Transcript] Started'); } catch (e) { console.error('[CivicVerify Transcript] Start failed:', e); }
   }
 
   function stopTranscription() {
@@ -786,7 +947,7 @@ export default function DebateSpace() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 12, background: 'rgba(11,37,69,0.04)' }}>
             <span style={{ fontSize: 14 }}>👁</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{debate.listener_count || 0}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{listenerCount}</span>
             <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.5)' }}>listening</span>
           </div>
         </div>
@@ -836,13 +997,22 @@ export default function DebateSpace() {
         )}
       </div>
 
+      {/* Live Audience Vote */}
+      {(isLive || isCompleted) && (
+        <LiveVoteBar
+          debate={debate} debaterA={debaterA} debaterB={debaterB}
+          votesA={audienceVotes.a} votesB={audienceVotes.b}
+          userVote={userVote} onVote={castAudienceVote} currentUser={currentUser}
+        />
+      )}
+
       {/* Moderator + Chat/Polls/Transcript */}
       <div className="cv-ds-main" style={{ display: 'flex', gap: 16 }}>
         {/* Moderator Panel */}
         <div style={{ flex: 1, borderRadius: 20, display: 'flex', flexDirection: 'column', minHeight: 420, background: 'linear-gradient(180deg, #fff 0%, #fafaf8 100%)', border: '1px solid rgba(11,37,69,0.06)', boxShadow: '0 2px 16px rgba(11,37,69,0.03)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px', borderBottom: '1px solid rgba(11,37,69,0.06)', background: 'linear-gradient(135deg, #0B2545, #163a64)', borderRadius: '20px 20px 0 0' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(197,150,12,0.3)' }}><span style={{ fontSize: 18 }}>⚖️</span></div>
-            <div><p style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 }}>The Forum</p><p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: 0, fontWeight: 500 }}>AI Moderator</p></div>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(197,150,12,0.3)' }}><span style={{ fontSize: 18 }}>{debate.moderator_type === 'user' ? '👤' : '⚖️'}</span></div>
+            <div><p style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 }}>The Forum</p><p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: 0, fontWeight: 500 }}>{debate.moderator_type === 'user' ? 'Human Moderator' : 'AI Moderator'}</p></div>
           </div>
           <div ref={modLogRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
             {modLog.length === 0 ? (
@@ -889,7 +1059,7 @@ export default function DebateSpace() {
 
             {activeTab === 'transcript' && (
               <div style={{ flex: 1, overflowY: 'auto' }}>
-                <TranscriptPanel debateId={id} transcriptSegments={transcriptSegments} />
+                <TranscriptPanel debateId={id} transcriptSegments={transcriptSegments} isLive={isLive} isActiveSpeaker={isActiveSpeaker} />
               </div>
             )}
 
