@@ -29,6 +29,7 @@ import DebateSpace from './pages/citizen/DebateSpace'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
+import AdminDebates from './pages/admin/AdminDebates'
 import AdminSurveys from './pages/admin/Surveys'
 import AdminSurveyBuilder from './pages/admin/SurveyBuilder'
 import AdminReviewQueue from './pages/admin/ReviewQueue'
@@ -92,7 +93,7 @@ export default function App() {
             <Route path="debates" element={<CitizenDebates />} />
             <Route path="debates/:id" element={<DebateSpace />} />
           </Route>
-
+          <Route path="debates" element={<AdminDebates />} />
           <Route path="/admin" element={
             <ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>
           }>
