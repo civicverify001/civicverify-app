@@ -145,13 +145,19 @@ function PollCard({ poll, onVote }) {
   var votes = poll.votes || {};
   var totalVotes = Object.values(votes).reduce(function(a, b) { return a + b; }, 0);
   var hasVoted = poll.userVote !== undefined && poll.userVote !== null;
+  var isFeatured = poll.poll_type === 'featured';
   return (
     <div style={{
       padding: '18px 20px', borderRadius: 16, marginBottom: 12,
-      background: 'linear-gradient(135deg, #fff, #fefce8)',
-      border: '1px solid rgba(197,150,12,0.15)', boxShadow: '0 2px 8px rgba(197,150,12,0.06)',
+      background: isFeatured ? 'linear-gradient(135deg, #fff, #fefce8)' : '#fff',
+      border: '1px solid ' + (isFeatured ? 'rgba(197,150,12,0.2)' : 'rgba(11,37,69,0.08)'),
+      boxShadow: '0 2px 8px rgba(11,37,69,0.04)',
     }}>
-      <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 14px' }}>📊 {poll.question}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: 0 }}>📊 {poll.question}</p>
+        {isFeatured && <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>Featured</span>}
+      </div>
+      {poll.creator_name && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.45)', margin: '-6px 0 10px', fontWeight: 500 }}>by {poll.creator_name}</p>}
       <div style={{ display: 'grid', gap: 8 }}>
         {options.map(function(opt, i) {
           var count = votes[i] || 0;
@@ -176,6 +182,95 @@ function PollCard({ poll, onVote }) {
         })}
       </div>
       {totalVotes > 0 && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.45)', margin: '10px 0 0', textAlign: 'right', fontWeight: 600 }}>{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</p>}
+    </div>
+  );
+}
+
+// ─── Create Poll Form ───
+function CreatePollForm({ debateId, currentUser, pollType, onCreated }) {
+  var [showForm, setShowForm] = useState(false);
+  var [question, setQuestion] = useState('');
+  var [options, setOptions] = useState(['', '']);
+  var [creating, setCreating] = useState(false);
+
+  async function handleCreate() {
+    if (!question.trim()) return;
+    var validOpts = options.filter(function(o) { return o.trim(); });
+    if (validOpts.length < 2) return alert('Need at least 2 options');
+    setCreating(true);
+    var { error } = await supabase.from('debate_polls').insert({
+      debate_id: debateId,
+      question: question.trim(),
+      options: validOpts,
+      is_active: true,
+      created_by: currentUser.id,
+      poll_type: pollType,
+    });
+    setCreating(false);
+    if (error) { alert('Error: ' + error.message); return; }
+    setQuestion(''); setOptions(['', '']); setShowForm(false);
+    if (onCreated) onCreated();
+  }
+
+  if (!showForm) {
+    return (
+      <button onClick={function() { setShowForm(true); }}
+        style={{
+          width: '100%', padding: '10px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          fontFamily: 'DM Sans, sans-serif', transition: 'all 0.2s',
+          background: pollType === 'featured' ? 'linear-gradient(135deg, rgba(197,150,12,0.08), rgba(197,150,12,0.15))' : 'rgba(11,37,69,0.04)',
+          border: '1px dashed ' + (pollType === 'featured' ? 'rgba(197,150,12,0.3)' : 'rgba(11,37,69,0.15)'),
+          color: pollType === 'featured' ? C.darkGold : 'rgba(11,37,69,0.6)',
+        }}>
+        + Create {pollType === 'featured' ? 'Featured' : ''} Poll
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ padding: '16px', borderRadius: 14, background: '#fff', border: '1px solid rgba(11,37,69,0.1)', marginBottom: 12, boxShadow: '0 2px 8px rgba(11,37,69,0.04)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: 0 }}>📊 New Poll</p>
+        <button onClick={function() { setShowForm(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'rgba(11,37,69,0.4)' }}>✕</button>
+      </div>
+      <input
+        value={question} onChange={function(e) { setQuestion(e.target.value); }}
+        placeholder="Your question..."
+        style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.1)', fontSize: 13, color: C.navy, fontFamily: 'DM Sans, sans-serif', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }}
+      />
+      {options.map(function(opt, i) {
+        return (
+          <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+            <input
+              value={opt}
+              onChange={function(e) { var newOpts = options.slice(); newOpts[i] = e.target.value; setOptions(newOpts); }}
+              placeholder={'Option ' + (i + 1)}
+              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(11,37,69,0.08)', fontSize: 12, color: C.navy, fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
+            />
+            {options.length > 2 && (
+              <button onClick={function() { var newOpts = options.slice(); newOpts.splice(i, 1); setOptions(newOpts); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'rgba(239,68,68,0.6)', padding: '0 4px' }}>✕</button>
+            )}
+          </div>
+        );
+      })}
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        {options.length < 5 && (
+          <button onClick={function() { setOptions(options.concat([''])); }}
+            style={{ padding: '6px 12px', borderRadius: 8, border: '1px dashed rgba(11,37,69,0.15)', background: 'none', fontSize: 11, fontWeight: 600, color: 'rgba(11,37,69,0.5)', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+            + Add Option
+          </button>
+        )}
+        <button onClick={handleCreate} disabled={creating || !question.trim()}
+          style={{
+            marginLeft: 'auto', padding: '8px 18px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            fontFamily: 'DM Sans, sans-serif',
+            background: question.trim() ? 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')' : 'rgba(11,37,69,0.06)',
+            color: question.trim() ? '#fff' : 'rgba(11,37,69,0.3)',
+          }}>
+          {creating ? 'Creating...' : 'Launch Poll'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -559,6 +654,8 @@ export default function DebateSpace() {
   var chatRef = useRef(null);
   var [chatUsers, setChatUsers] = useState({});
   var [polls, setPolls] = useState([]);
+  var [featuredPolls, setFeaturedPolls] = useState([]);
+  var [audiencePolls, setAudiencePolls] = useState([]);
   var [countdown, setCountdown] = useState(null);
 
   // Phase 4 state
@@ -620,15 +717,24 @@ export default function DebateSpace() {
   var loadPolls = useCallback(async function() {
     var { data: pd } = await supabase.from('debate_polls').select('*').eq('debate_id', id).eq('is_active', true);
     if (pd && pd.length > 0) {
+      // Get creator names
+      var creatorIds = pd.map(function(p) { return p.created_by; }).filter(Boolean);
+      var creatorMap = {};
+      if (creatorIds.length > 0) {
+        var { data: creators } = await supabase.from('users').select('id, full_name').in('id', Array.from(new Set(creatorIds)));
+        if (creators) creators.forEach(function(c) { creatorMap[c.id] = c.full_name; });
+      }
       var enriched = await Promise.all(pd.map(async function(p) {
         var { data: votes } = await supabase.from('debate_poll_votes').select('choice').eq('poll_id', p.id);
         var vc = {}; (votes || []).forEach(function(v) { vc[v.choice] = (vc[v.choice] || 0) + 1; });
         var uv = null;
         if (currentUser) { var { data: mv } = await supabase.from('debate_poll_votes').select('choice').eq('poll_id', p.id).eq('user_id', currentUser.id).single(); if (mv) uv = mv.choice; }
-        return Object.assign({}, p, { votes: vc, userVote: uv });
+        return Object.assign({}, p, { votes: vc, userVote: uv, creator_name: creatorMap[p.created_by] || null });
       }));
       setPolls(enriched);
-    } else { setPolls([]); }
+      setFeaturedPolls(enriched.filter(function(p) { return p.poll_type === 'featured'; }));
+      setAudiencePolls(enriched.filter(function(p) { return p.poll_type === 'audience'; }));
+    } else { setPolls([]); setFeaturedPolls([]); setAudiencePolls([]); }
   }, [id, currentUser]);
 
   var loadTranscript = useCallback(async function() {
@@ -745,7 +851,11 @@ export default function DebateSpace() {
           });
         }
       }).subscribe();
-    return function() { supabase.removeChannel(ch); supabase.removeChannel(ml); supabase.removeChannel(ds); supabase.removeChannel(ts); };
+    var pl = supabase.channel('dp-' + id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'debate_polls', filter: 'debate_id=eq.' + id }, function() {
+        loadPolls();
+      }).subscribe();
+    return function() { supabase.removeChannel(ch); supabase.removeChannel(ml); supabase.removeChannel(ds); supabase.removeChannel(ts); supabase.removeChannel(pl); };
   }, [id]);
 
   useEffect(function() { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chatMessages]);
@@ -895,6 +1005,7 @@ export default function DebateSpace() {
   }
 
   var isDebater = debate && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id);
+  var isModerator = debate && currentUser && debate.moderator_type === 'user' && debate.moderator_user_id === currentUser.id;
   var isActiveSpeaker = debate && currentUser && debate.active_speaker_id === currentUser.id;
   var isLive = debate && debate.status === 'live';
   var isWaiting = debate && (debate.status === 'waiting_room' || debate.status === 'confirmed' || debate.status === 'pending');
@@ -1006,6 +1117,20 @@ export default function DebateSpace() {
         />
       )}
 
+      {/* Featured Polls (from debaters/moderator) */}
+      {(isLive || isCompleted) && (featuredPolls.length > 0 || (isDebater || isModerator)) && (
+        <div style={{ padding: '18px 22px', borderRadius: 18, background: 'linear-gradient(135deg, rgba(197,150,12,0.03), rgba(197,150,12,0.06))', border: '1px solid rgba(197,150,12,0.12)', marginBottom: 20 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: '0 0 14px' }}>📊 Featured Polls</p>
+          {featuredPolls.map(function(p) { return <PollCard key={p.id} poll={p} onVote={votePoll} />; })}
+          {(isDebater || isModerator) && isLive && currentUser && (
+            <CreatePollForm debateId={id} currentUser={currentUser} pollType="featured" onCreated={loadPolls} />
+          )}
+          {featuredPolls.length === 0 && !(isDebater || isModerator) && (
+            <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)', margin: 0, textAlign: 'center' }}>No featured polls yet</p>
+          )}
+        </div>
+      )}
+
       {/* Moderator + Chat/Polls/Transcript */}
       <div className="cv-ds-main" style={{ display: 'flex', gap: 16 }}>
         {/* Moderator Panel */}
@@ -1027,7 +1152,7 @@ export default function DebateSpace() {
         {/* Sidebar: Chat / Polls / Transcript / Info */}
         <div className="cv-ds-sidebar" style={{ width: 380, borderRadius: 20, display: 'flex', flexDirection: 'column', minHeight: 420, background: '#fff', border: '1px solid rgba(11,37,69,0.06)', boxShadow: '0 2px 16px rgba(11,37,69,0.03)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', background: C.navy }}>
-            {[{ id: 'chat', label: '💬 Chat', count: chatMessages.length }, { id: 'transcript', label: '📝 Transcript', count: transcriptSegments.length }, { id: 'polls', label: '📊 Polls', count: polls.length }, { id: 'info', label: 'ℹ️ Info' }].map(function(t) {
+            {[{ id: 'chat', label: '💬 Chat', count: chatMessages.length }, { id: 'transcript', label: '📝 Transcript', count: transcriptSegments.length }, { id: 'polls', label: '📊 Polls', count: audiencePolls.length }, { id: 'info', label: 'ℹ️ Info' }].map(function(t) {
               var active = activeTab === t.id;
               return (<button key={t.id} className="cv-ds-tab" onClick={function() { setActiveTab(t.id); }} style={{ flex: 1, padding: '14px 4px', fontSize: 11, fontWeight: active ? 700 : 500, color: active ? '#fff' : 'rgba(255,255,255,0.45)', background: active ? 'rgba(197,150,12,0.2)' : 'transparent', borderBottom: active ? '3px solid ' + C.gold : '3px solid transparent' }}>
                 {t.label}{t.count > 0 && <span style={{ marginLeft: 4, padding: '2px 6px', borderRadius: 10, fontSize: 9, fontWeight: 700, background: active ? C.gold : 'rgba(255,255,255,0.15)', color: '#fff' }}>{t.count}</span>}
@@ -1065,13 +1190,35 @@ export default function DebateSpace() {
 
             {activeTab === 'polls' && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                {polls.length === 0 ? (
-                  <div style={{ padding: '50px 8px', textAlign: 'center' }}>
-                    <div style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px', background: 'rgba(197,150,12,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 24 }}>📊</span></div>
-                    <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.5)', margin: '0 0 4px', fontWeight: 500 }}>No active polls</p>
-                    <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)', margin: 0 }}>Polls may be launched during the debate</p>
+                {/* Audience poll creation for non-debaters */}
+                {currentUser && !isDebater && !isModerator && isLive && (
+                  <div style={{ marginBottom: 14 }}>
+                    <CreatePollForm debateId={id} currentUser={currentUser} pollType="audience" onCreated={loadPolls} />
                   </div>
-                ) : polls.map(function(p) { return <PollCard key={p.id} poll={p} onVote={votePoll} />; })}
+                )}
+
+                {audiencePolls.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.5)', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>🎤 Audience Polls</p>
+                    {audiencePolls.map(function(p) { return <PollCard key={p.id} poll={p} onVote={votePoll} />; })}
+                  </div>
+                )}
+
+                {/* Also show featured polls here for reference */}
+                {featuredPolls.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>⭐ Featured Polls</p>
+                    {featuredPolls.map(function(p) { return <PollCard key={p.id} poll={p} onVote={votePoll} />; })}
+                  </div>
+                )}
+
+                {polls.length === 0 && (
+                  <div style={{ padding: '40px 8px', textAlign: 'center' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px', background: 'rgba(197,150,12,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 24 }}>📊</span></div>
+                    <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.5)', margin: '0 0 4px', fontWeight: 500 }}>No polls yet</p>
+                    <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)', margin: 0 }}>{isLive ? 'Create a poll or wait for debaters to launch one' : 'Polls appear during live debates'}</p>
+                  </div>
+                )}
               </div>
             )}
 
