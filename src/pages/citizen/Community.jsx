@@ -32,10 +32,16 @@ const ICONS = {
   trending: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
   users:    "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
   back:     "M15 18l-6-6 6-6",
+  search:   "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  edit:     "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
+  trash:    "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16",
+  more:     "M12 5v.01M12 12v.01M12 19v.01",
   image:    "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
   x:        "M6 18L18 6M6 6l12 12",
   smile:    "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   poll:     "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+  follow:   "M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z",
+  check:    "M5 13l4 4L19 7",
 };
 
 // Emoji sets
@@ -65,8 +71,15 @@ const initials = (name) =>
   (name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
-const Avatar = ({ name, size = 38, verified = false }) => (
+const Avatar = ({ name, size = 38, verified = false, avatarUrl = null }) => (
   <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+    {avatarUrl ? (
+      <img src={avatarUrl} alt={name || "avatar"} style={{
+        width: size, height: size, borderRadius: "50%",
+        border: "2px solid " + T.gold + "33",
+        objectFit: "cover",
+      }} />
+    ) : (
     <div style={{
       width: size, height: size, borderRadius: "50%",
       background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)",
@@ -76,6 +89,7 @@ const Avatar = ({ name, size = 38, verified = false }) => (
     }}>
       {initials(name)}
     </div>
+    )}
     {verified && (
       <div style={{
         position: "absolute", bottom: -1, right: -1,
@@ -102,13 +116,100 @@ const VerifiedBadge = () => (
   </span>
 );
 
+// ── Follow Button ─────────────────────────────────────────────────────────────
+const FollowButton = ({ isFollowing, onToggle, isSelf }) => {
+  const [hov, setHov] = useState(false);
+  if (isSelf) return null;
+  return (
+    <button onClick={(e) => { e.stopPropagation(); onToggle(); }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "3px 10px", borderRadius: 20, cursor: "pointer",
+        fontSize: 11, fontWeight: 700, fontFamily: T.sans,
+        transition: "all 0.2s", flexShrink: 0,
+        background: isFollowing ? (hov ? "#fee2e2" : T.navy + "08") : (hov ? T.gold : T.navy),
+        color: isFollowing ? (hov ? "#e53e3e" : T.muted) : "#fff",
+        border: "1px solid " + (isFollowing ? (hov ? "#fca5a5" : T.border) : "transparent"),
+      }}>
+      {isFollowing
+        ? (hov ? <><Ico d={ICONS.x} size={10} /> Unfollow</> : <><Ico d={ICONS.check} size={10} /> Following</>)
+        : <><Ico d={ICONS.follow} size={10} /> Follow</>
+      }
+    </button>
+  );
+};
+
+// ── Citizen Poll Card ─────────────────────────────────────────────────────────
+const PollCard = ({ poll, userId, onVote }) => {
+  const [voted, setVoted] = useState(poll.my_vote_index);
+  const [votes, setVotes] = useState(poll.vote_counts || []);
+  const [total, setTotal] = useState(poll.total_votes || 0);
+  const options = typeof poll.options === "string" ? JSON.parse(poll.options) : (poll.options || []);
+  const expired = poll.expires_at && new Date(poll.expires_at) < new Date();
+  const showResults = voted !== null && voted !== undefined || expired;
+
+  const castVote = async (idx) => {
+    if (voted !== null && voted !== undefined) return;
+    setVoted(idx);
+    const newVotes = votes.map((v, i) => i === idx ? v + 1 : v);
+    setVotes(newVotes);
+    setTotal((t) => t + 1);
+    if (onVote) onVote(poll.id, idx);
+  };
+
+  return (
+    <div style={{ background: T.cream, borderRadius: 14, padding: "14px 16px", border: "1px solid " + T.border, marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <Ico d={ICONS.poll} size={14} />
+        <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Citizen Poll</span>
+        {expired && <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", background: "#f1f5f9", padding: "2px 8px", borderRadius: 10 }}>Ended</span>}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {options.map((opt, i) => {
+          const count = votes[i] || 0;
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          const isMyVote = voted === i;
+          return (
+            <button key={i} onClick={() => castVote(i)} disabled={showResults}
+              style={{
+                position: "relative", width: "100%", textAlign: "left",
+                padding: "10px 14px", borderRadius: 10, border: "1.5px solid " + (isMyVote ? T.gold : T.border),
+                background: "#fff", cursor: showResults ? "default" : "pointer",
+                fontFamily: T.sans, fontSize: 13, fontWeight: isMyVote ? 700 : 500,
+                color: T.navy, overflow: "hidden", transition: "all 0.2s",
+              }}>
+              {showResults && (
+                <div style={{
+                  position: "absolute", top: 0, left: 0, height: "100%",
+                  width: pct + "%", background: isMyVote ? T.gold + "20" : T.navy + "08",
+                  borderRadius: 8, transition: "width 0.5s ease",
+                }} />
+              )}
+              <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>{isMyVote ? "✓ " : ""}{opt}</span>
+                {showResults && <span style={{ fontSize: 12, fontWeight: 700, color: isMyVote ? T.gold : T.muted }}>{pct}%</span>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{total} vote{total !== 1 ? "s" : ""}</span>
+        {poll.expires_at && !expired && (
+          <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>Ends {new Date(poll.expires_at).toLocaleDateString()}</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Emoji Picker ──────────────────────────────────────────────────────────────
 const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
   const [cat, setCat] = useState("Smileys");
   const pickerRef = useRef(null);
 
   useEffect(() => {
-    // Position via direct DOM — no state, no re-render, never moves
     if (pickerRef.current && anchorRef?.current) {
       const anchor = anchorRef.current.getBoundingClientRect();
       const pw = 300, ph = 290;
@@ -121,7 +222,6 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
       pickerRef.current.style.left = left + "px";
       pickerRef.current.style.visibility = "visible";
     }
-    // Close on outside click — delay 100ms so opening click doesn't immediately close
     const handler = (e) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target) &&
           anchorRef?.current && !anchorRef.current.contains(e.target)) {
@@ -130,7 +230,7 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
     };
     const t = setTimeout(() => document.addEventListener("mousedown", handler), 100);
     return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
-  }, []); // runs ONCE on mount only
+  }, []);
 
   const picker = (
     <div ref={pickerRef} style={{
@@ -165,8 +265,6 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
     </div>
   );
 
-  // Portal: renders on document.body — completely outside parent tree
-  // Parent re-renders (typing) CANNOT affect this component
   return createPortal(picker, document.body);
 };
 
@@ -183,7 +281,7 @@ const ReactionBar = ({ reactions, onReact }) => {
         <button key={emoji} onClick={() => onReact(emoji)} style={{
           display: "inline-flex", alignItems: "center", gap: 4,
           padding: "3px 8px", borderRadius: 20, border: "1px solid " + T.border,
-          background: T.cream, cursor: "pointer", fontSize: 14,
+          background: T.cream, cursor: "pointer",
           fontFamily: T.sans, fontWeight: 600, color: T.navy, fontSize: 12,
           transition: "all 0.15s",
         }}>
@@ -215,13 +313,16 @@ const ReactionBar = ({ reactions, onReact }) => {
 };
 
 // ── Post Composer ─────────────────────────────────────────────────────────────
-const Composer = ({ user, onPost }) => {
+const Composer = ({ user, onPost, onCreatePoll }) => {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [showPollForm, setShowPollForm] = useState(false);
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [pollDays, setPollDays] = useState(3);
   const fileRef = useRef(null);
   const textRef = useRef(null);
   const emojiButtonRef = useRef(null);
@@ -250,7 +351,7 @@ const Composer = ({ user, onPost }) => {
   const removeImage = () => { setImageFile(null); setImagePreview(null); };
 
   const post = async () => {
-    if ((!text.trim() && !imageFile) || busy) return;
+    if ((!text.trim() && !imageFile && !showPollForm) || busy) return;
     setBusy(true);
     let imageUrl = null;
     if (imageFile) {
@@ -265,29 +366,40 @@ const Composer = ({ user, onPost }) => {
       }
       setUploading(false);
     }
-    await onPost(text.trim(), imageUrl);
+    if (showPollForm && onCreatePoll) {
+      const validOpts = pollOptions.filter((o) => o.trim());
+      if (validOpts.length >= 2 && text.trim()) {
+        const expires = new Date();
+        expires.setDate(expires.getDate() + pollDays);
+        await onCreatePoll(text.trim(), validOpts, expires.toISOString(), imageUrl);
+      }
+    } else {
+      await onPost(text.trim(), imageUrl);
+    }
     setText("");
     setImageFile(null);
     setImagePreview(null);
+    setShowPollForm(false);
+    setPollOptions(["", ""]);
     setBusy(false);
   };
 
   const left = MAX - text.length;
-  const hasContent = text.trim() || imageFile;
+  const hasContent = text.trim() || imageFile || showPollForm;
 
   return (
-    <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, boxShadow: "0 2px 16px rgba(11,37,69,0.08)", overflow: "visible" }}>
+    <div className="cv-composer-wrap" style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, boxShadow: "0 2px 16px rgba(11,37,69,0.08)", overflow: "visible" }}>
       <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)", borderRadius: "20px 20px 0 0" }} />
       <div style={{ padding: "16px 20px 14px" }}>
         <div style={{ display: "flex", gap: 12 }}>
-          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} />
+          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} avatarUrl={user?.avatar_url} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
               ref={textRef}
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, MAX))}
-              placeholder="What's on your civic mind? Share a thought, ask a question..."
-              rows={3}
+              placeholder={showPollForm ? "Ask your poll question..." : "What's on your civic mind? Share a thought, ask a question..."}
+              rows={2}
               style={{
                 width: "100%", resize: "none", border: "none", outline: "none",
                 fontFamily: T.sans, fontSize: 15, lineHeight: 1.6,
@@ -295,7 +407,6 @@ const Composer = ({ user, onPost }) => {
               }}
             />
 
-            {/* Image preview */}
             {imagePreview && (
               <div style={{ position: "relative", marginBottom: 10, borderRadius: 12, overflow: "hidden", display: "inline-block" }}>
                 <img src={imagePreview} alt="preview" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 12, display: "block" }} />
@@ -309,10 +420,38 @@ const Composer = ({ user, onPost }) => {
               </div>
             )}
 
-            {/* Toolbar */}
+            {showPollForm && (
+              <div style={{ marginBottom: 12, padding: "12px 14px", background: T.cream, borderRadius: 14, border: "1px solid " + T.border }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 700, color: T.navy, display: "flex", alignItems: "center", gap: 5 }}>
+                    <Ico d={ICONS.poll} size={14} /> Create Poll
+                  </span>
+                  <button onClick={() => { setShowPollForm(false); setPollOptions(["", ""]); }} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 14 }}>✕</button>
+                </div>
+                {pollOptions.map((opt, i) => (
+                  <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
+                    <input value={opt} onChange={(e) => { const next = [...pollOptions]; next[i] = e.target.value; setPollOptions(next); }}
+                      placeholder={"Option " + (i + 1)}
+                      style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 13, color: T.navy, outline: "none", background: "#fff" }} />
+                    {pollOptions.length > 2 && (
+                      <button onClick={() => setPollOptions((p) => p.filter((_, j) => j !== i))} style={{ width: 28, height: 28, borderRadius: 6, background: "none", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted, fontSize: 12 }}>✕</button>
+                    )}
+                  </div>
+                ))}
+                {pollOptions.length < 5 && (
+                  <button onClick={() => setPollOptions((p) => [...p, ""])} style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.gold, background: "none", border: "none", cursor: "pointer", padding: "4px 0", marginBottom: 8 }}>+ Add option</button>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>Expires in</span>
+                  <select value={pollDays} onChange={(e) => setPollDays(Number(e.target.value))} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, color: T.navy }}>
+                    <option value={1}>1 day</option><option value={3}>3 days</option><option value={7}>7 days</option><option value={14}>14 days</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid " + T.border }}>
               <div style={{ display: "flex", gap: 4, position: "relative" }}>
-                {/* Image upload */}
                 <button onClick={() => fileRef.current?.click()} style={{
                   width: 34, height: 34, borderRadius: 10, background: "none",
                   border: "1px solid " + T.border, cursor: "pointer",
@@ -326,7 +465,6 @@ const Composer = ({ user, onPost }) => {
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" onChange={pickImage} style={{ display: "none" }} />
 
-                {/* Emoji */}
                 <div style={{ position: "relative" }}>
                   <button ref={emojiButtonRef} onClick={() => setShowEmoji(!showEmoji)} style={{
                     width: 34, height: 34, borderRadius: 10, background: showEmoji ? T.cream : "none",
@@ -337,8 +475,22 @@ const Composer = ({ user, onPost }) => {
                   {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={emojiButtonRef} />}
                 </div>
 
-                {/* Quick emojis */}
-                <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>
+                <button onClick={() => setShowPollForm(!showPollForm)} style={{
+                  height: 34, borderRadius: 10, padding: "0 12px",
+                  background: showPollForm ? T.gold + "15" : "none",
+                  border: "1px solid " + (showPollForm ? T.gold + "44" : T.border), cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                  color: showPollForm ? T.gold : T.muted, transition: "all 0.15s",
+                  fontFamily: T.sans, fontSize: 12, fontWeight: 600,
+                }}
+                  onMouseEnter={(e) => { if (!showPollForm) { e.currentTarget.style.background = T.cream; e.currentTarget.style.color = T.navy; } }}
+                  onMouseLeave={(e) => { if (!showPollForm) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; } }}
+                >
+                  <Ico d={ICONS.poll} size={16} />
+                  <span>Poll</span>
+                </button>
+
+                <div className="cv-quick-emojis" style={{ display: "flex", gap: 2, marginLeft: 4 }}>
                   {["❤️","👍","🔥","🎉"].map((e) => (
                     <button key={e} onClick={() => insertEmoji(e)} style={{
                       width: 30, height: 30, fontSize: 16, background: "none", border: "none",
@@ -363,7 +515,7 @@ const Composer = ({ user, onPost }) => {
                   cursor: hasContent ? "pointer" : "default", transition: "all 0.2s",
                   boxShadow: hasContent ? "0 2px 8px " + T.navy + "40" : "none",
                 }}>
-                  {uploading ? "Uploading..." : busy ? "Posting..." : "Post"}
+                  {uploading ? "Uploading..." : busy ? "Posting..." : showPollForm ? "Post Poll" : "Post"}
                 </button>
               </div>
             </div>
@@ -377,7 +529,7 @@ const Composer = ({ user, onPost }) => {
 // ── Single comment row ────────────────────────────────────────────────────────
 const CommentRow = ({ c }) => (
   <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
-    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} />
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} avatarUrl={c.users?.avatar_url} />
     <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
       <div style={{
         background: T.cream, borderRadius: "12px 12px 12px 3px",
@@ -411,14 +563,13 @@ const CommentsList = ({ comments }) => {
   const [expanded, setExpanded] = useState(false);
   const SHOW = 3;
   const hiddenCount = Math.max(0, comments.length - SHOW);
-  const latest = comments.slice(-SHOW); // always show the 3 most recent
-  const older = comments.slice(0, -SHOW); // the rest hidden by default
+  const latest = comments.slice(-SHOW);
+  const older = comments.slice(0, -SHOW);
 
   if (comments.length === 0) return null;
 
   return (
     <div style={{ borderLeft: "2px solid " + T.gold + "33", marginLeft: 14, paddingLeft: 8, marginBottom: 4 }}>
-      {/* Older replies — slide open */}
       {hiddenCount > 0 && (
         <>
           <button onClick={() => setExpanded((v) => !v)} style={{
@@ -429,7 +580,6 @@ const CommentsList = ({ comments }) => {
             <span style={{ fontSize: 13, transition: "transform 0.2s", display: "inline-block", transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
             {expanded ? "Hide older replies" : "View " + hiddenCount + " more " + (hiddenCount === 1 ? "reply" : "replies")}
           </button>
-          {/* Slide wrapper using max-height transition */}
           <div style={{
             overflow: "hidden",
             maxHeight: expanded ? older.length * 120 + "px" : "0px",
@@ -439,97 +589,13 @@ const CommentsList = ({ comments }) => {
           </div>
         </>
       )}
-      {/* Always-visible latest replies */}
       {latest.map((c) => <CommentRow key={c.id} c={c} />)}
     </div>
   );
 };
 
-// ── Reply Box (isolated to prevent parent re-renders moving the emoji picker) ─
-const ReplyBox = ({ postId, onComment }) => {
-  const [reply, setReply] = useState("");
-  const [showEmojiReply, setShowEmojiReply] = useState(false);
-  const [replyImageFile, setReplyImageFile] = useState(null);
-  const [replyImagePreview, setReplyImagePreview] = useState(null);
-  const replyRef = useRef(null);
-  const replyFileRef = useRef(null);
-  const replyEmojiRef = useRef(null);
-
-  const insertReplyEmoji = (emoji) => {
-    setReply((r) => r + emoji);
-    setShowEmojiReply(false);
-    replyRef.current?.focus();
-  };
-
-  const submitReply = async () => {
-    if (!reply.trim() && !replyImageFile) return;
-    let imageUrl = null;
-    if (replyImageFile) {
-      const ext = replyImageFile.name.split(".").pop();
-      const path = "community/" + Date.now() + "-reply." + ext;
-      const { error: upErr } = await supabase.storage
-        .from("community-images").upload(path, replyImageFile, { cacheControl: "3600", upsert: false });
-      if (!upErr) {
-        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
-        imageUrl = urlData?.publicUrl;
-      }
-    }
-    await onComment(postId, reply.trim(), imageUrl);
-    setReply("");
-    setReplyImageFile(null);
-    setReplyImagePreview(null);
-  };
-
-  return (
-    <div style={{ marginTop: 12, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
-      <textarea
-        ref={replyRef}
-        value={reply}
-        onChange={(e) => setReply(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && submitReply()}
-        placeholder="Write a thoughtful reply..."
-        rows={2}
-        style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
-      />
-      {replyImagePreview && (
-        <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
-          <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
-          <button onClick={() => { setReplyImageFile(null); setReplyImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-            <Ico d={ICONS.x} size={10} />
-          </button>
-        </div>
-      )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
-            <Ico d={ICONS.image} size={14} />
-          </button>
-          <input ref={replyFileRef} type="file" accept="image/*" onChange={(e) => {
-            const file = e.target.files[0]; if (!file) return;
-            setReplyImageFile(file);
-            const reader = new FileReader();
-            reader.onload = (ev) => setReplyImagePreview(ev.target.result);
-            reader.readAsDataURL(file);
-          }} style={{ display: "none" }} />
-          <div style={{ position: "relative" }}>
-            <button ref={replyEmojiRef} onClick={() => setShowEmojiReply((v) => !v)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
-            {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
-          </div>
-          {["❤️","👍","🔥","😂"].map((e) => (
-            <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter</span>
-          <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
-            Reply
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-const PostCard = ({ post, onLike, onComment, onReact }) => {
+// ── PostCard ──────────────────────────────────────────────────────────────────
+const PostCard = ({ post, onLike, onComment, onReact, currentUserId, onDelete, onEdit, editingPost, setEditingPost, onFollow, onPollVote }) => {
   const [liked, setLiked] = useState(post.my_vote === "like");
   const [likes, setLikes] = useState(post.likes_count || 0);
   const [disliked, setDisliked] = useState(post.my_vote === "dislike");
@@ -543,9 +609,22 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentCount, setCommentCount] = useState(post.comments_count || 0);
+  const [showMenu, setShowMenu] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editText, setEditText] = useState(post.content || "");
+  const menuRef = useRef(null);
   const replyRef = useRef(null);
   const replyFileRef = useRef(null);
   const replyEmojiRef = useRef(null);
+  const isOwner = post.user_id === currentUserId;
+  const isEditing = editingPost === post.id;
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [showMenu]);
 
   const toggleLike = async () => {
     const next = !liked;
@@ -567,7 +646,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
     setLoadingComments(true);
     const { data } = await supabase
       .from("community_post_comments")
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified, avatar_url)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     setComments(data || []);
@@ -616,6 +695,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
 
   return (
     <div
+      className="cv-post-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -626,10 +706,10 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
         transition: "all 0.2s", overflow: "hidden",
       }}
     >
-      <div style={{ padding: "18px 20px 14px" }}>
+      <div className="cv-post-inner" style={{ padding: "18px 20px 14px" }}>
         {/* Author */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-          <Avatar name={post.author_name} size={44} verified={post.author_verified} />
+          <Avatar name={post.author_name} size={44} verified={post.author_verified} avatarUrl={post.author_avatar} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
               <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy }}>
@@ -641,26 +721,121 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
                   <Ico d={ICONS.hash} size={8} /> {post.survey_tag}
                 </span>
               )}
+              {onFollow && post.user_id && (
+                <FollowButton isFollowing={post.is_following} onToggle={() => onFollow(post.user_id)} isSelf={post.user_id === currentUserId} />
+              )}
             </div>
             <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{timeAgo(post.created_at)}</span>
           </div>
+          {isOwner && (
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button onClick={() => { setShowMenu(!showMenu); setConfirmDelete(false); }} style={{
+                width: 32, height: 32, borderRadius: 8, background: showMenu ? T.navy + "08" : "transparent",
+                border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                color: T.muted, transition: "all 0.15s",
+              }}
+                onMouseEnter={(e) => { if (!showMenu) e.currentTarget.style.background = T.cream; }}
+                onMouseLeave={(e) => { if (!showMenu) e.currentTarget.style.background = "transparent"; }}
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                </svg>
+              </button>
+              {showMenu && (
+                <div style={{
+                  position: "absolute", top: "100%", right: 0, marginTop: 4, zIndex: 50,
+                  background: "#fff", borderRadius: 12, border: "1px solid " + T.border,
+                  boxShadow: "0 8px 30px rgba(11,37,69,0.15)", overflow: "hidden", minWidth: 160,
+                  animation: "fadeIn 0.15s ease",
+                }}>
+                  {!confirmDelete ? (
+                    <>
+                      <button onClick={() => { setEditingPost(post.id); setEditText(post.content || ""); setShowMenu(false); }} style={{
+                        width: "100%", padding: "10px 14px", background: "none", border: "none",
+                        cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                        fontFamily: T.sans, fontSize: 13, fontWeight: 500, color: T.navy, transition: "background 0.1s",
+                      }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                      >
+                        <Ico d={ICONS.edit} size={14} /> Edit post
+                      </button>
+                      <div style={{ height: 1, background: T.border }} />
+                      <button onClick={() => setConfirmDelete(true)} style={{
+                        width: "100%", padding: "10px 14px", background: "none", border: "none",
+                        cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                        fontFamily: T.sans, fontSize: 13, fontWeight: 500, color: "#e53e3e", transition: "background 0.1s",
+                      }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                      >
+                        <Ico d={ICONS.trash} size={14} /> Delete post
+                      </button>
+                    </>
+                  ) : (
+                    <div style={{ padding: "12px 14px" }}>
+                      <p style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.navy, margin: "0 0 10px" }}>Delete this post?</p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => { onDelete(post.id); setShowMenu(false); }} style={{
+                          flex: 1, padding: "7px 12px", borderRadius: 8, background: "#e53e3e",
+                          border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12,
+                          fontWeight: 700, color: "#fff",
+                        }}>Delete</button>
+                        <button onClick={() => setConfirmDelete(false)} style={{
+                          flex: 1, padding: "7px 12px", borderRadius: 8, background: T.navy + "08",
+                          border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12,
+                          fontWeight: 600, color: T.navy,
+                        }}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
-        {post.content && (
+        {isEditing ? (
+          <div style={{ marginBottom: 12 }}>
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value.slice(0, 280))}
+              rows={3}
+              style={{
+                width: "100%", padding: "10px 12px", borderRadius: 12,
+                border: "1px solid " + T.gold + "44", background: T.cream,
+                fontFamily: T.sans, fontSize: 15, lineHeight: 1.65, color: T.ink,
+                outline: "none", resize: "none", boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 8, justifyContent: "flex-end", alignItems: "center" }}>
+              <span style={{ fontSize: 11, fontFamily: T.sans, color: T.muted }}>{280 - editText.length}</span>
+              <button onClick={() => setEditingPost(null)} style={{
+                padding: "6px 14px", borderRadius: 8, background: T.navy + "08",
+                border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.navy,
+              }}>Cancel</button>
+              <button onClick={() => onEdit(post.id, editText)} disabled={!editText.trim()} style={{
+                padding: "6px 14px", borderRadius: 8, background: T.navy,
+                border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700, color: T.gold,
+                opacity: editText.trim() ? 1 : 0.5,
+              }}>Save</button>
+            </div>
+          </div>
+        ) : post.content ? (
           <p style={{ fontFamily: T.sans, fontSize: 15, lineHeight: 1.65, color: T.ink, margin: "0 0 12px" }}>
             {post.content}
           </p>
-        )}
+        ) : null}
 
-        {/* Image */}
         {post.image_url && (
           <div style={{ marginBottom: 14, borderRadius: 14, overflow: "hidden" }}>
             <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 360, objectFit: "cover", display: "block" }} />
           </div>
         )}
 
-        {/* Reactions */}
+        {post.poll_data && <PollCard poll={post.poll_data} userId={currentUserId} onVote={onPollVote} />}
+
         {(post.reactions && post.reactions.length > 0) && (
           <div style={{ marginBottom: 10 }}>
             <ReactionBar reactions={post.reactions} onReact={(emoji) => onReact(post.id, emoji)} />
@@ -669,7 +844,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
 
         {/* Action bar */}
         <div style={{ paddingTop: 10, borderTop: "1px solid " + T.border }}>
-          {/* Stats row */}
           {(likes > 0 || commentCount > 0) && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid " + T.border }}>
               {likes > 0 && (
@@ -684,9 +858,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               )}
             </div>
           )}
-          {/* Buttons row */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {/* Thumbs up */}
             <button onClick={toggleLike} style={{
               display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
               borderRadius: 20, background: liked ? "#fee2e2" : "none",
@@ -694,11 +866,10 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
               color: liked ? "#e53e3e" : T.muted, transition: "all 0.15s",
             }}>
-              <span style={{ fontSize: 15 }}>{liked ? "👍" : "👍"}</span>
+              <span style={{ fontSize: 15 }}>👍</span>
               <span>{likes > 0 ? likes : ""}</span>
             </button>
 
-            {/* Thumbs down */}
             <button onClick={toggleDislike} style={{
               display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
               borderRadius: 20, background: disliked ? "#fef3c7" : "none",
@@ -710,7 +881,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               <span>{dislikes > 0 ? dislikes : ""}</span>
             </button>
 
-            {/* Reply */}
             <button onClick={toggleReplies} style={{
               display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
               borderRadius: 20, background: showReply ? T.navy + "08" : "none",
@@ -722,7 +892,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               {commentCount > 0 ? commentCount : "Reply"}
             </button>
 
-            {/* Quick emoji reactions */}
             <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
               {["❤️","🔥","😂"].map((e) => (
                 <button key={e} onClick={() => onReact(post.id, e)} style={{
@@ -740,7 +909,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
         {/* Comments + Reply box */}
         {showReply && (
           <div style={{ marginTop: 14 }}>
-            {/* Existing comments — show 4, expand rest */}
             {loadingComments ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}>
                 <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
@@ -750,7 +918,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
             )}
           </div>
         )}
-        {/* Reply composer */}
         {showReply && (
           <div style={{ marginTop: 4, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
             <textarea
@@ -762,7 +929,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               rows={2}
               style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
             />
-            {/* Reply image preview */}
             {replyImagePreview && (
               <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
                 <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
@@ -771,10 +937,8 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
                 </button>
               </div>
             )}
-            {/* Reply toolbar */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                {/* Image upload */}
                 <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
                   <Ico d={ICONS.image} size={14} />
                 </button>
@@ -785,18 +949,16 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
                   reader.onload = (ev) => setReplyImagePreview(ev.target.result);
                   reader.readAsDataURL(file);
                 }} style={{ display: "none" }} />
-                {/* Emoji picker */}
                 <div style={{ position: "relative" }}>
                   <button ref={replyEmojiRef} onClick={() => setShowEmojiReply(!showEmojiReply)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
                   {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
                 </div>
-                {/* Quick emojis */}
                 {["❤️","👍","🔥","😂"].map((e) => (
                   <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
                 ))}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter to send</span>
+                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter</span>
                 <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: (reply.trim() || replyImageFile) ? "pointer" : "default", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
                   Reply
                 </button>
@@ -991,28 +1153,72 @@ export default function Community() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingPost, setEditingPost] = useState(null);
+  const [followingMap, setFollowingMap] = useState({});
+  const [feedMode, setFeedMode] = useState("trending");
   const PAGE = 15;
 
   useEffect(() => { if (user?.id) init(); }, [user?.id]);
 
   const init = async () => {
     setLoading(true);
-    await Promise.all([fetchProfile(), fetchPosts(0), fetchSurveys()]);
+    try {
+      await Promise.all([fetchProfile(), fetchFollowing(), fetchPosts(0), fetchSurveys()]);
+    } catch (e) {
+      console.error("Community init error:", e);
+      try { await fetchPosts(0); } catch (e2) {}
+    }
     setLoading(false);
   };
 
   const fetchProfile = async () => {
-    const { data } = await supabase.from("users").select("id, full_name, identity_verified").eq("id", user.id).single();
+    const { data } = await supabase.from("users").select("id, full_name, identity_verified, avatar_url").eq("id", user.id).single();
     setCurrentUser(data);
   };
 
-  const fetchPosts = async (p) => {
+  const fetchFollowing = async () => {
+    try {
+      const { data } = await supabase.from("user_follows").select("following_id").eq("follower_id", user.id);
+      const map = {};
+      (data || []).forEach((f) => { map[f.following_id] = true; });
+      setFollowingMap(map);
+    } catch (e) { /* table may not exist yet */ }
+  };
+
+  const fetchPosts = async (p, mode) => {
+    const currentMode = mode || feedMode;
     const from = p * PAGE;
-    const { data } = await supabase
-      .from("community_posts")
-      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
-      .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
-    // Load this user's votes for these posts
+    let data = null;
+
+    if (currentMode === "trending") {
+      try {
+        const r = await supabase.rpc("get_ranked_feed", { p_user_id: user.id, p_limit: PAGE, p_offset: from });
+        if (!r.error && r.data && r.data.length) data = r.data;
+      } catch (e) { /* RPC may not exist yet */ }
+    }
+
+    if (!data) {
+      let r = await supabase
+        .from("community_posts")
+        .select("id, user_id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, poll_id, linked_survey_data, users:user_id(full_name, identity_verified, avatar_url)")
+        .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+      if (r.error) {
+        r = await supabase
+          .from("community_posts")
+          .select("id, user_id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified, avatar_url)")
+          .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+      }
+      data = (r.data || []).map((x) => ({
+        ...x, author_name: x.users?.full_name, author_verified: x.users?.identity_verified,
+        author_avatar: x.users?.avatar_url,
+      }));
+    }
+
+    if (currentMode === "following") {
+      data = data.filter((x) => followingMap[x.user_id]);
+    }
+
     const ids = (data || []).map((x) => x.id);
     let myVotes = {};
     if (ids.length && user?.id) {
@@ -1021,12 +1227,34 @@ export default function Community() {
         .select("post_id, type").eq("user_id", user.id).in("post_id", ids);
       (votes || []).forEach((v) => { myVotes[v.post_id] = v.type; });
     }
+
+    const pollIds = (data || []).map((x) => x.poll_id).filter(Boolean);
+    let pollMap = {};
+    if (pollIds.length) {
+      try {
+        const { data: polls } = await supabase.from("citizen_polls").select("*").in("id", pollIds);
+        const { data: allVotes } = await supabase.from("citizen_poll_votes").select("poll_id, option_index").in("poll_id", pollIds);
+        const { data: myPollVotes } = await supabase.from("citizen_poll_votes").select("poll_id, option_index").eq("user_id", user.id).in("poll_id", pollIds);
+        const myPollVoteMap = {};
+        (myPollVotes || []).forEach((v) => { myPollVoteMap[v.poll_id] = v.option_index; });
+        (polls || []).forEach((poll) => {
+          const opts = typeof poll.options === "string" ? JSON.parse(poll.options) : (poll.options || []);
+          const voteCounts = opts.map(() => 0);
+          (allVotes || []).filter((v) => v.poll_id === poll.id).forEach((v) => { voteCounts[v.option_index] = (voteCounts[v.option_index] || 0) + 1; });
+          pollMap[poll.id] = { ...poll, options: opts, vote_counts: voteCounts, my_vote_index: myPollVoteMap[poll.id] !== undefined ? myPollVoteMap[poll.id] : null };
+        });
+      } catch (e) { /* poll tables may not exist yet */ }
+    }
+
     const shaped = (data || []).map((x) => ({
       ...x,
-      author_name: x.users?.full_name,
-      author_verified: x.users?.identity_verified,
+      author_name: x.author_name || x.users?.full_name,
+      author_verified: x.author_verified !== undefined ? x.author_verified : x.users?.identity_verified,
+      author_avatar: x.author_avatar || x.users?.avatar_url,
       linked_survey: x.linked_survey_data,
       my_vote: myVotes[x.id] || null,
+      is_following: followingMap[x.user_id] || false,
+      poll_data: x.poll_id ? pollMap[x.poll_id] || null : null,
     }));
     if (p === 0) setPosts(shaped); else setPosts((prev) => [...prev, ...shaped]);
     setHasMore((data || []).length === PAGE);
@@ -1042,25 +1270,67 @@ export default function Community() {
     setSurveys(data.map((s) => ({ ...s, participant_count: s.participant_count?.[0]?.count || 0, message_count: cmap[s.id] || 0 })));
   };
 
+  const changeFeedMode = (mode) => {
+    setFeedMode(mode);
+    fetchPosts(0, mode);
+  };
+
+  const handleFollow = async (targetUserId) => {
+    if (!user?.id || targetUserId === user.id) return;
+    const isFollowing = followingMap[targetUserId];
+    try {
+      if (isFollowing) {
+        await supabase.from("user_follows").delete().eq("follower_id", user.id).eq("following_id", targetUserId);
+        setFollowingMap((m) => { const next = { ...m }; delete next[targetUserId]; return next; });
+      } else {
+        await supabase.from("user_follows").insert({ follower_id: user.id, following_id: targetUserId });
+        setFollowingMap((m) => ({ ...m, [targetUserId]: true }));
+      }
+    } catch (e) { /* table may not exist */ }
+    try { await supabase.rpc("sync_follow_counts", { p_user_id: targetUserId }); } catch(e) {}
+    try { await supabase.rpc("sync_follow_counts", { p_user_id: user.id }); } catch(e) {}
+    setPosts((prev) => prev.map((p) => p.user_id === targetUserId ? { ...p, is_following: !isFollowing } : p));
+  };
+
+  const handleCreatePoll = async (question, options, expiresAt, imageUrl) => {
+    try {
+      const { data: poll, error } = await supabase.from("citizen_polls")
+        .insert({ user_id: user.id, question, options: JSON.stringify(options), expires_at: expiresAt })
+        .select("id").single();
+      if (error || !poll) return;
+      const { data: postData } = await supabase.from("community_posts")
+        .insert({ user_id: user.id, content: question, image_url: imageUrl, poll_id: poll.id, likes_count: 0, comments_count: 0 })
+        .select("id, user_id, content, created_at, likes_count, comments_count, image_url, poll_id, users:user_id(full_name, identity_verified, avatar_url)").single();
+      if (postData) {
+        const pollData = { id: poll.id, question, options, total_votes: 0, vote_counts: options.map(() => 0), my_vote_index: null, expires_at: expiresAt };
+        setPosts((prev) => [{ ...postData, author_name: postData.users?.full_name, author_verified: postData.users?.identity_verified, author_avatar: postData.users?.avatar_url, is_following: false, poll_data: pollData }, ...prev]);
+      }
+    } catch (e) { console.error("Poll creation failed:", e); }
+  };
+
+  const handlePollVote = async (pollId, optionIndex) => {
+    try {
+      await supabase.from("citizen_poll_votes").insert({ poll_id: pollId, user_id: user.id, option_index: optionIndex });
+      try { await supabase.rpc("sync_poll_votes", { p_poll_id: pollId }); } catch(e) {}
+    } catch (e) { /* table may not exist */ }
+  };
+
   const handlePost = async (content, imageUrl) => {
     const { data, error } = await supabase.from("community_posts")
       .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 })
-      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified)").single();
-    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
+      .select("id, user_id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified, avatar_url)").single();
+    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_avatar: data.users?.avatar_url, is_following: false }, ...prev]);
   };
 
   const handleLike = async (postId, type, active, removingOpposite) => {
     if (!user?.id) return;
     if (!active) {
-      // Remove vote
       await supabase.from("community_post_likes")
         .delete().eq("post_id", postId).eq("user_id", user.id);
     } else {
-      // Upsert vote (handles switching from like->dislike automatically)
       await supabase.from("community_post_likes")
         .upsert({ post_id: postId, user_id: user.id, type }, { onConflict: "post_id,user_id" });
     }
-    // Sync counts in DB
     await supabase.rpc("sync_post_like_counts", { p_post_id: postId });
   };
 
@@ -1070,10 +1340,9 @@ export default function Community() {
     const { data, error } = await supabase
       .from("community_post_comments")
       .insert(insertData)
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified, avatar_url)")
       .single();
     if (error) { console.error("Comment save error:", error); return null; }
-    // Increment count in DB so it persists on refresh
     await supabase.rpc("increment_comment_count", { post_id: postId });
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
     return data;
@@ -1083,6 +1352,31 @@ export default function Community() {
     await supabase.from("community_post_reactions").insert({ post_id: postId, user_id: user.id, emoji }).select();
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, reactions: [...(p.reactions || []), { emoji, user_id: user.id }] } : p));
   };
+
+  const handleDelete = async (postId) => {
+    await supabase.from("community_post_comments").delete().eq("post_id", postId);
+    await supabase.from("community_post_likes").delete().eq("post_id", postId);
+    await supabase.from("community_post_reactions").delete().eq("post_id", postId);
+    const { error } = await supabase.from("community_posts").delete().eq("id", postId).eq("user_id", user.id);
+    if (!error) setPosts((prev) => prev.filter((p) => p.id !== postId));
+  };
+
+  const handleEdit = async (postId, newContent) => {
+    const { error } = await supabase.from("community_posts").update({ content: newContent }).eq("id", postId).eq("user_id", user.id);
+    if (!error) {
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, content: newContent } : p));
+      setEditingPost(null);
+    }
+  };
+
+  const filteredPosts = searchQuery.trim()
+    ? posts.filter((p) => {
+        const q = searchQuery.toLowerCase();
+        return (p.content || "").toLowerCase().includes(q) ||
+               (p.author_name || "").toLowerCase().includes(q) ||
+               (p.survey_tag || "").toLowerCase().includes(q);
+      })
+    : posts;
 
   if (activeRoom) {
     return (
@@ -1094,8 +1388,8 @@ export default function Community() {
   }
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans }}>
-      <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }"}</style>
+    <div className="cv-community" style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans, overflowX: "hidden" }}>
+      <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } } @media (max-width: 768px) { .cv-community h1 { font-size: 24px !important; } .cv-composer-wrap { border-radius: 16px !important; } .cv-feed-tabs button { font-size: 11px !important; padding: 7px 8px !important; } .cv-post-card { border-radius: 16px !important; } .cv-post-inner { padding: 14px 14px 10px !important; } .cv-quick-emojis { display: none !important; } } @media (max-width: 420px) { .cv-community h1 { font-size: 20px !important; } .cv-feed-tabs button { font-size: 10px !important; } .cv-post-inner { padding: 12px 12px 8px !important; } }"}</style>
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
@@ -1155,17 +1449,69 @@ export default function Community() {
       {/* Feed */}
       {tab === "feed" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Composer user={currentUser} onPost={handlePost} />
+          <Composer user={currentUser} onPost={handlePost} onCreatePoll={handleCreatePoll} />
+
+          {/* Feed mode selector */}
+          <div className="cv-feed-tabs" style={{ display: "flex", gap: 6, padding: "2px", background: T.navy + "06", borderRadius: 12, border: "1px solid " + T.border }}>
+            {[
+              { id: "trending", label: "🔥 Trending" },
+              { id: "following", label: "👥 Following" },
+              { id: "latest", label: "🕐 Latest" },
+            ].map((m) => (
+              <button key={m.id} onClick={() => changeFeedMode(m.id)} style={{
+                flex: 1, padding: "8px 10px", borderRadius: 10, border: "none", cursor: "pointer",
+                fontFamily: T.sans, fontSize: 12, fontWeight: 600, transition: "all 0.2s",
+                background: feedMode === m.id ? "#fff" : "transparent",
+                color: feedMode === m.id ? T.navy : T.muted,
+                boxShadow: feedMode === m.id ? "0 1px 4px rgba(11,37,69,0.08)" : "none",
+              }}>{m.label}</button>
+            ))}
+          </div>
+
+          {/* Search bar */}
+          <div style={{ position: "relative" }}>
+            <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.muted, pointerEvents: "none" }}>
+              <Ico d={ICONS.search} size={16} />
+            </div>
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search posts, people, topics..."
+              style={{
+                width: "100%", padding: "11px 14px 11px 42px", borderRadius: 14,
+                border: "1px solid " + T.border, background: "#fff",
+                fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none",
+                boxSizing: "border-box", transition: "border-color 0.2s",
+              }}
+              onFocus={(e) => { e.target.style.borderColor = T.gold + "66"; }}
+              onBlur={(e) => { e.target.style.borderColor = T.border; }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: T.muted, padding: 4 }}>
+                <Ico d={ICONS.x} size={14} />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p style={{ fontFamily: T.sans, fontSize: 12, color: T.muted, margin: "-8px 0 0 4px" }}>
+              {filteredPosts.length} result{filteredPosts.length !== 1 ? "s" : ""} for "{searchQuery}"
+            </p>
+          )}
+
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
-            posts.length === 0 ? (
+            filteredPosts.length === 0 ? (
               <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>No posts yet</p>
-                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share a civic thought with your community.</p>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>{searchQuery ? "🔍" : feedMode === "following" ? "👥" : "💬"}</div>
+                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>
+                  {searchQuery ? "No matching posts" : feedMode === "following" ? "No posts from people you follow" : "No posts yet"}
+                </p>
+                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>
+                  {searchQuery ? "Try a different search term." : feedMode === "following" ? "Follow citizens to see their posts here." : "Be the first to share a civic thought with your community."}
+                </p>
               </div>
             ) : (
               <>
-                {posts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified}} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
+                {filteredPosts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified, _currentUserAvatar: currentUser?.avatar_url}} currentUserId={currentUser?.id} onLike={handleLike} onComment={handleComment} onReact={handleReact} onDelete={handleDelete} onEdit={handleEdit} editingPost={editingPost} setEditingPost={setEditingPost} onFollow={handleFollow} onPollVote={handlePollVote} />)}
                 {hasMore && (
                   <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
