@@ -1,4 +1,4 @@
-// src/pages/public/Landing.jsx — Complete Overhaul v2 (Fixed SVGs + Footer Links + Notification Bell)
+// src/pages/public/Landing.jsx — Complete with Notification Bell + Mobile Overflow Fix
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -96,8 +96,8 @@ function ShareModal({ title, surveyId, onClose }) {
           })}
         </div>
         <div style={{ display: 'flex', gap: 8, background: '#f7f7f7', borderRadius: 12, padding: 8 }}>
-          <input readOnly value={url} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12, color: '#666', outline: 'none', padding: '0 8px', fontFamily: body }} />
-          <button onClick={copy} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: copied ? C.green : C.gold, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: body, transition: 'background 0.3s' }}>
+          <input readOnly value={url} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12, color: '#666', outline: 'none', padding: '0 8px', fontFamily: body, minWidth: 0 }} />
+          <button onClick={copy} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: copied ? C.green : C.gold, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: body, transition: 'background 0.3s', whiteSpace: 'nowrap' }}>
             {copied ? '\u2713 Copied!' : 'Copy'}
           </button>
         </div>
@@ -144,7 +144,7 @@ function InlinePoll({ question, surveyId, user, existingAnswer, onVoted, respons
     return (
       <div style={{ margin: '16px 0' }}>
         <p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: '0 0 12px', fontFamily: body }}>{question.text}</p>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           {[1, 2, 3, 4, 5].map(function (n) { return <button key={n} onClick={function () { vote(n); }} disabled={!!selected} style={{ width: 46, height: 46, borderRadius: 12, border: 'none', fontSize: 16, fontWeight: 700, cursor: selected ? 'default' : 'pointer', background: selected === n ? C.gold : 'rgba(11,37,69,0.04)', color: selected === n ? '#fff' : 'rgba(11,37,69,0.3)', transform: selected === n ? 'scale(1.15)' : 'none', transition: 'all 0.25s cubic-bezier(.4,0,.2,1)', fontFamily: body }}>{n}</button>; })}
         </div>
       </div>
@@ -165,11 +165,11 @@ function InlinePoll({ question, surveyId, user, existingAnswer, onVoted, respons
               style={{ position: 'relative', overflow: 'hidden', width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: 12, border: '2px solid ' + (isSelected ? C.gold : C.light), background: isSelected ? C.goldGlow : '#fff', cursor: selected ? 'default' : 'pointer', transition: 'all 0.25s', zIndex: 1, fontFamily: body }}>
               {showResults ? <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: pct + '%', background: isSelected ? C.gold + '18' : 'rgba(11,37,69,0.04)', borderRadius: 10, transition: 'width 0.8s cubic-bezier(.4,0,.2,1)', zIndex: -1 }} /> : null}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {!showResults ? <span style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid ' + (isSelected ? C.gold : 'rgba(11,37,69,0.15)'), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{isSelected ? <span style={{ width: 9, height: 9, borderRadius: '50%', background: C.gold }} /> : null}</span> : isSelected ? <span style={{ fontSize: 13, color: C.gold }}>{'\u2713'}</span> : null}
-                  <span style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, color: isSelected ? C.navy : 'rgba(11,37,69,0.55)' }}>{opt}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  {!showResults ? <span style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid ' + (isSelected ? C.gold : 'rgba(11,37,69,0.15)'), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{isSelected ? <span style={{ width: 9, height: 9, borderRadius: '50%', background: C.gold }} /> : null}</span> : isSelected ? <span style={{ fontSize: 13, color: C.gold, flexShrink: 0 }}>{'\u2713'}</span> : null}
+                  <span style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, color: isSelected ? C.navy : 'rgba(11,37,69,0.55)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opt}</span>
                 </div>
-                {showResults ? <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? C.gold : 'rgba(11,37,69,0.25)', minWidth: 40, textAlign: 'right' }}>{pct}%</span> : null}
+                {showResults ? <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? C.gold : 'rgba(11,37,69,0.25)', minWidth: 40, textAlign: 'right', flexShrink: 0 }}>{pct}%</span> : null}
               </div>
             </button>
           );
@@ -192,7 +192,7 @@ function CommentItem({ comment, user, onVote }) {
           <span style={{ fontSize: 13, fontWeight: 600, color: C.navy, fontFamily: body }}>{comment.user_name || 'Anonymous'}</span>
           <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.2)', fontFamily: body }}>{timeAgo(comment.created_at)}</span>
         </div>
-        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.55)', margin: '5px 0 0', lineHeight: 1.6, fontFamily: body }}>{comment.content}</p>
+        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.55)', margin: '5px 0 0', lineHeight: 1.6, fontFamily: body, wordBreak: 'break-word' }}>{comment.content}</p>
         <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
           <button onClick={function () { onVote(comment.id, 'like'); }} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, border: 'none', background: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 8, color: comment.userVote === 'like' ? C.green : 'rgba(11,37,69,0.2)', fontWeight: comment.userVote === 'like' ? 600 : 400, fontFamily: body, transition: 'color 0.2s' }}>
             {'\uD83D\uDC4D'} {comment.likes || 0}
@@ -301,7 +301,7 @@ function LiveSurveyCard({ survey, user }) {
             {user ? (
               <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: C.gold, flexShrink: 0, fontFamily: body }}>{(user.full_name || 'U').charAt(0).toUpperCase()}</div>
-                <input value={newComment} onChange={function (e) { setNewComment(e.target.value); }} placeholder="Share your thoughts..." onKeyDown={function (e) { if (e.key === 'Enter') postComment(); }} style={{ flex: 1, padding: '9px 14px', fontSize: 13, border: '1px solid ' + C.light, borderRadius: 10, outline: 'none', color: C.navy, background: '#fff', fontFamily: body }} />
+                <input value={newComment} onChange={function (e) { setNewComment(e.target.value); }} placeholder="Share your thoughts..." onKeyDown={function (e) { if (e.key === 'Enter') postComment(); }} style={{ flex: 1, padding: '9px 14px', fontSize: 13, border: '1px solid ' + C.light, borderRadius: 10, outline: 'none', color: C.navy, background: '#fff', fontFamily: body, minWidth: 0 }} />
                 <button onClick={postComment} disabled={!newComment.trim() || posting} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (!newComment.trim() || posting) ? 0.3 : 1, whiteSpace: 'nowrap', fontFamily: body }}>Post</button>
               </div>
             ) : <button onClick={function () { navigate('/login'); }} style={{ width: '100%', padding: 12, borderRadius: 10, border: '1.5px dashed ' + C.light, background: 'transparent', fontSize: 13, color: 'rgba(11,37,69,0.3)', cursor: 'pointer', marginBottom: 12, fontFamily: body }}>{'\uD83D\uDD12'} Sign in to comment</button>}
@@ -366,7 +366,7 @@ function CommunityDiscussions({ user }) {
         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid ' + C.light, padding: 20, marginBottom: 24 }}>
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ width: 38, height: 38, borderRadius: '50%', background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: C.gold, flexShrink: 0, fontFamily: body }}>{(user.full_name || 'U').charAt(0).toUpperCase()}</div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <textarea value={newTopic} onChange={function (e) { setNewTopic(e.target.value); }} placeholder="What civic issue is on your mind?" rows={3} style={{ width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid ' + C.light, borderRadius: 12, outline: 'none', color: C.navy, background: '#fff', resize: 'vertical', lineHeight: 1.6, fontFamily: body, boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
                 <button onClick={postTopic} disabled={!newTopic.trim() || posting} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: (!newTopic.trim() || posting) ? 0.3 : 1, fontFamily: body }}>{posting ? 'Posting...' : 'Start Discussion'}</button>
@@ -390,21 +390,21 @@ function CommunityDiscussions({ user }) {
                   ) : (
                     <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, ' + C.navy + ', rgba(11,37,69,0.7))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: C.gold, flexShrink: 0, fontFamily: body }}>{(p.author_name || 'A').charAt(0).toUpperCase()}</div>
                   )}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: C.navy, fontFamily: body }}>{p.author_name || 'Citizen'}</span>
                       {p.author_verified && <span style={{ fontSize: 10, fontWeight: 700, color: C.gold, background: C.goldGlow, padding: '2px 8px', borderRadius: 20, fontFamily: body }}>VERIFIED</span>}
                     </div>
                     <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.25)', fontFamily: body }}>{timeAgo(p.created_at)}</span>
                   </div>
                 </div>
-                <p style={{ fontSize: 15, color: 'rgba(11,37,69,0.7)', margin: '0 0 12px', lineHeight: 1.65, fontFamily: body }}>{p.content}</p>
+                <p style={{ fontSize: 15, color: 'rgba(11,37,69,0.7)', margin: '0 0 12px', lineHeight: 1.65, fontFamily: body, wordBreak: 'break-word' }}>{p.content}</p>
                 {p.image_url && (
                   <div style={{ marginBottom: 12, borderRadius: 12, overflow: 'hidden' }}>
                     <img src={p.image_url} alt="post" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 16, paddingTop: 10, borderTop: '1px solid rgba(11,37,69,0.05)' }}>
+                <div style={{ display: 'flex', gap: 16, paddingTop: 10, borderTop: '1px solid rgba(11,37,69,0.05)', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: body }}>{'\uD83D\uDC4D'} {p.likes_count || 0}</span>
                   <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: body }}>{'\uD83D\uDCAC'} {p.comments_count || 0}</span>
                   <button onClick={function () { navigate('/citizen/community'); }} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: C.gold, border: 'none', background: 'none', cursor: 'pointer', fontFamily: body }}>Join Discussion {'\u2192'}</button>
@@ -487,8 +487,8 @@ export default function Landing() {
         borderBottom: scrolled ? '1px solid rgba(11,37,69,0.06)' : '1px solid transparent',
         transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={function () { window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', flexShrink: 0 }} onClick={function () { window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <svg width="38" height="38" viewBox="0 0 38 38" fill="none" style={{ flexShrink: 0 }}>
               <rect width="38" height="38" rx="10" fill={C.gold} />
               <text x="19" y="24.5" textAnchor="middle" fill="#fff" fontFamily="'Playfair Display', Georgia, serif" fontSize="18" fontWeight="700">CV</text>
@@ -506,7 +506,7 @@ export default function Landing() {
               return <button key={id} onClick={function () { var el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 500, color: scrolled ? 'rgba(11,37,69,0.5)' : 'rgba(255,255,255,0.55)', cursor: 'pointer', fontFamily: body, transition: 'color 0.3s', padding: 0 }}>{item}</button>;
             })}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             {user ? (
               <>
                 <NotificationBell notifications={notif.notifications} unreadCount={notif.unreadCount} markAllRead={notif.markAllRead} theme={scrolled ? 'light' : 'dark'} />
@@ -528,7 +528,7 @@ export default function Landing() {
         <div style={{ position: 'absolute', bottom: -150, left: -150, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.04) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, opacity: 0.02, backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 28px 100px', position: 'relative' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 28px 100px', position: 'relative', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 64 }} className="cv-hero-flex">
             <div style={{ flex: 1, minWidth: 0 }}>
               <Reveal>
@@ -647,7 +647,7 @@ export default function Landing() {
 
       {/* ============ WHY THIS MATTERS ============ */}
       <section style={{ padding: '60px 0 80px', background: '#fff' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 28px', boxSizing: 'border-box' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: C.gold, margin: '0 0 14px', fontFamily: body }}>Why This Matters</span>
@@ -656,7 +656,7 @@ export default function Landing() {
             </div>
           </Reveal>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 48 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, marginBottom: 48 }}>
             <Reveal delay={100}>
               <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1px solid rgba(184,53,46,0.1)', height: '100%' }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: C.red + '0c', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
@@ -698,18 +698,18 @@ export default function Landing() {
 
       {/* ============ HOW IT WORKS ============ */}
       <section id="how-it-works" style={{ padding: '80px 0', background: C.cream + '60' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', boxSizing: 'border-box' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: C.gold, fontFamily: body }}>How It Works</span>
               <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: C.navy, margin: '12px 0 0', fontFamily: heading }}>Three Steps to Civic Impact</h2>
             </div>
           </Reveal>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
             {[
               { s: '01', t: 'Sign Up & Verify', d: 'Create your account and verify your identity with a quick ID scan. One-time, completely private.', color: '#60a5fa' },
               { s: '02', t: 'Vote on Live Polls', d: 'Vote directly on civic polls matched to your community. Discuss issues with fellow verified citizens.', color: '#34d399' },
-              { s: '03', t: 'See Real Impact', d: 'Watch live results, see your community\'s voice, and track how opinions shape real decisions.', color: '#c084fc' },
+              { s: '03', t: 'See Real Impact', d: "Watch live results, see your community's voice, and track how opinions shape real decisions.", color: '#c084fc' },
             ].map(function (item, i) {
               var stepIcons = [
                 <svg key="s0" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"/><circle cx="9" cy="7" r="4" stroke="#60a5fa" strokeWidth="2"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"/></svg>,
@@ -733,7 +733,7 @@ export default function Landing() {
 
       {/* ============ LIVE POLLS ============ */}
       <section id="live-polls" style={{ padding: '80px 0', background: '#fff' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', boxSizing: 'border-box' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: C.gold, fontFamily: body }}>Vote Now</span>
@@ -744,7 +744,7 @@ export default function Landing() {
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}><div className="cv-spinner" /></div>
           ) : surveys.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
               {surveys.map(function (s, i) { return <Reveal key={s.id} delay={i * 80}><LiveSurveyCard survey={s} user={profile} /></Reveal>; })}
             </div>
           ) : (
@@ -764,7 +764,7 @@ export default function Landing() {
 
       {/* ============ COMMUNITY DISCUSSIONS ============ */}
       <section id="community" style={{ padding: '80px 0', background: C.cream + '40' }}>
-        <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 28px', boxSizing: 'border-box' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: C.gold, fontFamily: body }}>Community Forum</span>
@@ -780,7 +780,7 @@ export default function Landing() {
 
       {/* ============ FOR ORGANIZATIONS ============ */}
       <section id="for-organizations" style={{ padding: '80px 0', background: '#fff' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 60 }} className="cv-org-flex">
             <div style={{ flex: 1, minWidth: 0 }}>
               <Reveal direction="left">
@@ -847,7 +847,7 @@ export default function Landing() {
 
       {/* ============ REAL STATS BAR ============ */}
       <section style={{ padding: '64px 0', background: 'linear-gradient(135deg, #091e38, #0B2545, #132d52)' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 28px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 32, textAlign: 'center' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 28px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 32, textAlign: 'center', boxSizing: 'border-box' }}>
           {[
             { v: userCount, l: 'Verified Citizens', suffix: '' },
             { v: orgCount, l: 'Organizations', suffix: '' },
@@ -870,7 +870,7 @@ export default function Landing() {
 
       {/* ============ FINAL CTA ============ */}
       <section style={{ padding: '100px 0', background: '#fff' }}>
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 28px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 28px', textAlign: 'center', boxSizing: 'border-box' }}>
           <Reveal>
             <div style={{ width: 68, height: 68, borderRadius: 18, background: C.goldGlow, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', border: '1px solid ' + C.gold + '20' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -890,7 +890,7 @@ export default function Landing() {
 
       {/* ============ FOOTER ============ */}
       <footer style={{ borderTop: '1px solid ' + C.light, background: C.cream + '50' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 32 }}>
             <div style={{ maxWidth: 280 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -928,30 +928,14 @@ export default function Landing() {
       <style>{`
         @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
         @keyframes spin { to { transform:rotate(360deg) } }
-        @media (max-width: 768px) {
-  section > div {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-  }
-}
-@media (max-width: 420px) {
-  section > div {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
-}
         * { box-sizing:border-box; margin:0; }
-        html, body, #root {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
-  width: 100% !important;
-}
-img, video, iframe, svg, table { max-width: 100% !important; }
-```
 
-**Edit C** — In the same `<style>` block, find:
-```
-html { scroll-behavior: smooth; }
+        html, body, #root {
+          overflow-x: hidden !important;
+          max-width: 100vw !important;
+          width: 100% !important;
+        }
+        img, video, iframe, svg, table { max-width: 100% !important; }
 
         .cv-pulse { animation: pulse 2s ease-in-out infinite; }
 
@@ -985,6 +969,20 @@ html { scroll-behavior: smooth; }
           .cv-nav-links { display: flex !important; }
           .cv-org-right { display: block !important; }
           .cv-org-flex { flex-direction: row !important; }
+        }
+
+        @media (max-width: 768px) {
+          section > div {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          section > div {
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+          }
         }
 
         html { scroll-behavior: smooth; }
