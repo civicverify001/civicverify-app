@@ -476,7 +476,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: body }}>
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: body, overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* ============ NAVBAR ============ */}
