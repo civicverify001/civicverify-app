@@ -1,5 +1,10 @@
 // src/components/NotificationBell.jsx
 // Global notification bell — lives in CitizenLayout, visible on every citizen page
+// Props:
+//   align="left"  → panel opens left from bell (default, for right-side placements like mobile header)
+//   align="right" → panel opens right from bell (for sidebar/left-side placements)
+//   theme="dark"  → bell styled for dark backgrounds (sidebar)
+//   theme="light" → bell styled for light backgrounds (landing page header)
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -45,7 +50,10 @@ function NotifMessage({ n }) {
   );
 }
 
-export default function NotificationBell({ notifications, unreadCount, markAllRead }) {
+export default function NotificationBell({ notifications, unreadCount, markAllRead, align, theme }) {
+  align = align || "left";
+  theme = theme || "dark";
+
   var [open, setOpen] = useState(false);
   var panelRef = useRef(null);
   var btnRef = useRef(null);
@@ -78,12 +86,10 @@ export default function NotificationBell({ notifications, unreadCount, markAllRe
     setOpen(false);
 
     if (n.post_id) {
-      // Navigate to community if not already there
       var isCommunity = location.pathname.includes("/community");
       if (!isCommunity) {
         navigate("/citizen/community", { state: { scrollToPost: n.post_id } });
       } else {
-        // Already on community — scroll to post
         scrollToPost(n.post_id);
       }
     } else if (n.type === "follow") {
@@ -106,27 +112,45 @@ export default function NotificationBell({ notifications, unreadCount, markAllRe
 
   var unread = notifications.filter(function (n) { return !n.read; });
 
+  // Panel position based on align prop
+  var panelPosition = align === "right"
+    ? { left: 0 }   // opens to the right of bell
+    : { right: 0 };  // opens to the left of bell
+
+  // Button styles based on theme
+  var isDark = theme === "dark";
+  var btnBg = open
+    ? (isDark ? "rgba(255,255,255,0.15)" : C.gold + "12")
+    : (isDark ? "rgba(255,255,255,0.08)" : "#fff");
+  var btnBorder = open
+    ? (isDark ? C.gold + "44" : C.gold + "44")
+    : (isDark ? "rgba(255,255,255,0.1)" : C.border);
+  var btnColor = open
+    ? C.gold
+    : (isDark ? "rgba(255,255,255,0.7)" : C.navy);
+  var badgeBorder = isDark ? C.navy : "#fff";
+
+  var hoverBg = isDark ? "rgba(255,255,255,0.12)" : C.cream;
+  var hoverColor = isDark ? "#fff" : C.navy;
+  var defaultBg = isDark ? "rgba(255,255,255,0.08)" : "#fff";
+  var defaultColor = isDark ? "rgba(255,255,255,0.7)" : C.navy;
+
   return (
     <div style={{ position: "relative" }}>
       <style>{"\
         @keyframes cvBellShake { 0%,100%{transform:rotate(0)} 15%{transform:rotate(12deg)} 30%{transform:rotate(-10deg)} 45%{transform:rotate(6deg)} 60%{transform:rotate(-4deg)} 75%{transform:rotate(2deg)} }\
         @keyframes cvNotifFadeIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }\
-        .cv-notif-panel-global { width: 380px; right: 0; }\
-        @media (max-width: 768px) { .cv-notif-panel-global { width: 320px; right: -40px; } }\
-        @media (max-width: 420px) { .cv-notif-panel-global { width: 290px; right: -60px; } }\
       "}</style>
 
       {/* Bell button */}
       <button ref={btnRef} onClick={toggle} style={{
         width: 40, height: 40, borderRadius: 12, cursor: "pointer",
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: open ? C.navy + "10" : "rgba(255,255,255,0.08)",
-        border: "1px solid " + (open ? C.gold + "33" : "rgba(255,255,255,0.1)"),
-        color: open ? C.gold : "rgba(255,255,255,0.7)",
+        background: btnBg, border: "1px solid " + btnBorder, color: btnColor,
         position: "relative", transition: "all 0.2s",
       }}
-        onMouseEnter={function (e) { if (!open) { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; } }}
-        onMouseLeave={function (e) { if (!open) { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; } }}
+        onMouseEnter={function (e) { if (!open) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; } }}
+        onMouseLeave={function (e) { if (!open) { e.currentTarget.style.background = defaultBg; e.currentTarget.style.color = defaultColor; } }}
       >
         <svg width={18} height={18} viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -142,7 +166,7 @@ export default function NotificationBell({ notifications, unreadCount, markAllRe
             background: "#e53e3e", color: "#fff",
             fontFamily: C.sans, fontSize: 10, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "0 4px", border: "2px solid " + C.navy,
+            padding: "0 4px", border: "2px solid " + badgeBorder,
             animation: "cvNotifFadeIn 0.2s ease",
           }}>
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -152,13 +176,13 @@ export default function NotificationBell({ notifications, unreadCount, markAllRe
 
       {/* Panel */}
       {open && (
-        <div ref={panelRef} className="cv-notif-panel-global" style={{
+        <div ref={panelRef} style={Object.assign({
           position: "absolute", top: "calc(100% + 10px)", zIndex: 200,
-          maxHeight: 460, background: "#fff", borderRadius: 16,
+          width: 380, maxHeight: 460, background: "#fff", borderRadius: 16,
           border: "1px solid " + C.border, boxShadow: "0 12px 48px rgba(11,37,69,0.22)",
           display: "flex", flexDirection: "column",
           animation: "cvNotifFadeIn 0.15s ease", overflow: "hidden",
-        }}>
+        }, panelPosition)}>
           {/* Header */}
           <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
             <span style={{ fontFamily: C.sans, fontWeight: 700, fontSize: 15, color: C.navy }}>Notifications</span>
