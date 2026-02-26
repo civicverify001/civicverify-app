@@ -1,4 +1,4 @@
-// src/pages/citizen/Dashboard.jsx
+// src/pages/citizen/Dashboard.jsx v2
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
