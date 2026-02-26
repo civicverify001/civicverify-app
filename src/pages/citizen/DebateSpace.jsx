@@ -216,7 +216,17 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
       });
       callObjRef.current = callObj;
 
-      callObj.on('joined-meeting', function() { setAudioConnected(true); setJoining(false); });
+      callObj.on('joined-meeting', function() {
+        setAudioConnected(true);
+        setJoining(false);
+        // Debaters auto-unmute, listeners stay muted
+        if (isDebater) {
+          callObj.setLocalAudio(true);
+          setIsMuted(false);
+        } else {
+          setIsMuted(true);
+        }
+      });
       callObj.on('error', function(e) {
         var msg = e.errorMsg || 'Audio error';
         if (msg.indexOf('payment') !== -1) msg = 'Audio provider requires billing setup. Debate features work without audio.';
@@ -235,7 +245,7 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
         url: debate.audio_room_url,
         token: tokenData.token,
         startVideoOff: true,
-        startAudioOff: true,
+        startAudioOff: true, // Always join muted, then unmute debaters in joined-meeting callback
       });
 
     } catch (err) {
