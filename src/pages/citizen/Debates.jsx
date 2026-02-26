@@ -84,6 +84,7 @@ export default function Debates() {
   var [searchUser, setSearchUser] = useState('');
   var [searchResults, setSearchResults] = useState([]);
   var [searching, setSearching] = useState(false);
+  var [modSearchResults, setModSearchResults] = useState([]);
 
   var [form, setForm] = useState({
     topic: '',
@@ -94,6 +95,9 @@ export default function Debates() {
     directOpponentName: '',
     scheduledDate: '',
     scheduledTime: '',
+    moderatorType: 'ai',
+    moderatorUserId: null,
+    moderatorUserName: '',
   });
 
   var loadDebates = useCallback(async function() {
@@ -159,12 +163,14 @@ export default function Debates() {
       opponent_id: form.challengeType === 'direct' ? form.directOpponentId : null,
       scheduled_at: scheduled.toISOString(),
       status: form.challengeType === 'direct' ? 'pending' : 'pending',
+      moderator_type: form.moderatorType,
+      moderator_user_id: form.moderatorType === 'user' ? form.moderatorUserId : null,
     });
 
     setCreating(false);
     if (error) { alert('Error: ' + error.message); return; }
 
-    setForm({ topic: '', description: '', formatIndex: 0, challengeType: 'open', directOpponentId: null, directOpponentName: '', scheduledDate: '', scheduledTime: '' });
+    setForm({ topic: '', description: '', formatIndex: 0, challengeType: 'open', directOpponentId: null, directOpponentName: '', scheduledDate: '', scheduledTime: '', moderatorType: 'ai', moderatorUserId: null, moderatorUserName: '' });
     setShowForm(false);
     loadDebates();
   }
@@ -520,6 +526,71 @@ export default function Debates() {
             </div>
           </div>
 
+          {/* Moderator Type */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={labelStyle}>Moderator</label>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[{ val: 'ai', label: '🤖 AI Moderator', desc: 'Automated turn management' }, { val: 'user', label: '👤 Human Moderator', desc: 'A person you choose' }].map(function(opt) {
+                var selected = form.moderatorType === opt.val;
+                return (
+                  <button key={opt.val} onClick={function() { setForm(Object.assign({}, form, { moderatorType: opt.val })); }}
+                    style={{
+                      flex: 1, padding: '14px 16px', borderRadius: 14, cursor: 'pointer',
+                      background: selected ? 'linear-gradient(135deg, rgba(11,37,69,0.06), rgba(11,37,69,0.1))' : '#fff',
+                      border: selected ? '2px solid ' + C.navy : '1px solid rgba(11,37,69,0.1)',
+                      fontFamily: 'DM Sans, sans-serif', textAlign: 'left', transition: 'all 0.2s',
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 700, color: C.navy, display: 'block', marginBottom: 2 }}>{opt.label}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.5)' }}>{opt.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {form.moderatorType === 'user' && (
+              <div style={{ marginTop: 10 }}>
+                <input
+                  className="cv-form-input"
+                  style={inputStyle}
+                  placeholder="Search verified citizens as moderator..."
+                  onChange={function(e) {
+                    var q = e.target.value;
+                    setForm(Object.assign({}, form, { moderatorUserName: q }));
+                    if (q.length >= 2) {
+                      supabase.from('users').select('id, full_name, identity_verified')
+                        .eq('role', 'citizen').eq('identity_verified', true).neq('id', currentUser.id)
+                        .ilike('full_name', '%' + q + '%').limit(5)
+                        .then(function(r) { if (r.data) setModSearchResults(r.data); });
+                    } else { setModSearchResults([]); }
+                  }}
+                  value={form.moderatorUserName}
+                />
+                {form.moderatorUserId && (
+                  <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: C.navy }}>{form.moderatorUserName}</span>
+                    <span style={{ fontSize: 10, color: '#16a34a', fontWeight: 700 }}>✓ Moderator</span>
+                    <button onClick={function() { setForm(Object.assign({}, form, { moderatorUserId: null, moderatorUserName: '' })); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(11,37,69,0.4)' }}>✕</button>
+                  </div>
+                )}
+                {!form.moderatorUserId && modSearchResults.length > 0 && form.moderatorUserName.length >= 2 && (
+                  <div style={{ marginTop: 4, border: '1px solid rgba(11,37,69,0.08)', borderRadius: 10, overflow: 'hidden' }}>
+                    {modSearchResults.map(function(u) {
+                      return (
+                        <button key={u.id} onClick={function() { setForm(Object.assign({}, form, { moderatorUserId: u.id, moderatorUserName: u.full_name })); setModSearchResults([]); }}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#fff', border: 'none', borderBottom: '1px solid rgba(11,37,69,0.04)', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: C.gold }}>{(u.full_name || '?').charAt(0).toUpperCase()}</div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{u.full_name}</span>
+                          {u.identity_verified && <span style={{ fontSize: 10, color: '#16a34a', fontWeight: 700 }}>✓ Verified</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {form.topic && (
             <div style={{
               padding: '14px 18px', borderRadius: 12, background: 'rgba(11,37,69,0.02)',
@@ -528,7 +599,7 @@ export default function Debates() {
               <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.55)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 1 }}>Preview</p>
               <p style={{ fontSize: 15, fontWeight: 600, color: C.navy, margin: '0 0 4px' }}>{form.topic}</p>
               <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.65)', margin: 0 }}>
-                {FORMATS[form.formatIndex].label} format · {formatDuration(FORMATS[form.formatIndex].value)} · {form.challengeType === 'open' ? 'Open to all' : 'Direct: ' + (form.directOpponentName || '...')}
+                {FORMATS[form.formatIndex].label} format · {formatDuration(FORMATS[form.formatIndex].value)} · {form.challengeType === 'open' ? 'Open to all' : 'Direct: ' + (form.directOpponentName || '...')} · {form.moderatorType === 'ai' ? '🤖 AI Moderator' : '👤 ' + (form.moderatorUserName || 'Human Moderator')}
               </p>
             </div>
           )}
@@ -771,4 +842,3 @@ export default function Debates() {
     </div>
   );
 }
-
