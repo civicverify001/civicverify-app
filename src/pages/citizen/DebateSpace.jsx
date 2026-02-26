@@ -897,7 +897,7 @@ export default function DebateSpace() {
   var isDebater = debate && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id);
   var isActiveSpeaker = debate && currentUser && debate.active_speaker_id === currentUser.id;
   var isLive = debate && debate.status === 'live';
-  var isWaiting = debate && (debate.status === 'waiting_room' || debate.status === 'confirmed');
+  var isWaiting = debate && (debate.status === 'waiting_room' || debate.status === 'confirmed' || debate.status === 'pending');
   var isCompleted = debate && debate.status === 'completed';
 
   if (loading) return (
@@ -954,7 +954,7 @@ export default function DebateSpace() {
       </div>
 
       {/* Audio Panel */}
-      {(isLive || isWaiting) && (
+      {!isCompleted && (
         <div style={{ marginBottom: 16 }}>
           <AudioPanel
             debate={debate} currentUser={currentUser} isDebater={isDebater}
