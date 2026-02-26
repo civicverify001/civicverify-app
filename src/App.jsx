@@ -24,6 +24,7 @@ import CitizenVerify from './pages/citizen/Verify'
 import CitizenImpact from './pages/citizen/Impact'
 import CitizenAccount from './pages/citizen/Account'
 import CitizenCommunity from './pages/citizen/Community'
+import CitizenDebates from './pages/citizen/Debates'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="impact" element={<CitizenImpact />} />
             <Route path="account" element={<CitizenAccount />} />
             <Route path="community" element={<CitizenCommunity />} />
+            <Route path="debates" element={<CitizenDebates />} />
           </Route>
 
           <Route path="/admin" element={
