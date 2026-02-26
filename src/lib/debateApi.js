@@ -1,4 +1,5 @@
-// src/lib/debateApi.js — Frontend helper to call debate-controller edge function
+// src/lib/debateApi.js — Frontend helper for debate-controller edge function
+// Phase 4: Audio, auto-timer, transcription, admin
 import { supabase } from '../supabaseClient';
 
 const FUNCTION_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1/debate-controller';
@@ -29,28 +30,47 @@ async function callDebateController(action, debateId, extras = {}) {
   return data;
 }
 
-// Open the waiting room (5 min before start)
+// ─── Debate Lifecycle ───
 export function openWaitingRoom(debateId) {
   return callDebateController('open_waiting_room', debateId);
 }
 
-// Start the debate (triggers AI introduction)
 export function startDebate(debateId) {
   return callDebateController('start_debate', debateId);
 }
 
-// Advance to next turn (timer expired)
 export function nextTurn(debateId) {
   return callDebateController('next_turn', debateId);
 }
 
-// Concede remaining time
 export function concedeTime(debateId) {
   return callDebateController('concede', debateId);
 }
 
-// Update listener count
 export function updateListenerCount(debateId, count) {
   return callDebateController('update_listener_count', debateId, { count });
+}
+
+// ─── Audio (Daily.co) ───
+export function createAudioRoom(debateId) {
+  return callDebateController('create_audio_room', debateId);
+}
+
+export function getDailyToken(debateId) {
+  return callDebateController('get_daily_token', debateId);
+}
+
+// ─── Transcription & Summary ───
+export function generateSummary(debateId) {
+  return callDebateController('generate_summary', debateId);
+}
+
+// ─── Admin Actions ───
+export function adminCancelDebate(debateId) {
+  return callDebateController('admin_cancel', debateId);
+}
+
+export function adminFlagMessage(debateId, messageId) {
+  return callDebateController('admin_flag_message', debateId, { message_id: messageId });
 }
 
