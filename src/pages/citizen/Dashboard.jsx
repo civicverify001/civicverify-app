@@ -1,4 +1,4 @@
-// src/pages/citizen/Dashboard.jsx v2
+// src/pages/citizen/Dashboard.jsx
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -15,13 +15,8 @@ function timeAgo(iso) {
   if (d < 86400) return Math.floor(d / 3600) + 'h ago';
   return Math.floor(d / 86400) + 'd ago';
 }
-function Avatar({ name, size, avatarUrl }) {
+function Avatar({ name, size }) {
   size = size || 30;
-  if (avatarUrl) {
-    return (
-      <img src={avatarUrl} alt={name || 'User'} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block', flexShrink: 0, border: '2px solid rgba(197,150,12,0.2)' }} onError={function(e) { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex'); }} />
-    );
-  }
   var initials = (name || '?').split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
   var cols = [C.navy, C.gold, C.green, C.purple, '#0891b2', '#b45309'];
   var col = cols[(initials.charCodeAt(0) || 0) % cols.length];
@@ -103,6 +98,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         .limit(100);
 
       if (cr.error) {
+        // survey_id column may not exist yet
         setError('sql_missing');
         setLoading(false);
         return;
@@ -114,7 +110,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
       var userIds = [...new Set(allComments.map(function(c) { return c.user_id; }).filter(Boolean))];
       var profileMap = {};
       if (userIds.length) {
-        var pr = await supabase.from('users').select('id,full_name,identity_verified,avatar_url').in('id', userIds);
+        var pr = await supabase.from('users').select('id,full_name,identity_verified').in('id', userIds);
         (pr.data || []).forEach(function(p) { profileMap[p.id] = p; });
       }
       allComments = allComments.map(function(c) {
@@ -122,7 +118,6 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         return Object.assign({}, c, {
           author_name: p.full_name || 'Citizen',
           verified: !!(p.identity_verified),
-          author_avatar_url: p.avatar_url || null,
         });
       });
 
@@ -218,9 +213,9 @@ create index if not exists idx_dc_survey
           <div key={survey.id} style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.07)', overflow: 'hidden', boxShadow: '0 2px 12px rgba(11,37,69,0.04)' }}>
 
             {/* Survey header */}
-            <div className="cv-poll-card-header" style={{ padding: '14px 20px', borderBottom: '1px solid rgba(11,37,69,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(11,37,69,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   {isActive
                     ? <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 9px', borderRadius: 20, background: C.green + '15', color: C.green, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, display: 'inline-block', animation: 'pulse 2s infinite' }} />LIVE
@@ -243,7 +238,7 @@ create index if not exists idx_dc_survey
             </div>
 
             {/* Comments list */}
-            <div className="cv-poll-card-comments" style={{ padding: '12px 20px 4px' }}>
+            <div style={{ padding: '12px 20px 4px' }}>
               {comments.length === 0 && (
                 <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.3)', margin: '4px 0 10px', fontStyle: 'italic' }}>No comments yet — be the first!</p>
               )}
@@ -253,7 +248,7 @@ create index if not exists idx_dc_survey
                 var isOwn = currentUser && c.user_id === currentUser.id;
                 return (
                   <div key={c.id} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                    <Avatar name={c.author_name} size={30} avatarUrl={c.author_avatar_url} />
+                    <Avatar name={c.author_name} size={30} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ background: 'rgba(11,37,69,0.03)', borderRadius: 11, padding: '9px 13px', marginBottom: 4, border: '1px solid rgba(11,37,69,0.05)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -286,8 +281,8 @@ create index if not exists idx_dc_survey
             </div>
 
             {/* Comment input */}
-            <div className="cv-poll-card-input" style={{ padding: '8px 20px 16px', display: 'flex', gap: 9, alignItems: 'center' }}>
-              <Avatar name={currentProfile ? currentProfile.full_name : 'You'} size={28} avatarUrl={currentProfile?.avatar_url} />
+            <div style={{ padding: '8px 20px 16px', display: 'flex', gap: 9, alignItems: 'center' }}>
+              <Avatar name={currentProfile ? currentProfile.full_name : 'You'} size={28} />
               <input
                 value={inputText}
                 onChange={function(e) { setNewComment(function(p) { return Object.assign({}, p, { [survey.id]: e.target.value }); }); }}
@@ -351,35 +346,15 @@ export default function CitizenDashboard() {
   var tierColor = trust <= 2 ? 'rgba(11,37,69,0.35)' : trust <= 10 ? C.gold : trust <= 25 ? C.green : C.purple;
 
   return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 980, overflowX: 'hidden' }}>
-      <style>{'\
-        @keyframes spin{to{transform:rotate(360deg)}}\
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}\
-        @media (max-width: 768px) {\
-          .cv-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }\
-          .cv-stats-grid > div { padding: 14px 14px !important; }\
-          .cv-stat-val { font-size: 24px !important; }\
-          .cv-main-grid { grid-template-columns: 1fr !important; }\
-          .cv-dash-heading { font-size: 22px !important; }\
-          .cv-poll-card-header { padding: 12px 14px !important; }\
-          .cv-poll-card-comments { padding: 10px 14px 4px !important; }\
-          .cv-poll-card-input { padding: 8px 14px 14px !important; }\
-          .cv-verify-banner { padding: 14px 16px !important; }\
-        }\
-        @media (max-width: 420px) {\
-          .cv-stat-val { font-size: 20px !important; }\
-          .cv-stats-grid > div { padding: 12px 10px !important; }\
-          .cv-stats-grid { gap: 8px !important; }\
-          .cv-stat-label { font-size: 9px !important; }\
-        }\
-      '}</style>
+    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 980, width: '100%', overflowX: 'hidden' }}>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}@media(max-width:768px){.cv-stats-grid{grid-template-columns:repeat(2,1fr)!important}.cv-dash-layout{grid-template-columns:1fr!important}}@media(max-width:420px){.cv-stats-grid{grid-template-columns:1fr!important;gap:10px!important}}'}</style>
 
-      <h1 className="cv-dash-heading" style={{ fontSize: 27, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Welcome back{name ? ', ' + name : ''}</h1>
+      <h1 style={{ fontSize: 27, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Welcome back{name ? ', ' + name : ''}</h1>
       <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Your civic voice matters.</p>
 
       {/* Verify banner */}
       {profile && !profile.identity_verified && (
-        <div className="cv-verify-banner" style={{ background: 'linear-gradient(135deg,' + C.gold + '12,' + C.gold + '06)', border: '1px solid ' + C.gold + '30', borderRadius: 13, padding: '18px 22px', marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+        <div style={{ background: 'linear-gradient(135deg,' + C.gold + '12,' + C.gold + '06)', border: '1px solid ' + C.gold + '30', borderRadius: 13, padding: '18px 22px', marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
           <div>
             <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Verify your identity to take surveys</p>
             <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.45)', margin: 0 }}>Quick ID check — takes less than 2 minutes</p>
@@ -400,16 +375,16 @@ export default function CitizenDashboard() {
             <div key={i} style={{ background: s.bg, borderRadius: 13, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <span style={{ fontSize: 15 }}>{s.icon}</span>
-                <span className="cv-stat-label" style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{s.label}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{s.label}</span>
               </div>
-              <p className="cv-stat-val" style={{ fontSize: 32, fontWeight: 800, color: s.color, margin: 0, fontFamily: font, lineHeight: 1 }}>{s.val}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, color: s.color, margin: 0, fontFamily: font, lineHeight: 1 }}>{s.val}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Two-col layout — stacks on mobile */}
-      <div className="cv-main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+      {/* Two-col layout */}
+      <div className="cv-dash-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
 
         {/* LEFT — Poll Discussions */}
         <div>
@@ -498,3 +473,4 @@ export default function CitizenDashboard() {
     </div>
   );
 }
+
