@@ -58,7 +58,7 @@ function FormatPills({ format }) {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
       {Object.entries(format).map(function(entry) {
         return (
-          <span key={entry[0]} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.5)', fontWeight: 500 }}>
+          <span key={entry[0]} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(11,37,69,0.06)', color: 'rgba(11,37,69,0.65)', fontWeight: 500 }}>
             {entry[0]} · {Math.round(entry[1] / 60)}m
           </span>
         );
@@ -232,7 +232,7 @@ export default function Debates() {
     fontFamily: 'DM Sans, sans-serif', transition: 'border-color 0.2s',
     boxSizing: 'border-box',
   };
-  var labelStyle = { fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.5)', marginBottom: 6, display: 'block' };
+  var labelStyle = { fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.6)', marginBottom: 6, display: 'block' };
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '80px 0' }}>
@@ -267,7 +267,7 @@ export default function Debates() {
           <h1 style={{ fontSize: 28, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>
             Live Debates
           </h1>
-          <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '6px 0 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.65)', margin: '6px 0 0', lineHeight: 1.5 }}>
             AI-moderated civic debates between verified citizens
           </p>
         </div>
@@ -297,7 +297,7 @@ export default function Debates() {
           <span style={{ fontSize: 20 }}>🔒</span>
           <div>
             <p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: 0 }}>Identity verification required</p>
-            <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: '4px 0 0' }}>
+            <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.6)', margin: '4px 0 0' }}>
               You need to verify your identity to schedule or participate in debates. You can still watch and chat!
             </p>
           </div>
@@ -321,7 +321,7 @@ export default function Debates() {
                     ⚔️ Challenge Received
                   </p>
                   <p style={{ fontSize: 15, fontWeight: 600, color: C.navy, margin: '0 0 4px' }}>{d.topic}</p>
-                  <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: 0 }}>
+                  <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.6)', margin: 0 }}>
                     From {getUserName(d.creator_id)} · {formatDate(d.scheduled_at)} at {formatTime(d.scheduled_at)}
                   </p>
                 </div>
@@ -340,7 +340,7 @@ export default function Debates() {
                     onClick={function() { cancelDebate(d.id); }}
                     style={{
                       padding: '10px 20px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.1)',
-                      fontSize: 13, fontWeight: 600, background: '#fff', color: 'rgba(11,37,69,0.5)',
+                      fontSize: 13, fontWeight: 600, background: '#fff', color: 'rgba(11,37,69,0.6)',
                       cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                     }}
                   >
@@ -379,7 +379,7 @@ export default function Debates() {
 
           {/* Description */}
           <div style={{ marginBottom: 18 }}>
-            <label style={labelStyle}>Description <span style={{ fontWeight: 400, color: 'rgba(11,37,69,0.3)' }}>(optional)</span></label>
+            <label style={labelStyle}>Description <span style={{ fontWeight: 400, color: 'rgba(11,37,69,0.55)' }}>(optional)</span></label>
             <textarea
               className="cv-form-input"
               style={Object.assign({}, inputStyle, { minHeight: 80, resize: 'vertical' })}
@@ -410,7 +410,7 @@ export default function Debates() {
                       <p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: 0 }}>
                         {selected && '✦ '}{f.label}
                       </p>
-                      <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)', margin: '3px 0 0' }}>
+                      <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.65)', margin: '3px 0 0' }}>
                         {f.desc}
                       </p>
                     </div>
@@ -440,7 +440,7 @@ export default function Debates() {
                       <p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: 0 }}>
                         {opt.icon} {opt.label}
                       </p>
-                      <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)', margin: '3px 0 0' }}>
+                      <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.65)', margin: '3px 0 0' }}>
                         {opt.desc}
                       </p>
                     </div>
@@ -489,7 +489,7 @@ export default function Debates() {
                                 <div style={{
                                   width: 30, height: 30, borderRadius: '50%', background: 'rgba(11,37,69,0.06)',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: 12, fontWeight: 700, color: 'rgba(11,37,69,0.4)',
+                                  fontSize: 12, fontWeight: 700, color: 'rgba(11,37,69,0.65)',
                                 }}>
                                   {(u.full_name || 'C').charAt(0).toUpperCase()}
                                 </div>
@@ -540,9 +540,9 @@ export default function Debates() {
               padding: '14px 18px', borderRadius: 12, background: 'rgba(11,37,69,0.02)',
               border: '1px dashed rgba(11,37,69,0.08)', marginBottom: 20,
             }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 1 }}>Preview</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.55)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 1 }}>Preview</p>
               <p style={{ fontSize: 15, fontWeight: 600, color: C.navy, margin: '0 0 4px' }}>{form.topic}</p>
-              <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)', margin: 0 }}>
+              <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.65)', margin: 0 }}>
                 {FORMATS[form.formatIndex].label} format · {formatDuration(FORMATS[form.formatIndex].value)} · {form.challengeType === 'open' ? 'Open to all' : 'Direct: ' + (form.directOpponentName || '...')}
               </p>
             </div>
@@ -585,7 +585,7 @@ export default function Debates() {
               style={{
                 flex: 1, padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: active ? 700 : 500,
                 background: active ? '#fff' : 'transparent',
-                color: active ? C.navy : 'rgba(11,37,69,0.4)',
+                color: active ? C.navy : 'rgba(11,37,69,0.55)',
                 boxShadow: active ? '0 1px 8px rgba(11,37,69,0.06)' : 'none',
                 whiteSpace: 'nowrap',
               }}
@@ -605,13 +605,13 @@ export default function Debates() {
           <div style={{ fontSize: 40, marginBottom: 16 }}>
             {tab === 'open' ? '⚔️' : tab === 'my' ? '🎙' : tab === 'past' ? '📜' : '📅'}
           </div>
-          <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(11,37,69,0.25)', margin: '0 0 6px' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(11,37,69,0.6)', margin: '0 0 6px' }}>
             {tab === 'open' ? 'No open challenges right now' :
              tab === 'my' ? 'You have no active debates' :
              tab === 'past' ? 'No past debates yet' :
              'No upcoming debates scheduled'}
           </p>
-          <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.2)', margin: 0 }}>
+          <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.6)', margin: 0 }}>
             {tab === 'open' ? 'Check back soon or create your own!' :
              tab === 'my' ? 'Schedule one to get started' :
              tab === 'past' ? 'Completed debates will appear here' :
@@ -646,7 +646,7 @@ export default function Debates() {
                 {/* Top row: Status + Time until */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <StatusBadge status={d.status} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.3)' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.55)' }}>
                     {d.status === 'completed' ? formatDate(d.scheduled_at) :
                      d.status === 'live' ? '🔴 Live Now' :
                      '⏱ ' + timeUntil(d.scheduled_at)}
@@ -658,7 +658,7 @@ export default function Debates() {
                   {d.topic}
                 </h3>
                 {d.description && (
-                  <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.45)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.7)', margin: '0 0 12px', lineHeight: 1.5 }}>
                     {d.description}
                   </p>
                 )}
@@ -670,7 +670,7 @@ export default function Debates() {
                       width: 32, height: 32, borderRadius: '50%',
                       background: isCreator ? 'rgba(197,150,12,0.15)' : 'rgba(11,37,69,0.06)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, fontWeight: 700, color: isCreator ? C.gold : 'rgba(11,37,69,0.4)',
+                      fontSize: 12, fontWeight: 700, color: isCreator ? C.gold : 'rgba(11,37,69,0.55)',
                       border: isCreator ? '2px solid rgba(197,150,12,0.3)' : 'none',
                     }}>
                       {getUserName(d.creator_id).charAt(0).toUpperCase()}
@@ -683,7 +683,7 @@ export default function Debates() {
                     </div>
                   </div>
 
-                  <span style={{ fontSize: 16, color: 'rgba(11,37,69,0.15)', fontWeight: 700 }}>VS</span>
+                  <span style={{ fontSize: 16, color: 'rgba(11,37,69,0.5)', fontWeight: 700 }}>VS</span>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {d.opponent_id ? (
@@ -692,7 +692,7 @@ export default function Debates() {
                           width: 32, height: 32, borderRadius: '50%',
                           background: isOpponent ? 'rgba(197,150,12,0.15)' : 'rgba(11,37,69,0.06)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 12, fontWeight: 700, color: isOpponent ? C.gold : 'rgba(11,37,69,0.4)',
+                          fontSize: 12, fontWeight: 700, color: isOpponent ? C.gold : 'rgba(11,37,69,0.55)',
                           border: isOpponent ? '2px solid rgba(197,150,12,0.3)' : 'none',
                         }}>
                           {getUserName(d.opponent_id).charAt(0).toUpperCase()}
@@ -705,7 +705,7 @@ export default function Debates() {
                         </div>
                       </>
                     ) : (
-                      <span style={{ fontSize: 13, color: 'rgba(11,37,69,0.25)', fontStyle: 'italic' }}>
+                      <span style={{ fontSize: 13, color: 'rgba(11,37,69,0.6)', fontStyle: 'italic' }}>
                         Awaiting challenger...
                       </span>
                     )}
@@ -714,14 +714,14 @@ export default function Debates() {
 
                 {/* Format + Schedule */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.6)' }}>
                     📅 {formatDate(d.scheduled_at)} at {formatTime(d.scheduled_at)}
                   </span>
-                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.6)' }}>
                     ⏱ {formatDuration(d.format)}
                   </span>
                   {d.listener_count > 0 && (
-                    <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)' }}>
+                    <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.6)' }}>
                       👁 {d.listener_count} listening
                     </span>
                   )}
@@ -767,7 +767,7 @@ export default function Debates() {
                       onClick={function() { cancelDebate(d.id); }}
                       style={{
                         padding: '10px 18px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.06)',
-                        fontSize: 12, fontWeight: 500, background: '#fff', color: 'rgba(11,37,69,0.35)',
+                        fontSize: 12, fontWeight: 500, background: '#fff', color: 'rgba(11,37,69,0.6)',
                         cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                       }}
                     >
