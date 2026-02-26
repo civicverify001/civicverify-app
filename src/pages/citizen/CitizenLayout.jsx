@@ -55,9 +55,9 @@ export default function CitizenLayout() {
             <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {/* Notification bell — desktop sidebar (panel opens RIGHT so it doesn't clip off screen) */}
+            {/* Notification bell — desktop sidebar */}
             <div className="cv-sidebar-bell">
-              <NotificationBell notifications={notifications} unreadCount={unreadCount} markAllRead={markAllRead} align="right" theme="dark" />
+              <NotificationBell notifications={notifications} unreadCount={unreadCount} markAllRead={markAllRead} theme="dark" />
             </div>
             {/* Close button - mobile only */}
             <button onClick={function(){setOpen(false)}} className="cv-close-btn" style={{ display: 'none', width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 18, cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}>{'\u2715'}</button>
@@ -113,8 +113,8 @@ export default function CitizenLayout() {
         <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '12px 16px', alignItems: 'center', justifyContent: 'space-between' }}>
           <button onClick={function(){setOpen(true)}} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u2630'}</button>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
-          {/* Notification bell — mobile header (panel opens LEFT since bell is on right side) */}
-          <NotificationBell notifications={notifications} unreadCount={unreadCount} markAllRead={markAllRead} align="left" theme="dark" />
+          {/* Notification bell — mobile header */}
+          <NotificationBell notifications={notifications} unreadCount={unreadCount} markAllRead={markAllRead} theme="dark" />
         </header>
 
         <div style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto' }}>
