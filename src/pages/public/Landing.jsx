@@ -1,8 +1,10 @@
-// src/pages/public/Landing.jsx \u2014 Complete Overhaul v2 (Fixed SVGs + Footer Links)
+// src/pages/public/Landing.jsx — Complete Overhaul v2 (Fixed SVGs + Footer Links + Notification Bell)
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
+import { useNotifications } from '../../hooks/useNotifications';
+import NotificationBell from '../../components/NotificationBell';
 
 /* ======== DESIGN TOKENS ======== */
 var C = {
@@ -73,9 +75,7 @@ function ShareModal({ title, surveyId, onClose }) {
     { label: 'Facebook', abbr: 'Fb', bg: '#1877F2', href: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url) },
     { label: 'LinkedIn', abbr: 'In', bg: '#0A66C2', href: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url) },
     { label: 'WhatsApp', abbr: 'Wa', bg: '#25D366', href: 'https://wa.me/?text=' + encodeURIComponent(text + ' ' + url) },
-    { label: 'Email', abbr: '\u2709', bg: '#6B7280', href: 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\
-\
-' + url) },
+    { label: 'Email', abbr: '\u2709', bg: '#6B7280', href: 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url) },
   ];
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -448,6 +448,7 @@ export default function Landing() {
   var auth = useAuth();
   var user = auth.user;
   var profile = auth.profile;
+  var notif = useNotifications(supabase, user ? user.id : null);
   var [surveys, setSurveys] = useState([]);
   var [loading, setLoading] = useState(true);
   var [userCount, setUserCount] = useState(0);
@@ -507,7 +508,10 @@ export default function Landing() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {user ? (
-              <button onClick={function () { navigate(profile && profile.role === 'admin' ? '/admin' : profile && profile.role === 'org' ? '/org' : '/citizen'); }} style={{ padding: '10px 22px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: body, boxShadow: '0 2px 12px rgba(197,150,12,0.25)' }}>Dashboard</button>
+              <>
+                <NotificationBell notifications={notif.notifications} unreadCount={notif.unreadCount} markAllRead={notif.markAllRead} theme={scrolled ? 'light' : 'dark'} />
+                <button onClick={function () { navigate(profile && profile.role === 'admin' ? '/admin' : profile && profile.role === 'org' ? '/org' : '/citizen'); }} style={{ padding: '10px 22px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: body, boxShadow: '0 2px 12px rgba(197,150,12,0.25)' }}>Dashboard</button>
+              </>
             ) : (
               <>
                 <button onClick={function () { navigate('/login'); }} style={{ padding: '10px 18px', background: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: scrolled ? 'rgba(11,37,69,0.5)' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: body, transition: 'color 0.3s' }}>Sign In</button>
@@ -965,3 +969,4 @@ export default function Landing() {
     </div>
   );
 }
+
