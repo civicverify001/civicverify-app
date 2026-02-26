@@ -48,42 +48,44 @@ function NotificationBell({ userId }) {
   }, [showDropdown]);
 
   async function fetchCount() {
-    var result = await supabase
-      .from('community_notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('read', false);
-    setUnreadCount(result.count || 0);
+    try {
+      var result = await supabase
+        .from('community_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('read', false);
+      setUnreadCount(result.count || 0);
+    } catch (e) { /* table may not exist yet */ }
   }
 
   async function fetchNotifications() {
     setLoading(true);
-    var result = await supabase
-      .from('community_notifications')
-      .select('id, type, title, body, read, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setNotifications(result.data || []);
+    try {
+      var result = await supabase
+        .from('community_notifications')
+        .select('id, type, title, body, read, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setNotifications(result.data || []);
+    } catch (e) { setNotifications([]); }
     setLoading(false);
   }
 
   async function toggleDropdown() {
     var next = !showDropdown;
     setShowDropdown(next);
-    if (next) {
-      fetchNotifications();
-    }
+    if (next) fetchNotifications();
   }
 
   async function markAllRead() {
-    await supabase.rpc('mark_notifications_read', { p_user_id: userId });
+    try { await supabase.rpc('mark_notifications_read', { p_user_id: userId }); } catch(e) {}
     setUnreadCount(0);
     setNotifications(function (prev) { return prev.map(function (n) { return Object.assign({}, n, { read: true }); }); });
   }
 
   async function clearAll() {
-    await supabase.from('community_notifications').delete().eq('user_id', userId);
+    try { await supabase.from('community_notifications').delete().eq('user_id', userId); } catch(e) {}
     setNotifications([]);
     setUnreadCount(0);
   }
@@ -105,7 +107,7 @@ function NotificationBell({ userId }) {
             position: 'absolute', top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8,
             background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 800,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
-            fontFamily: sans, animation: 'pulse 2s ease infinite',
+            fontFamily: sans,
           }}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
@@ -118,28 +120,21 @@ function NotificationBell({ userId }) {
           background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.1)',
           boxShadow: '0 12px 40px rgba(11,37,69,0.2)', zIndex: 100, overflow: 'hidden',
         }}>
-          {/* Header */}
           <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(11,37,69,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: C.navy }}>Notifications</span>
             <div style={{ display: 'flex', gap: 8 }}>
               {unreadCount > 0 && (
-                <button onClick={markAllRead} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 11, fontWeight: 600, color: C.gold }}>
-                  Mark all read
-                </button>
+                <button onClick={markAllRead} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 11, fontWeight: 600, color: C.gold }}>Mark all read</button>
               )}
               {notifications.length > 0 && (
-                <button onClick={clearAll} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>
-                  Clear
-                </button>
+                <button onClick={clearAll} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>Clear</button>
               )}
             </div>
           </div>
-
-          {/* Notifications list */}
           <div style={{ maxHeight: 360, overflowY: 'auto' }}>
             {loading ? (
               <div style={{ padding: '40px 0', textAlign: 'center' }}>
-                <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid ' + C.gold, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
+                <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid ' + C.gold, borderTopColor: 'transparent', animation: 'cvSpin 0.8s linear infinite', margin: '0 auto' }} />
               </div>
             ) : notifications.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -152,8 +147,7 @@ function NotificationBell({ userId }) {
                 <div key={n.id} style={{
                   padding: '12px 16px', borderBottom: '1px solid rgba(11,37,69,0.04)',
                   background: n.read ? '#fff' : 'rgba(197,150,12,0.04)',
-                  display: 'flex', gap: 10, alignItems: 'flex-start', transition: 'background 0.15s',
-                  cursor: 'pointer',
+                  display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer',
                 }}
                   onMouseEnter={function (e) { e.currentTarget.style.background = C.cream; }}
                   onMouseLeave={function (e) { e.currentTarget.style.background = n.read ? '#fff' : 'rgba(197,150,12,0.04)'; }}
@@ -171,7 +165,6 @@ function NotificationBell({ userId }) {
           </div>
         </div>
       )}
-      <style>{'@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }'}</style>
     </div>
   );
 }
@@ -194,7 +187,6 @@ export default function CitizenLayout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
-      {/* Mobile overlay */}
       {open && <div onClick={function(){setOpen(false)}} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />}
 
       {/* Sidebar */}
@@ -202,7 +194,6 @@ export default function CitizenLayout() {
         width: 260, background: 'linear-gradient(180deg, #0B2545 0%, #0d2e55 100%)', position: 'fixed', top: 0, bottom: 0, left: open ? 0 : -260, zIndex: 50,
         display: 'flex', flexDirection: 'column', transition: 'left 0.3s ease', overflowY: 'auto'
       }} className="cv-sidebar">
-        {/* Logo */}
         <div style={{ padding: '24px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){navigate('/')}}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -210,11 +201,9 @@ export default function CitizenLayout() {
             </div>
             <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
           </div>
-          {/* Close button - mobile only */}
           <button onClick={function(){setOpen(false)}} className="cv-close-btn" style={{ display: 'none', width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 18, cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}>{'\u2715'}</button>
         </div>
 
-        {/* Nav links */}
         <nav style={{ flex: 1, padding: '8px 12px' }}>
           {links.map(function(link) {
             return (
@@ -232,7 +221,6 @@ export default function CitizenLayout() {
           })}
         </nav>
 
-        {/* User info */}
         <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile ? profile.full_name : '...'}</p>
@@ -246,43 +234,36 @@ export default function CitizenLayout() {
       </aside>
 
       {/* Main content */}
-      <div style={{ flex: 1, marginLeft: 0, overflowX: 'hidden' }} className="cv-main">
-        {/* Mobile header */}
-        <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '12px 16px', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={function(){setOpen(true)}} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u2630'}</button>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
+      <div style={{ flex: 1, marginLeft: 0, overflowX: 'hidden', width: '100%', minWidth: 0 }} className="cv-main">
+        {/* Single responsive header — shows hamburger on mobile, just bell on desktop */}
+        <header style={{ position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button onClick={function(){setOpen(true)}} className="cv-hamburger" style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u2630'}</button>
+          <span className="cv-header-logo" style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
           <NotificationBell userId={user?.id} />
         </header>
-
-        {/* Desktop notification bar */}
-        <div className="cv-desktop-topbar" style={{ display: 'none', padding: '12px 24px', justifyContent: 'flex-end', background: C.navy, position: 'sticky', top: 0, zIndex: 30 }}>
-          <NotificationBell userId={user?.id} />
-        </div>
 
         <div className="cv-content-area" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', boxSizing: 'border-box', width: '100%' }}>
           <Outlet />
         </div>
       </div>
 
-      {/* Responsive styles */}
-      <style>{'\
-        @media (min-width: 769px) {\
-          .cv-sidebar { left: 0 !important; }\
-          .cv-main { margin-left: 260px !important; }\
-          .cv-mobile-header { display: none !important; }\
-          .cv-desktop-topbar { display: flex !important; }\
-        }\
-        @media (max-width: 768px) {\
-          .cv-mobile-header { display: flex !important; }\
-          .cv-close-btn { display: flex !important; }\
-          .cv-main { margin-left: 0 !important; }\
-          .cv-desktop-topbar { display: none !important; }\
-          .cv-content-area { padding: 20px 16px !important; }\
-        }\
-        @media (max-width: 420px) {\
-          .cv-content-area { padding: 16px 12px !important; }\
-        }\
-      '}</style>
+      <style dangerouslySetInnerHTML={{ __html: [
+        '@keyframes cvSpin { to { transform: rotate(360deg) } }',
+        '@media (min-width: 769px) {',
+        '  .cv-sidebar { left: 0 !important; }',
+        '  .cv-main { margin-left: 260px !important; }',
+        '  .cv-hamburger { display: none !important; }',
+        '  .cv-header-logo { display: none !important; }',
+        '}',
+        '@media (max-width: 768px) {',
+        '  .cv-close-btn { display: flex !important; }',
+        '  .cv-main { margin-left: 0 !important; }',
+        '  .cv-content-area { padding: 20px 16px !important; }',
+        '}',
+        '@media (max-width: 420px) {',
+        '  .cv-content-area { padding: 16px 12px !important; }',
+        '}',
+      ].join('\n') }} />
     </div>
   );
 }
