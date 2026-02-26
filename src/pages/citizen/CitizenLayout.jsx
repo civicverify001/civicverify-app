@@ -1,4 +1,4 @@
-// src/pages/citizen/CitizenLayout.jsx — With global notification bell
+// src/pages/citizen/CitizenLayout.jsx — With global notification bell + mobile overflow fix
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -25,7 +25,6 @@ export default function CitizenLayout() {
   var profile = auth.profile;
   var user = auth.user;
 
-  // Global notifications — available on every page
   var { notifications, unreadCount, markAllRead } = useNotifications(supabase, user?.id);
 
   async function logout() {
@@ -37,7 +36,8 @@ export default function CitizenLayout() {
   var normalStyle = { color: 'rgba(255,255,255,0.5)' };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif', width: '100%', maxWidth: '100vw', overflowX: 'hidden', position: 'relative' }}>
+
       {/* Mobile overlay */}
       {open && <div onClick={function(){setOpen(false)}} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />}
 
@@ -46,7 +46,6 @@ export default function CitizenLayout() {
         width: 260, background: 'linear-gradient(180deg, #0B2545 0%, #0d2e55 100%)', position: 'fixed', top: 0, bottom: 0, left: open ? 0 : -260, zIndex: 50,
         display: 'flex', flexDirection: 'column', transition: 'left 0.3s ease', overflowY: 'auto'
       }} className="cv-sidebar">
-        {/* Logo + Bell */}
         <div style={{ padding: '24px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){navigate('/')}}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -55,16 +54,13 @@ export default function CitizenLayout() {
             <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {/* Notification bell — desktop sidebar */}
             <div className="cv-sidebar-bell">
               <NotificationBell notifications={notifications} unreadCount={unreadCount} markAllRead={markAllRead} theme="dark" />
             </div>
-            {/* Close button - mobile only */}
             <button onClick={function(){setOpen(false)}} className="cv-close-btn" style={{ display: 'none', width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 18, cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}>{'\u2715'}</button>
           </div>
         </div>
 
-        {/* Nav links */}
         <nav style={{ flex: 1, padding: '8px 12px' }}>
           {links.map(function(link) {
             return (
@@ -77,7 +73,6 @@ export default function CitizenLayout() {
                 }}>
                 <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{link.icon}</span>
                 {link.label}
-                {/* Show unread dot next to Community link */}
                 {link.label === 'Community' && unreadCount > 0 && (
                   <span style={{
                     marginLeft: 'auto', minWidth: 20, height: 20, borderRadius: 10,
@@ -94,7 +89,6 @@ export default function CitizenLayout() {
           })}
         </nav>
 
-        {/* User info */}
         <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile ? profile.full_name : '...'}</p>
@@ -108,35 +102,73 @@ export default function CitizenLayout() {
       </aside>
 
       {/* Main content */}
-      <div style={{ flex: 1, marginLeft: 0 }} className="cv-main">
+      <div style={{ flex: 1, marginLeft: 0, width: '100%', minWidth: 0, overflowX: 'hidden' }} className="cv-main">
         {/* Mobile header */}
         <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '12px 16px', alignItems: 'center', justifyContent: 'space-between' }}>
           <button onClick={function(){setOpen(true)}} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u2630'}</button>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
-          {/* Notification bell — mobile header */}
           <NotificationBell notifications={notifications} unreadCount={unreadCount} markAllRead={markAllRead} theme="dark" />
         </header>
 
-        <div style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto' }}>
+        <div className="cv-page-content" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', boxSizing: 'border-box', width: '100%' }}>
           <Outlet />
         </div>
       </div>
 
-      {/* Responsive styles */}
-      <style>{'\
-        @media (min-width: 769px) {\
-          .cv-sidebar { left: 0 !important; }\
-          .cv-main { margin-left: 260px !important; }\
-          .cv-mobile-header { display: none !important; }\
-          .cv-sidebar-bell { display: block; }\
-        }\
-        @media (max-width: 768px) {\
-          .cv-mobile-header { display: flex !important; }\
-          .cv-close-btn { display: flex !important; }\
-          .cv-main { margin-left: 0 !important; }\
-          .cv-sidebar-bell { display: none; }\
-        }\
-      '}</style>
+      {/* === GLOBAL OVERFLOW FIX + RESPONSIVE === */}
+      <style>{`
+        /* Global mobile overflow kill */
+        html {
+          overflow-x: hidden !important;
+          -webkit-overflow-scrolling: touch;
+        }
+        body {
+          overflow-x: hidden !important;
+          max-width: 100vw !important;
+          position: relative;
+        }
+        #root {
+          overflow-x: hidden !important;
+          max-width: 100vw !important;
+          width: 100% !important;
+        }
+        *, *::before, *::after {
+          box-sizing: border-box !important;
+        }
+
+        /* Force all images and media to stay within bounds */
+        img, video, iframe, canvas, svg, table {
+          max-width: 100% !important;
+        }
+
+        /* Force all direct children to respect container */
+        .cv-page-content > * {
+          max-width: 100% !important;
+          overflow-x: hidden;
+        }
+
+        @media (min-width: 769px) {
+          .cv-sidebar { left: 0 !important; }
+          .cv-main { margin-left: 260px !important; }
+          .cv-mobile-header { display: none !important; }
+          .cv-sidebar-bell { display: block; }
+        }
+        @media (max-width: 768px) {
+          .cv-mobile-header { display: flex !important; }
+          .cv-close-btn { display: flex !important; }
+          .cv-main { margin-left: 0 !important; width: 100% !important; }
+          .cv-sidebar-bell { display: none; }
+          .cv-page-content {
+            padding: 20px 14px !important;
+            width: 100% !important;
+          }
+        }
+        @media (max-width: 420px) {
+          .cv-page-content {
+            padding: 16px 10px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
