@@ -186,8 +186,16 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
   var [audioError, setAudioError] = useState(null);
 
   async function joinAudio() {
+    if (joining) return; // Prevent double-click
     setJoining(true); setAudioError(null);
     try {
+      // Destroy any existing instance first to prevent duplicates
+      if (callObjRef.current) {
+        try { await callObjRef.current.leave(); } catch(e) {}
+        try { callObjRef.current.destroy(); } catch(e) {}
+        callObjRef.current = null;
+      }
+
       // Get Daily.co token from edge function
       var tokenData = await apiGetDailyToken(debate.id);
       if (!tokenData.token) throw new Error('No token received');
@@ -209,7 +217,15 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
       callObjRef.current = callObj;
 
       callObj.on('joined-meeting', function() { setAudioConnected(true); setJoining(false); });
-      callObj.on('error', function(e) { setAudioError(e.errorMsg || 'Audio error'); setJoining(false); });
+      callObj.on('error', function(e) {
+        var msg = e.errorMsg || 'Audio error';
+        if (msg.indexOf('payment') !== -1) msg = 'Audio provider requires billing setup. Debate features work without audio.';
+        setAudioError(msg);
+        setJoining(false);
+        // Destroy on error to prevent duplicate instance
+        try { callObj.destroy(); } catch(ex) {}
+        callObjRef.current = null;
+      });
       callObj.on('left-meeting', function() { setAudioConnected(false); });
       callObj.on('participant-counts-updated', function(e) {
         // Could update listener count here
@@ -223,15 +239,24 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
       });
 
     } catch (err) {
-      setAudioError(err.message || 'Failed to connect audio');
+      // Destroy orphaned instance on failure to prevent "duplicate" error
+      if (callObjRef.current) {
+        try { callObjRef.current.destroy(); } catch(e) {}
+        callObjRef.current = null;
+      }
+      var msg = err.message || 'Failed to connect audio';
+      if (msg.indexOf('payment') !== -1 || msg.indexOf('Payment') !== -1) {
+        msg = 'Audio provider requires billing setup. Debate features work without audio.';
+      }
+      setAudioError(msg);
       setJoining(false);
     }
   }
 
   function leaveAudio() {
     if (callObjRef.current) {
-      callObjRef.current.leave();
-      callObjRef.current.destroy();
+      try { callObjRef.current.leave(); } catch(e) {}
+      try { callObjRef.current.destroy(); } catch(e) {}
       callObjRef.current = null;
     }
     setAudioConnected(false);
@@ -563,7 +588,11 @@ export default function DebateSpace() {
   // Cleanup audio + transcription on unmount
   useEffect(function() {
     return function() {
-      if (callObjRef.current) { callObjRef.current.leave(); callObjRef.current.destroy(); }
+      if (callObjRef.current) {
+        try { callObjRef.current.leave(); } catch(e) {}
+        try { callObjRef.current.destroy(); } catch(e) {}
+        callObjRef.current = null;
+      }
       if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch (e) {} }
     };
   }, []);
@@ -797,4 +826,3 @@ export default function DebateSpace() {
     </div>
   );
 }
-
