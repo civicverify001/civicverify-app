@@ -93,7 +93,7 @@ export default function App() {
             <Route path="debates" element={<CitizenDebates />} />
             <Route path="debates/:id" element={<DebateSpace />} />
           </Route>
-          <Route path="debates" element={<AdminDebates />} />
+
           <Route path="/admin" element={
             <ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>
           }>
@@ -108,6 +108,7 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="export" element={<AdminExport />} />
             <Route path="org-review" element={<OrgReview />} />
+            <Route path="debates" element={<AdminDebates />} />
           </Route>
 
           <Route path="/org" element={
@@ -127,3 +128,4 @@ export default function App() {
     </BrowserRouter>
   )
 }
+
