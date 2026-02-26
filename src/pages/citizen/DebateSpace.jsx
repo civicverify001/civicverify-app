@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
+import { startDebate as apiStartDebate, concedeTime as apiConcedeTime } from '../../lib/debateApi';
 
 var C = { navy: '#0B2545', gold: '#C5960C', darkGold: '#a07a0a', cream: '#F5F1EC', green: '#16a34a', darkGreen: '#15803d', red: '#ef4444' };
 var font = 'Libre Baskerville, Georgia, serif';
@@ -285,7 +286,11 @@ export default function DebateSpace() {
   }
   async function concedeTime() {
     if (!currentUser || !debate) return;
-    await supabase.from('debate_moderator_log').insert({ debate_id: id, message: (profile ? profile.full_name : 'Debater') + ' has conceded their remaining time.', event_type: 'announcement' });
+    try { await apiConcedeTime(debate.id); } catch (err) { console.error('Concede error:', err); }
+  }
+  async function handleStartDebate() {
+    if (!currentUser || !debate) return;
+    try { await apiStartDebate(debate.id); } catch (err) { console.error('Start error:', err); }
   }
 
   var isDebater = debate && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id);
@@ -351,7 +356,12 @@ export default function DebateSpace() {
         <div style={{ padding: '36px 28px', borderRadius: 22, textAlign: 'center', marginBottom: 24, background: 'linear-gradient(135deg, #0B2545, #163a64)', border: '1px solid rgba(197,150,12,0.2)', boxShadow: '0 8px 32px rgba(11,37,69,0.15)' }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)', margin: '0 0 10px', letterSpacing: 1, textTransform: 'uppercase' }}>{countdown > 0 ? 'Debate begins in' : 'Starting any moment...'}</p>
           {countdown > 0 && <p style={{ fontSize: 48, fontWeight: 700, color: C.gold, margin: 0, fontFamily: 'monospace', letterSpacing: 6, animation: 'countPulse 2s ease-in-out infinite', textShadow: '0 2px 16px rgba(197,150,12,0.4)' }}>{countdownText}</p>}
-          {isDebater && <div style={{ marginTop: 16, padding: '8px 20px', borderRadius: 12, display: 'inline-block', background: 'rgba(197,150,12,0.15)', border: '1px solid rgba(197,150,12,0.25)' }}><span style={{ fontSize: 13, color: C.gold, fontWeight: 700 }}>🎙 You are a debater — get ready!</span></div>}
+          {isDebater && (<div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ padding: '8px 20px', borderRadius: 12, display: 'inline-block', background: 'rgba(197,150,12,0.15)', border: '1px solid rgba(197,150,12,0.25)' }}><span style={{ fontSize: 13, color: C.gold, fontWeight: 700 }}>🎙 You are a debater — get ready!</span></div>
+            {countdown !== null && countdown <= 0 && (
+              <button onClick={handleStartDebate} style={{ padding: '14px 36px', borderRadius: 14, border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', color: '#fff', boxShadow: '0 4px 20px rgba(197,150,12,0.4)', letterSpacing: 0.5 }}>🎙 Start Debate Now</button>
+            )}
+          </div>)}
         </div>
       )}
 
