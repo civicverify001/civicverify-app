@@ -1,9 +1,16 @@
-// src/pages/citizen/DebateSpace.jsx — Live Debate Room (Polished)
+// src/pages/citizen/DebateSpace.jsx — Phase 4: Audio + Auto-Timer + Transcription
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
-import { startDebate as apiStartDebate, concedeTime as apiConcedeTime } from '../../lib/debateApi';
+import {
+  startDebate as apiStartDebate,
+  concedeTime as apiConcedeTime,
+  nextTurn as apiNextTurn,
+  createAudioRoom as apiCreateAudioRoom,
+  getDailyToken as apiGetDailyToken,
+  generateSummary as apiGenerateSummary,
+} from '../../lib/debateApi';
 
 var C = { navy: '#0B2545', gold: '#C5960C', darkGold: '#a07a0a', cream: '#F5F1EC', green: '#16a34a', darkGreen: '#15803d', red: '#ef4444' };
 var font = 'Libre Baskerville, Georgia, serif';
@@ -21,7 +28,7 @@ function timeAgo(d) {
   return Math.floor(diff / 3600) + 'h ago';
 }
 
-function SpeakerCard({ name, isActive, isVerified, timeLeft, side }) {
+function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAudioConnected }) {
   var initial = (name || '?').charAt(0).toUpperCase();
   return (
     <div style={{
@@ -47,6 +54,12 @@ function SpeakerCard({ name, isActive, isVerified, timeLeft, side }) {
           }}>
             <span style={{ fontSize: 14, animation: 'micPulse 1.5s ease-in-out infinite' }}>🎙</span>
           </div>
+        )}
+        {isAudioConnected && (
+          <div style={{
+            position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%',
+            background: isMuted ? C.red : C.green, border: '2px solid #fff',
+          }} />
         )}
       </div>
       <div style={{ textAlign: 'center' }}>
@@ -95,7 +108,7 @@ function ModMessage({ message, eventType, time }) {
   );
 }
 
-function ChatMsg({ name, content, isVerified: verified, time, isOwn, index }) {
+function ChatMsg({ name, content, isVerified: verified, time, index }) {
   var isEven = index % 2 === 0;
   var bubbleBg = isEven ? 'rgba(22,163,74,0.08)' : 'rgba(197,150,12,0.08)';
   var bubbleBorder = isEven ? 'rgba(22,163,74,0.15)' : 'rgba(197,150,12,0.15)';
@@ -167,6 +180,160 @@ function PollCard({ poll, onVote }) {
   );
 }
 
+// ─── Audio Controls Panel ───
+function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected, setAudioConnected, isMuted, setIsMuted }) {
+  var [joining, setJoining] = useState(false);
+  var [audioError, setAudioError] = useState(null);
+
+  async function joinAudio() {
+    setJoining(true); setAudioError(null);
+    try {
+      // Get Daily.co token from edge function
+      var tokenData = await apiGetDailyToken(debate.id);
+      if (!tokenData.token) throw new Error('No token received');
+
+      // Load Daily.co SDK if not loaded
+      if (!window.DailyIframe) {
+        await new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          s.src = 'https://unpkg.com/@daily-co/daily-js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      var callObj = window.DailyIframe.createCallObject({
+        audioSource: true,
+        videoSource: false,
+      });
+      callObjRef.current = callObj;
+
+      callObj.on('joined-meeting', function() { setAudioConnected(true); setJoining(false); });
+      callObj.on('error', function(e) { setAudioError(e.errorMsg || 'Audio error'); setJoining(false); });
+      callObj.on('left-meeting', function() { setAudioConnected(false); });
+      callObj.on('participant-counts-updated', function(e) {
+        // Could update listener count here
+      });
+
+      await callObj.join({
+        url: debate.audio_room_url,
+        token: tokenData.token,
+        startVideoOff: true,
+        startAudioOff: true,
+      });
+
+    } catch (err) {
+      setAudioError(err.message || 'Failed to connect audio');
+      setJoining(false);
+    }
+  }
+
+  function leaveAudio() {
+    if (callObjRef.current) {
+      callObjRef.current.leave();
+      callObjRef.current.destroy();
+      callObjRef.current = null;
+    }
+    setAudioConnected(false);
+  }
+
+  function toggleMute() {
+    if (!callObjRef.current) return;
+    callObjRef.current.setLocalAudio(isMuted);
+    setIsMuted(!isMuted);
+  }
+
+  if (!debate.audio_room_url) {
+    return (
+      <div style={{ padding: '14px 18px', borderRadius: 16, background: 'rgba(11,37,69,0.03)', border: '1px solid rgba(11,37,69,0.06)', textAlign: 'center' }}>
+        <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: 0 }}>🔇 Audio room not yet created</p>
+        {isDebater && (
+          <button onClick={async function() { try { await apiCreateAudioRoom(debate.id); } catch (err) { setAudioError(err.message); } }}
+            style={{ marginTop: 10, padding: '10px 24px', borderRadius: 12, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', color: '#fff', boxShadow: '0 2px 8px rgba(197,150,12,0.25)' }}>
+            🔊 Create Audio Room
+          </button>
+        )}
+        {audioError && <p style={{ fontSize: 12, color: C.red, marginTop: 8 }}>{audioError}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '14px 18px', borderRadius: 16, background: audioConnected ? 'rgba(22,163,74,0.06)' : 'rgba(11,37,69,0.03)', border: '1px solid ' + (audioConnected ? 'rgba(22,163,74,0.15)' : 'rgba(11,37,69,0.06)') }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: audioConnected ? C.green : '#94a3b8', animation: audioConnected ? 'liveDot 1.5s ease-in-out infinite' : 'none' }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>
+            {audioConnected ? '🔊 Audio Connected' : '🔇 Audio Disconnected'}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {audioConnected && isDebater && (
+            <button onClick={toggleMute} style={{
+              padding: '8px 16px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'DM Sans, sans-serif',
+              background: isMuted ? 'rgba(239,68,68,0.1)' : 'rgba(22,163,74,0.1)',
+              color: isMuted ? C.red : C.green,
+            }}>
+              {isMuted ? '🔇 Unmute' : '🎙 Mute'}
+            </button>
+          )}
+          {!audioConnected ? (
+            <button onClick={joinAudio} disabled={joining} style={{
+              padding: '8px 20px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'DM Sans, sans-serif',
+              background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
+              color: '#fff', boxShadow: '0 2px 8px rgba(197,150,12,0.25)',
+            }}>
+              {joining ? '⏳ Connecting...' : '🎧 Join Audio'}
+            </button>
+          ) : (
+            <button onClick={leaveAudio} style={{
+              padding: '8px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.2)',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              background: 'rgba(239,68,68,0.06)', color: C.red,
+            }}>
+              Leave Audio
+            </button>
+          )}
+        </div>
+      </div>
+      {audioError && <p style={{ fontSize: 12, color: C.red, marginTop: 8, margin: '8px 0 0' }}>{audioError}</p>}
+    </div>
+  );
+}
+
+// ─── Live Transcript Panel ───
+function TranscriptPanel({ debateId, transcriptSegments }) {
+  if (transcriptSegments.length === 0) {
+    return (
+      <div style={{ padding: '30px 16px', textAlign: 'center' }}>
+        <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.45)', margin: 0 }}>📝 Live transcript will appear here when debaters speak</p>
+      </div>
+    );
+  }
+  return (
+    <div style={{ padding: '12px 14px' }}>
+      {transcriptSegments.map(function(seg, i) {
+        return (
+          <div key={seg.id || i} style={{
+            marginBottom: 8, padding: '8px 12px', borderRadius: 10,
+            background: seg.is_final ? 'rgba(11,37,69,0.03)' : 'rgba(197,150,12,0.06)',
+            borderLeft: '3px solid ' + (seg.is_final ? C.navy : C.gold),
+            opacity: seg.is_final ? 1 : 0.7,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: C.gold }}>{seg.speaker_name || 'Speaker'}</span>
+              {seg.section && <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.4)' }}>{seg.section}</span>}
+            </div>
+            <p style={{ fontSize: 13, color: C.navy, margin: 0, lineHeight: 1.5, fontStyle: seg.is_final ? 'normal' : 'italic' }}>{seg.content}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DebateSpace() {
   var { id } = useParams();
   var navigate = useNavigate();
@@ -191,6 +358,16 @@ export default function DebateSpace() {
   var [polls, setPolls] = useState([]);
   var [countdown, setCountdown] = useState(null);
 
+  // Phase 4 state
+  var [audioConnected, setAudioConnected] = useState(false);
+  var [isMuted, setIsMuted] = useState(true);
+  var callObjRef = useRef(null);
+  var [transcriptSegments, setTranscriptSegments] = useState([]);
+  var recognitionRef = useRef(null);
+  var [isTranscribing, setIsTranscribing] = useState(false);
+  var autoTimerFired = useRef(false);
+  var debateStartTimeRef = useRef(null);
+
   var loadDebate = useCallback(async function() {
     var { data } = await supabase.from('debates').select('*').eq('id', id).single();
     if (!data) { navigate('/citizen/debates'); return; }
@@ -200,7 +377,16 @@ export default function DebateSpace() {
       var { data: users } = await supabase.from('users').select('id, full_name, identity_verified').in('id', ids);
       if (users) { users.forEach(function(u) { if (u.id === data.creator_id) setDebaterA(u); if (u.id === data.opponent_id) setDebaterB(u); }); }
     }
-    if (data.format) { var s = Object.entries(data.format); if (s.length > 0) { setTimerA(s[0][1]); setTimerB(s[0][1]); } }
+    // Set timer from server-synced turn data
+    if (data.turn_started_at && data.turn_duration) {
+      var elapsed = Math.floor((Date.now() - new Date(data.turn_started_at).getTime()) / 1000);
+      var remaining = Math.max(0, data.turn_duration - elapsed);
+      if (data.active_speaker_id === data.creator_id) { setTimerA(remaining); setTimerB(data.turn_duration); }
+      else { setTimerB(remaining); setTimerA(data.turn_duration); }
+    } else if (data.format) {
+      var s = Object.entries(data.format);
+      if (s.length > 0) { setTimerA(s[0][1]); setTimerB(s[0][1]); }
+    }
     setLoading(false);
   }, [id, navigate]);
 
@@ -236,8 +422,16 @@ export default function DebateSpace() {
     } else { setPolls([]); }
   }, [id, currentUser]);
 
-  useEffect(function() { loadDebate(); loadModLog(); loadChat(); loadPolls(); }, [loadDebate, loadModLog, loadChat, loadPolls]);
+  var loadTranscript = useCallback(async function() {
+    var { data } = await supabase.from('debate_transcript_segments').select('*, users:speaker_id(full_name)').eq('debate_id', id).eq('is_final', true).order('created_at', { ascending: true });
+    if (data) {
+      setTranscriptSegments(data.map(function(s) { return Object.assign({}, s, { speaker_name: s.users ? s.users.full_name : 'Speaker' }); }));
+    }
+  }, [id]);
 
+  useEffect(function() { loadDebate(); loadModLog(); loadChat(); loadPolls(); loadTranscript(); }, [loadDebate, loadModLog, loadChat, loadPolls, loadTranscript]);
+
+  // Realtime subscriptions
   useEffect(function() {
     var ch = supabase.channel('dc-' + id)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'debate_chat_messages', filter: 'debate_id=eq.' + id }, function(p) {
@@ -248,13 +442,32 @@ export default function DebateSpace() {
     var ml = supabase.channel('dm-' + id)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'debate_moderator_log', filter: 'debate_id=eq.' + id }, function(p) { setModLog(function(prev) { return prev.concat([p.new]); }); }).subscribe();
     var ds = supabase.channel('ds-' + id)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'debates', filter: 'id=eq.' + id }, function(p) { setDebate(p.new); }).subscribe();
-    return function() { supabase.removeChannel(ch); supabase.removeChannel(ml); supabase.removeChannel(ds); };
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'debates', filter: 'id=eq.' + id }, function(p) {
+        setDebate(p.new);
+        // Sync timer from server on turn change
+        if (p.new.turn_started_at && p.new.turn_duration) {
+          var elapsed = Math.floor((Date.now() - new Date(p.new.turn_started_at).getTime()) / 1000);
+          var remaining = Math.max(0, p.new.turn_duration - elapsed);
+          if (p.new.active_speaker_id === p.new.creator_id) { setTimerA(remaining); setTimerB(p.new.turn_duration); }
+          else { setTimerB(remaining); setTimerA(p.new.turn_duration); }
+          autoTimerFired.current = false;
+        }
+      }).subscribe();
+    var ts = supabase.channel('dt-' + id)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'debate_transcript_segments', filter: 'debate_id=eq.' + id }, function(p) {
+        if (p.new.is_final) {
+          supabase.from('users').select('full_name').eq('id', p.new.speaker_id).single().then(function(r) {
+            setTranscriptSegments(function(prev) { return prev.concat([Object.assign({}, p.new, { speaker_name: r.data ? r.data.full_name : 'Speaker' })]); });
+          });
+        }
+      }).subscribe();
+    return function() { supabase.removeChannel(ch); supabase.removeChannel(ml); supabase.removeChannel(ds); supabase.removeChannel(ts); };
   }, [id]);
 
   useEffect(function() { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chatMessages]);
   useEffect(function() { if (modLogRef.current) modLogRef.current.scrollTop = modLogRef.current.scrollHeight; }, [modLog]);
 
+  // Waiting room countdown
   useEffect(function() {
     if (!debate) return;
     if (debate.status === 'waiting_room' || debate.status === 'confirmed') {
@@ -263,15 +476,97 @@ export default function DebateSpace() {
     }
   }, [debate]);
 
+  // Auto-timer: countdown + auto-advance
   useEffect(function() {
     if (!debate || debate.status !== 'live') return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(function() {
-      if (debate.active_speaker_id === debate.creator_id) setTimerA(function(t) { return Math.max(0, t - 1); });
-      else if (debate.active_speaker_id === debate.opponent_id) setTimerB(function(t) { return Math.max(0, t - 1); });
+      var isCreatorTurn = debate.active_speaker_id === debate.creator_id;
+      var setTimer = isCreatorTurn ? setTimerA : setTimerB;
+
+      setTimer(function(t) {
+        var newT = Math.max(0, t - 1);
+        // Auto-advance: only the active speaker's client triggers next_turn
+        if (newT === 0 && !autoTimerFired.current && currentUser && debate.active_speaker_id === currentUser.id) {
+          autoTimerFired.current = true;
+          apiNextTurn(debate.id).catch(function(err) { console.error('Auto next_turn error:', err); });
+        }
+        return newT;
+      });
     }, 1000);
     return function() { clearInterval(timerRef.current); };
-  }, [debate]);
+  }, [debate, currentUser]);
+
+  // Web Speech API transcription
+  useEffect(function() {
+    if (!debate || debate.status !== 'live' || !currentUser) return;
+    var isActiveSpeaker = debate.active_speaker_id === currentUser.id;
+
+    if (isActiveSpeaker && !isTranscribing) {
+      startTranscription();
+    } else if (!isActiveSpeaker && isTranscribing) {
+      stopTranscription();
+    }
+  }, [debate, currentUser, isTranscribing]);
+
+  function startTranscription() {
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return; // Browser doesn't support
+
+    var recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = function(event) {
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        var result = event.results[i];
+        if (result.isFinal && result[0].transcript.trim()) {
+          // Save final transcript segment to database
+          supabase.from('debate_transcript_segments').insert({
+            debate_id: id,
+            speaker_id: currentUser.id,
+            section: debate ? debate.current_section : null,
+            content: result[0].transcript.trim(),
+            is_final: true,
+            start_time: debateStartTimeRef.current ? (Date.now() - debateStartTimeRef.current) / 1000 : null,
+          });
+        }
+      }
+    };
+
+    recognition.onerror = function(e) {
+      if (e.error !== 'no-speech' && e.error !== 'aborted') console.error('Speech recognition error:', e.error);
+    };
+
+    recognition.onend = function() {
+      // Auto-restart if still active speaker
+      if (debate && debate.active_speaker_id === currentUser.id && recognitionRef.current) {
+        try { recognition.start(); } catch (e) { /* ignore */ }
+      }
+    };
+
+    recognitionRef.current = recognition;
+    if (!debateStartTimeRef.current) debateStartTimeRef.current = Date.now();
+    try { recognition.start(); setIsTranscribing(true); } catch (e) { /* ignore */ }
+  }
+
+  function stopTranscription() {
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null; // Prevent auto-restart
+      try { recognitionRef.current.stop(); } catch (e) { /* ignore */ }
+      recognitionRef.current = null;
+    }
+    setIsTranscribing(false);
+  }
+
+  // Cleanup audio + transcription on unmount
+  useEffect(function() {
+    return function() {
+      if (callObjRef.current) { callObjRef.current.leave(); callObjRef.current.destroy(); }
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch (e) {} }
+    };
+  }, []);
 
   async function sendChat() {
     if (!chatInput.trim() || sendingChat || !currentUser) return;
@@ -339,6 +634,7 @@ export default function DebateSpace() {
               {isLive && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 20, background: 'linear-gradient(135deg, #ef4444, #dc2626)', fontSize: 12, fontWeight: 800, color: '#fff', boxShadow: '0 2px 12px rgba(239,68,68,0.3)' }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: '#fff', animation: 'liveDot 1.5s ease-in-out infinite' }} />LIVE NOW</span>}
               {isWaiting && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 20, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', fontSize: 12, fontWeight: 700, color: '#fff', boxShadow: '0 2px 12px rgba(59,130,246,0.25)' }}>⏳ Waiting Room</span>}
               {isCompleted && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 14px', borderRadius: 20, background: C.navy, fontSize: 12, fontWeight: 700, color: '#fff' }}>✓ Completed</span>}
+              {isTranscribing && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 20, background: 'rgba(239,68,68,0.08)', fontSize: 11, fontWeight: 700, color: C.red }}>● REC</span>}
             </div>
             <h1 style={{ fontSize: 24, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font, lineHeight: 1.3 }}>{debate.topic}</h1>
             {debate.description && <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.6)', margin: '6px 0 0', lineHeight: 1.5 }}>{debate.description}</p>}
@@ -351,7 +647,18 @@ export default function DebateSpace() {
         </div>
       </div>
 
-      {/* Countdown */}
+      {/* Audio Panel */}
+      {(isLive || isWaiting) && (
+        <div style={{ marginBottom: 16 }}>
+          <AudioPanel
+            debate={debate} currentUser={currentUser} isDebater={isDebater}
+            callObjRef={callObjRef} audioConnected={audioConnected} setAudioConnected={setAudioConnected}
+            isMuted={isMuted} setIsMuted={setIsMuted}
+          />
+        </div>
+      )}
+
+      {/* Countdown / Waiting Room */}
       {isWaiting && countdown !== null && (
         <div style={{ padding: '36px 28px', borderRadius: 22, textAlign: 'center', marginBottom: 24, background: 'linear-gradient(135deg, #0B2545, #163a64)', border: '1px solid rgba(197,150,12,0.2)', boxShadow: '0 8px 32px rgba(11,37,69,0.15)' }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)', margin: '0 0 10px', letterSpacing: 1, textTransform: 'uppercase' }}>{countdown > 0 ? 'Debate begins in' : 'Starting any moment...'}</p>
@@ -369,13 +676,13 @@ export default function DebateSpace() {
       <div style={{ background: 'linear-gradient(180deg, #fff 0%, #fafafa 100%)', borderRadius: 22, padding: '28px 20px', border: isLive ? '2px solid rgba(197,150,12,0.2)' : '1px solid rgba(11,37,69,0.06)', marginBottom: 20, boxShadow: '0 4px 24px rgba(11,37,69,0.04)' }}>
         {debate.current_section && <div style={{ textAlign: 'center', marginBottom: 20 }}><span style={{ display: 'inline-block', padding: '8px 22px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(197,150,12,0.1), rgba(197,150,12,0.15))', fontSize: 13, fontWeight: 700, color: C.darkGold, border: '1px solid rgba(197,150,12,0.2)' }}>📌 {debate.current_section}</span></div>}
         <div className="cv-ds-speakers" style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 24 }}>
-          <SpeakerCard name={debaterA ? debaterA.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.creator_id} isVerified={debaterA && debaterA.identity_verified} timeLeft={timerA} side="Proposition" />
+          <SpeakerCard name={debaterA ? debaterA.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.creator_id} isVerified={debaterA && debaterA.identity_verified} timeLeft={timerA} side="Proposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.creator_id === currentUser.id} />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 8px' }}>
             <div style={{ width: 52, height: 52, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0B2545, #163a64)', boxShadow: '0 4px 16px rgba(11,37,69,0.15)' }}>
               <span style={{ fontSize: 18, fontWeight: 800, color: C.gold }}>VS</span>
             </div>
           </div>
-          <SpeakerCard name={debaterB ? debaterB.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.opponent_id} isVerified={debaterB && debaterB.identity_verified} timeLeft={timerB} side="Opposition" />
+          <SpeakerCard name={debaterB ? debaterB.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.opponent_id} isVerified={debaterB && debaterB.identity_verified} timeLeft={timerB} side="Opposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.opponent_id === currentUser.id} />
         </div>
         {isActiveSpeaker && isLive && (
           <div style={{ textAlign: 'center', marginTop: 24 }}>
@@ -384,9 +691,9 @@ export default function DebateSpace() {
         )}
       </div>
 
-      {/* Moderator + Chat */}
+      {/* Moderator + Chat/Polls/Transcript */}
       <div className="cv-ds-main" style={{ display: 'flex', gap: 16 }}>
-        {/* Moderator */}
+        {/* Moderator Panel */}
         <div style={{ flex: 1, borderRadius: 20, display: 'flex', flexDirection: 'column', minHeight: 420, background: 'linear-gradient(180deg, #fff 0%, #fafaf8 100%)', border: '1px solid rgba(11,37,69,0.06)', boxShadow: '0 2px 16px rgba(11,37,69,0.03)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px', borderBottom: '1px solid rgba(11,37,69,0.06)', background: 'linear-gradient(135deg, #0B2545, #163a64)', borderRadius: '20px 20px 0 0' }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(197,150,12,0.3)' }}><span style={{ fontSize: 18 }}>⚖️</span></div>
@@ -402,13 +709,13 @@ export default function DebateSpace() {
           </div>
         </div>
 
-        {/* Chat Sidebar */}
+        {/* Sidebar: Chat / Polls / Transcript / Info */}
         <div className="cv-ds-sidebar" style={{ width: 380, borderRadius: 20, display: 'flex', flexDirection: 'column', minHeight: 420, background: '#fff', border: '1px solid rgba(11,37,69,0.06)', boxShadow: '0 2px 16px rgba(11,37,69,0.03)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', background: C.navy }}>
-            {[{ id: 'chat', label: '💬 Chat', count: chatMessages.length }, { id: 'polls', label: '📊 Polls', count: polls.length }, { id: 'info', label: 'ℹ️ Info' }].map(function(t) {
+            {[{ id: 'chat', label: '💬 Chat', count: chatMessages.length }, { id: 'transcript', label: '📝 Transcript', count: transcriptSegments.length }, { id: 'polls', label: '📊 Polls', count: polls.length }, { id: 'info', label: 'ℹ️ Info' }].map(function(t) {
               var active = activeTab === t.id;
-              return (<button key={t.id} className="cv-ds-tab" onClick={function() { setActiveTab(t.id); }} style={{ flex: 1, padding: '14px 8px', fontSize: 13, fontWeight: active ? 700 : 500, color: active ? '#fff' : 'rgba(255,255,255,0.45)', background: active ? 'rgba(197,150,12,0.2)' : 'transparent', borderBottom: active ? '3px solid ' + C.gold : '3px solid transparent' }}>
-                {t.label}{t.count > 0 && <span style={{ marginLeft: 5, padding: '2px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700, background: active ? C.gold : 'rgba(255,255,255,0.15)', color: '#fff' }}>{t.count}</span>}
+              return (<button key={t.id} className="cv-ds-tab" onClick={function() { setActiveTab(t.id); }} style={{ flex: 1, padding: '14px 4px', fontSize: 11, fontWeight: active ? 700 : 500, color: active ? '#fff' : 'rgba(255,255,255,0.45)', background: active ? 'rgba(197,150,12,0.2)' : 'transparent', borderBottom: active ? '3px solid ' + C.gold : '3px solid transparent' }}>
+                {t.label}{t.count > 0 && <span style={{ marginLeft: 4, padding: '2px 6px', borderRadius: 10, fontSize: 9, fontWeight: 700, background: active ? C.gold : 'rgba(255,255,255,0.15)', color: '#fff' }}>{t.count}</span>}
               </button>);
             })}
           </div>
@@ -422,7 +729,7 @@ export default function DebateSpace() {
                   </div>
                 ) : chatMessages.map(function(m, idx) {
                   var u = chatUsers[m.user_id];
-                  return <ChatMsg key={m.id} name={u ? u.full_name : '...'} content={m.content} isVerified={u && u.identity_verified} time={m.created_at} isOwn={currentUser && m.user_id === currentUser.id} index={idx} />;
+                  return <ChatMsg key={m.id} name={u ? u.full_name : '...'} content={m.content} isVerified={u && u.identity_verified} time={m.created_at} index={idx} />;
                 })}
               </div>
               {currentUser ? (
@@ -434,6 +741,13 @@ export default function DebateSpace() {
                 <div style={{ padding: '16px', borderTop: '1px solid rgba(11,37,69,0.06)', textAlign: 'center', background: 'rgba(11,37,69,0.02)' }}><p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: 0 }}>Sign in to join the chat</p></div>
               )}
             </>)}
+
+            {activeTab === 'transcript' && (
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                <TranscriptPanel debateId={id} transcriptSegments={transcriptSegments} />
+              </div>
+            )}
+
             {activeTab === 'polls' && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
                 {polls.length === 0 ? (
@@ -445,6 +759,7 @@ export default function DebateSpace() {
                 ) : polls.map(function(p) { return <PollCard key={p.id} poll={p} onVote={votePoll} />; })}
               </div>
             )}
+
             {activeTab === 'info' && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px' }}>
                 <div style={{ marginBottom: 22 }}>
