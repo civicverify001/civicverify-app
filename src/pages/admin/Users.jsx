@@ -1,4 +1,4 @@
-// src/pages/admin/Users.jsx — Polished
+// src/pages/admin/Users.jsx — Fixed to use identity_verified (Didit)
 import { useEffect, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 
@@ -16,13 +16,13 @@ export default function AdminUsers() {
 
   const filtered = users.filter(u => {
     if (roleFilter !== 'all' && u.role !== roleFilter) return false;
-    if (statusFilter === 'verified' && !u.is_verified) return false;
-    if (statusFilter === 'unverified' && u.is_verified) return false;
+    if (statusFilter === 'verified' && !u.identity_verified) return false;
+    if (statusFilter === 'unverified' && u.identity_verified) return false;
     if (search && !(u.full_name || '').toLowerCase().includes(search.toLowerCase()) && !(u.email || '').toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
-  const verifiedCount = users.filter(u => u.is_verified).length;
+  const verifiedCount = users.filter(u => u.identity_verified).length;
 
   async function updateRole(id, role) {
     const { error } = await supabase.from('users').update({ role }).eq('id', id);
@@ -30,8 +30,8 @@ export default function AdminUsers() {
   }
 
   async function toggleVerify(id, current) {
-    const { error } = await supabase.from('users').update({ is_verified: !current }).eq('id', id);
-    if (!error) setUsers(users.map(u => u.id === id ? { ...u, is_verified: !current } : u));
+    const { error } = await supabase.from('users').update({ identity_verified: !current }).eq('id', id);
+    if (!error) setUsers(users.map(u => u.id === id ? { ...u, identity_verified: !current } : u));
   }
 
   async function deleteUser(id) {
@@ -109,11 +109,11 @@ export default function AdminUsers() {
                       </select>
                     </td>
                     <td className="px-6 py-4">
-                      <button onClick={() => toggleVerify(u.id, u.is_verified)}
+                      <button onClick={() => toggleVerify(u.id, u.identity_verified)}
                         className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-200 ${
-                          u.is_verified ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 hover:bg-emerald-100' : 'bg-gray-50 text-gray-400 border border-gray-200/60 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200/60'
+                          u.identity_verified ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 hover:bg-emerald-100' : 'bg-gray-50 text-gray-400 border border-gray-200/60 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200/60'
                         }`}>
-                        {u.is_verified ? '✓ Verified' : 'Unverified'}
+                        {u.identity_verified ? '✓ Verified' : 'Unverified'}
                       </button>
                     </td>
                     <td className="px-6 py-4 font-semibold text-[#0B2545]/50 tabular-nums">{u.trust_score || 0}</td>
@@ -138,3 +138,4 @@ export default function AdminUsers() {
     </div>
   );
 }
+
