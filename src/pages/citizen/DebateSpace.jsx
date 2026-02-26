@@ -186,6 +186,17 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
   var [audioError, setAudioError] = useState(null);
   var audioContainerRef = useRef(null);
 
+  // Auto-mute/unmute based on whose turn it is
+  useEffect(function() {
+    if (!audioConnected || !callObjRef.current || !isDebater || !currentUser) return;
+    if (!debate || debate.status !== 'live') return;
+
+    var isMyTurn = debate.active_speaker_id === currentUser.id;
+    callObjRef.current.setLocalAudio(isMyTurn);
+    setIsMuted(!isMyTurn);
+    console.log('[CivicVerify Audio] Turn-based mute:', isMyTurn ? 'YOUR TURN - unmuted' : 'NOT your turn - muted');
+  }, [debate?.active_speaker_id, audioConnected]);
+
   async function joinAudio() {
     if (joining) return;
     setJoining(true); setAudioError(null);
@@ -274,18 +285,19 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
         setAudioConnected(true);
         setJoining(false);
         console.log('[CivicVerify Audio] Joined meeting! isDebater:', isDebater);
-        // Debaters unmute after joining
-        if (isDebater) {
+        // Only unmute if it's YOUR turn right now
+        var isMyTurn = isDebater && debate && currentUser && debate.active_speaker_id === currentUser.id;
+        if (isMyTurn) {
           callObj.setLocalAudio(true);
           setIsMuted(false);
-          console.log('[CivicVerify Audio] Debater unmuted');
+          console.log('[CivicVerify Audio] Your turn - unmuted');
         } else {
           callObj.setLocalAudio(false);
           setIsMuted(true);
+          console.log('[CivicVerify Audio] Not your turn - muted');
         }
-        // Log local participant info
         var local = callObj.participants().local;
-        console.log('[CivicVerify Audio] Local participant:', local?.user_name, 'audio:', local?.audio, 'tracks:', local?.tracks);
+        console.log('[CivicVerify Audio] Local participant:', local?.user_name, 'audio:', local?.audio);
       });
 
       callObj.on('error', function(e) {
@@ -305,7 +317,7 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
         url: debate.audio_room_url,
         token: tokenData.token,
         startVideoOff: true,
-        startAudioOff: !isDebater, // Debaters start with mic ON
+        startAudioOff: true, // Always join muted — turn logic handles unmuting
       });
 
       console.log('[CivicVerify Audio] Join call complete');
@@ -340,6 +352,8 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
 
   function toggleMute() {
     if (!callObjRef.current) return;
+    // Only allow toggle during your turn
+    if (debate && currentUser && debate.active_speaker_id !== currentUser.id) return;
     callObjRef.current.setLocalAudio(isMuted);
     setIsMuted(!isMuted);
   }
@@ -371,16 +385,30 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {audioConnected && isDebater && (
-            <button onClick={toggleMute} style={{
-              padding: '8px 16px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'DM Sans, sans-serif',
-              background: isMuted ? 'rgba(239,68,68,0.1)' : 'rgba(22,163,74,0.1)',
-              color: isMuted ? C.red : C.green,
-            }}>
-              {isMuted ? '🔇 Unmute' : '🎙 Mute'}
-            </button>
-          )}
+          {audioConnected && isDebater && (function() {
+            var isMyTurn = debate && currentUser && debate.active_speaker_id === currentUser.id;
+            if (!isMyTurn) {
+              return (
+                <span style={{
+                  padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                  fontFamily: 'DM Sans, sans-serif',
+                  background: 'rgba(239,68,68,0.08)', color: 'rgba(239,68,68,0.6)',
+                }}>
+                  🔇 Muted — Not your turn
+                </span>
+              );
+            }
+            return (
+              <button onClick={toggleMute} style={{
+                padding: '8px 16px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif',
+                background: isMuted ? 'rgba(239,68,68,0.1)' : 'rgba(22,163,74,0.1)',
+                color: isMuted ? C.red : C.green,
+              }}>
+                {isMuted ? '🔇 Unmute' : '🎙 Mute'}
+              </button>
+            );
+          })()}
           {!audioConnected ? (
             <button onClick={joinAudio} disabled={joining} style={{
               padding: '8px 20px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
@@ -579,7 +607,7 @@ export default function DebateSpace() {
     }
   }, [debate]);
 
-  // Auto-timer: countdown + auto-advance
+  // Auto-timer: countdown + auto-advance + MIC ENFORCEMENT
   useEffect(function() {
     if (!debate || debate.status !== 'live') return;
     if (timerRef.current) clearInterval(timerRef.current);
@@ -596,6 +624,16 @@ export default function DebateSpace() {
         }
         return newT;
       });
+
+      // ENFORCE mic mute every second — if it's not your turn, you MUST be muted
+      if (callObjRef.current && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id)) {
+        var shouldBeUnmuted = debate.active_speaker_id === currentUser.id;
+        var localParticipant = callObjRef.current.participants().local;
+        if (localParticipant && localParticipant.audio !== shouldBeUnmuted) {
+          callObjRef.current.setLocalAudio(shouldBeUnmuted);
+          setIsMuted(!shouldBeUnmuted);
+        }
+      }
     }, 1000);
     return function() { clearInterval(timerRef.current); };
   }, [debate, currentUser]);
