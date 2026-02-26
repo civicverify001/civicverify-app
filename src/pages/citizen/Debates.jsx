@@ -1,5 +1,6 @@
 // src/pages/citizen/Debates.jsx — CivicVerify Live Debates
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -71,11 +72,12 @@ export default function Debates() {
   var auth = useAuth();
   var currentUser = auth.user;
   var profile = auth.profile;
+  var navigate = useNavigate();
 
   var [debates, setDebates] = useState([]);
   var [users, setUsers] = useState({});
   var [loading, setLoading] = useState(true);
-  var [tab, setTab] = useState('upcoming'); // upcoming | open | my | past
+  var [tab, setTab] = useState('upcoming');
   var [showForm, setShowForm] = useState(false);
   var [creating, setCreating] = useState(false);
   var [accepting, setAccepting] = useState(null);
@@ -83,7 +85,6 @@ export default function Debates() {
   var [searchResults, setSearchResults] = useState([]);
   var [searching, setSearching] = useState(false);
 
-  // Form state
   var [form, setForm] = useState({
     topic: '',
     description: '',
@@ -95,7 +96,6 @@ export default function Debates() {
     scheduledTime: '',
   });
 
-  // Load debates
   var loadDebates = useCallback(async function() {
     var { data } = await supabase
       .from('debates')
@@ -104,7 +104,6 @@ export default function Debates() {
     
     if (data && data.length > 0) {
       setDebates(data);
-      // Batch fetch user names
       var userIds = [];
       data.forEach(function(d) {
         if (d.creator_id && !users[d.creator_id]) userIds.push(d.creator_id);
@@ -127,7 +126,6 @@ export default function Debates() {
 
   useEffect(function() { loadDebates(); }, [loadDebates]);
 
-  // Search for opponent (direct challenge)
   async function searchOpponent(query) {
     if (query.length < 2) { setSearchResults([]); return; }
     setSearching(true);
@@ -143,7 +141,6 @@ export default function Debates() {
     setSearching(false);
   }
 
-  // Create debate
   async function createDebate() {
     if (!form.topic.trim()) return alert('Please enter a debate topic');
     if (!form.scheduledDate || !form.scheduledTime) return alert('Please select a date and time');
@@ -172,7 +169,6 @@ export default function Debates() {
     loadDebates();
   }
 
-  // Accept open challenge
   async function acceptChallenge(debateId) {
     setAccepting(debateId);
     var { error } = await supabase.from('debates')
@@ -183,14 +179,12 @@ export default function Debates() {
     loadDebates();
   }
 
-  // Cancel debate
   async function cancelDebate(debateId) {
     if (!confirm('Cancel this debate?')) return;
     await supabase.from('debates').update({ status: 'cancelled' }).eq('id', debateId);
     loadDebates();
   }
 
-  // Accept direct challenge
   async function acceptDirect(debateId) {
     setAccepting(debateId);
     var { error } = await supabase.from('debates')
@@ -200,7 +194,6 @@ export default function Debates() {
     if (!error) loadDebates();
   }
 
-  // Filter debates by tab
   var now = new Date();
   var filtered = debates.filter(function(d) {
     if (tab === 'upcoming') return (d.status === 'confirmed' || d.status === 'waiting_room' || d.status === 'live') && new Date(d.scheduled_at) >= new Date(now - 86400000);
@@ -210,7 +203,6 @@ export default function Debates() {
     return true;
   });
 
-  // Also get pending direct challenges sent to me
   var myDirectChallenges = debates.filter(function(d) {
     return d.status === 'pending' && d.challenge_type === 'direct' && d.opponent_id === (currentUser && currentUser.id);
   });
@@ -225,7 +217,6 @@ export default function Debates() {
     return u && u.identity_verified;
   }
 
-  // Input style
   var inputStyle = {
     width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid rgba(11,37,69,0.08)',
     borderRadius: 12, background: '#fff', outline: 'none', color: C.navy,
@@ -246,7 +237,7 @@ export default function Debates() {
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.4}}
-        .cv-debate-card{transition:all 0.2s ease}
+        .cv-debate-card{transition:all 0.2s ease;cursor:pointer}
         .cv-debate-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(11,37,69,0.08)!important}
         .cv-tab-btn{transition:all 0.2s ease;cursor:pointer;border:none;font-family:DM Sans,sans-serif}
         .cv-tab-btn:hover{background:rgba(197,150,12,0.08)}
@@ -364,7 +355,6 @@ export default function Debates() {
             Schedule a Debate
           </h2>
 
-          {/* Topic */}
           <div style={{ marginBottom: 18 }}>
             <label style={labelStyle}>Topic / Proposition</label>
             <input
@@ -377,7 +367,6 @@ export default function Debates() {
             />
           </div>
 
-          {/* Description */}
           <div style={{ marginBottom: 18 }}>
             <label style={labelStyle}>Description <span style={{ fontWeight: 400, color: 'rgba(11,37,69,0.55)' }}>(optional)</span></label>
             <textarea
@@ -390,7 +379,6 @@ export default function Debates() {
             />
           </div>
 
-          {/* Format + Challenge Type */}
           <div className="cv-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
             <div>
               <label style={labelStyle}>Debate Format</label>
@@ -448,7 +436,6 @@ export default function Debates() {
                 })}
               </div>
 
-              {/* Opponent search */}
               {form.challengeType === 'direct' && (
                 <div style={{ marginTop: 12 }}>
                   {form.directOpponentId ? (
@@ -509,7 +496,6 @@ export default function Debates() {
             </div>
           </div>
 
-          {/* Date + Time */}
           <div className="cv-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 24 }}>
             <div>
               <label style={labelStyle}>Date</label>
@@ -534,7 +520,6 @@ export default function Debates() {
             </div>
           </div>
 
-          {/* Preview */}
           {form.topic && (
             <div style={{
               padding: '14px 18px', borderRadius: 12, background: 'rgba(11,37,69,0.02)',
@@ -548,7 +533,6 @@ export default function Debates() {
             </div>
           )}
 
-          {/* Submit */}
           <button
             onClick={createDebate}
             disabled={creating}
@@ -568,7 +552,7 @@ export default function Debates() {
       {/* Tabs */}
       <div className="cv-tab-row" style={{
         display: 'flex', gap: 4, padding: 4, borderRadius: 14, background: 'rgba(11,37,69,0.03)',
-        marginBottom: 20, 
+        marginBottom: 20,
       }}>
         {[
           { id: 'upcoming', label: 'Upcoming', icon: '📅' },
@@ -631,6 +615,7 @@ export default function Debates() {
               <div
                 key={d.id}
                 className="cv-debate-card"
+                onClick={function() { navigate('/citizen/debates/' + d.id); }}
                 style={{
                   background: '#fff', borderRadius: 18, padding: '22px 24px',
                   border: isLive ? '2px solid rgba(185,27,46,0.2)' : '1px solid rgba(11,37,69,0.04)',
@@ -638,12 +623,10 @@ export default function Debates() {
                   position: 'relative', overflow: 'hidden',
                 }}
               >
-                {/* Live indicator */}
                 {isLive && (
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #ef4444, #f87171, #ef4444)', animation: 'livePulse 2s ease-in-out infinite' }} />
                 )}
 
-                {/* Top row: Status + Time until */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <StatusBadge status={d.status} />
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(11,37,69,0.55)' }}>
@@ -653,7 +636,6 @@ export default function Debates() {
                   </span>
                 </div>
 
-                {/* Topic */}
                 <h3 style={{ fontSize: 17, fontWeight: 700, color: C.navy, margin: '0 0 8px', fontFamily: font, lineHeight: 1.4 }}>
                   {d.topic}
                 </h3>
@@ -663,7 +645,6 @@ export default function Debates() {
                   </p>
                 )}
 
-                {/* Debaters */}
                 <div className="cv-debate-meta" style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{
@@ -712,7 +693,6 @@ export default function Debates() {
                   </div>
                 </div>
 
-                {/* Format + Schedule */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.6)' }}>
                     📅 {formatDate(d.scheduled_at)} at {formatTime(d.scheduled_at)}
@@ -729,11 +709,10 @@ export default function Debates() {
 
                 <FormatPills format={d.format} />
 
-                {/* Actions */}
                 <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                   {canAccept && (
                     <button
-                      onClick={function() { acceptChallenge(d.id); }}
+                      onClick={function(e) { e.stopPropagation(); acceptChallenge(d.id); }}
                       disabled={accepting === d.id}
                       style={{
                         padding: '10px 22px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700,
@@ -745,7 +724,7 @@ export default function Debates() {
                     </button>
                   )}
                   {isLive && (
-                    <button style={{
+                    <button onClick={function(e) { e.stopPropagation(); }} style={{
                       padding: '10px 22px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700,
                       background: '#ef4444', color: '#fff', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                       animation: 'livePulse 2s ease-in-out infinite',
@@ -754,7 +733,7 @@ export default function Debates() {
                     </button>
                   )}
                   {d.status === 'confirmed' && isParticipant && (
-                    <button style={{
+                    <button onClick={function(e) { e.stopPropagation(); }} style={{
                       padding: '10px 22px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.08)',
                       fontSize: 13, fontWeight: 600, background: '#fff', color: C.navy, cursor: 'pointer',
                       fontFamily: 'DM Sans, sans-serif',
@@ -764,7 +743,7 @@ export default function Debates() {
                   )}
                   {d.status === 'pending' && isCreator && (
                     <button
-                      onClick={function() { cancelDebate(d.id); }}
+                      onClick={function(e) { e.stopPropagation(); cancelDebate(d.id); }}
                       style={{
                         padding: '10px 18px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.06)',
                         fontSize: 12, fontWeight: 500, background: '#fff', color: 'rgba(11,37,69,0.6)',
@@ -775,7 +754,7 @@ export default function Debates() {
                     </button>
                   )}
                   {d.status === 'completed' && d.summary && (
-                    <button style={{
+                    <button onClick={function(e) { e.stopPropagation(); }} style={{
                       padding: '10px 22px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.08)',
                       fontSize: 13, fontWeight: 600, background: '#fff', color: C.navy, cursor: 'pointer',
                       fontFamily: 'DM Sans, sans-serif',
