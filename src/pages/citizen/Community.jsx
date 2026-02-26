@@ -1,288 +1,1200 @@
-// src/pages/citizen/CitizenLayout.jsx — Mobile-responsive with hamburger menu + notification bell
-import { useState, useEffect, useRef } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { supabase } from '../../supabaseClient';
-import { useAuth } from '../../hooks/useAuth';
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { supabase } from "../../supabaseClient";
+import { useAuth } from "../../hooks/useAuth";
 
-var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC' };
-var font = 'Libre Baskerville, Georgia, serif';
-var sans = 'DM Sans, system-ui, sans-serif';
+const T = {
+  navy:    "#0B2545",
+  navyMid: "#122e56",
+  gold:    "#C5960C",
+  cream:   "#F5F1EC",
+  ink:     "#1a2942",
+  muted:   "#64748b",
+  border:  "rgba(11,37,69,0.08)",
+  serif:   "'Libre Baskerville', Georgia, serif",
+  sans:    "'DM Sans', system-ui, sans-serif",
+};
 
-var links = [
-  { to: '/citizen', icon: '\uD83D\uDCCA', label: 'Dashboard', end: true },
-  { to: '/citizen/surveys', icon: '\u2630', label: 'Surveys' },
-  { to: '/citizen/community', icon: '\uD83D\uDCAC', label: 'Community' },
-  { to: '/citizen/verify', icon: '\u2713', label: 'Verify ID' },
-  { to: '/citizen/impact', icon: '\uD83D\uDE80', label: 'My Impact' },
-  { to: '/citizen/account', icon: '\u2699\uFE0F', label: 'Account' },
-];
+const Ico = ({ d, size = 16, fill = "none" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill}
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
+    <path d={d} />
+  </svg>
+);
 
-function timeAgo(ts) {
-  var s = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + 'm ago';
-  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
-  return Math.floor(s / 86400) + 'd ago';
-}
+const ICONS = {
+  heart:    "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
+  chat:     "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
+  send:     "M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
+  shield:   "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+  hash:     "M4 9h16M4 15h16M10 3L8 21M16 3l-2 18",
+  trending: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
+  users:    "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
+  back:     "M15 18l-6-6 6-6",
+  image:    "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+  x:        "M6 18L18 6M6 6l12 12",
+  smile:    "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  poll:     "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+};
 
-function NotificationBell({ userId }) {
-  var [notifications, setNotifications] = useState([]);
-  var [unreadCount, setUnreadCount] = useState(0);
-  var [showDropdown, setShowDropdown] = useState(false);
-  var [loading, setLoading] = useState(false);
-  var dropRef = useRef(null);
+// Emoji sets
+const EMOJI_CATEGORIES = {
+  "Smileys": ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡"],
+  "Gestures": ["👍","👎","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👋","🤚","🖐","✋","🖖","🤜","🤛","✊","👊","🙌","👏","🤲","🙏","✍️","💪","🦾"],
+  "People": ["👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","👴","👵","🧓","👮","🕵️","💂","🥷","👷","🫅","🤴","👸","👰","🤵","🦸","🦹","🧙","🧚","🧛","🧜","🧝"],
+  "Nature": ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜"],
+  "Food": ["🍎","🍊","🍋","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🥑","🫒","🍆","🥔","🥕","🌽","🌶️","🫑","🧄","🧅","🥜","🌰","🍞","🥐","🧆","🧇","🥞","🧈"],
+  "Activities": ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🏓","🏸","🏒","🥊","🥋","🎽","⛷️","🏂","🪂","🏋️","🤸","⛹️","🤺","🤼","🤽","🤾","🏌️","🏇","🧘"],
+  "Travel": ["🚗","🚕","🚙","🚌","🚎","🏎️","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🛵","🏍️","🚲","🛴","🛹","🛼","🚁","🛸","✈️","🚀","🛶","⛵","🚤","🛥️","🛳️"],
+  "Objects": ["💡","🔦","🕯️","🪔","🧱","💎","🔮","🪄","🎭","📺","📷","📸","🎸","🎹","🥁","🎷","🎺","🎻","🪕","📱","💻","🖥️","🖨️","⌨️","🖱️","📝","📖","📚","📰"],
+  "Symbols": ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","☮️","✝️","☯️","🕊️","🌈","⭐","🌟","💫","✨","🎉","🎊","🏆"],
+};
 
-  useEffect(function () {
-    if (userId) fetchCount();
-    var interval = setInterval(function () { if (userId) fetchCount(); }, 30000);
-    return function () { clearInterval(interval); };
-  }, [userId]);
+const REACTION_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥", "👏", "🤔"];
 
-  useEffect(function () {
-    if (!showDropdown) return;
-    function close(e) {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setShowDropdown(false);
-    }
-    document.addEventListener('mousedown', close);
-    return function () { document.removeEventListener('mousedown', close); };
-  }, [showDropdown]);
+const timeAgo = (ts) => {
+  const s = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (s < 60) return s + "s";
+  if (s < 3600) return Math.floor(s / 60) + "m";
+  if (s < 86400) return Math.floor(s / 3600) + "h";
+  return Math.floor(s / 86400) + "d";
+};
 
-  async function fetchCount() {
-    var result = await supabase
-      .from('community_notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('read', false);
-    setUnreadCount(result.count || 0);
-  }
+const initials = (name) =>
+  (name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
-  async function fetchNotifications() {
-    setLoading(true);
-    var result = await supabase
-      .from('community_notifications')
-      .select('id, type, title, body, read, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setNotifications(result.data || []);
-    setLoading(false);
-  }
-
-  async function toggleDropdown() {
-    var next = !showDropdown;
-    setShowDropdown(next);
-    if (next) {
-      fetchNotifications();
-    }
-  }
-
-  async function markAllRead() {
-    await supabase.rpc('mark_notifications_read', { p_user_id: userId });
-    setUnreadCount(0);
-    setNotifications(function (prev) { return prev.map(function (n) { return Object.assign({}, n, { read: true }); }); });
-  }
-
-  async function clearAll() {
-    await supabase.from('community_notifications').delete().eq('user_id', userId);
-    setNotifications([]);
-    setUnreadCount(0);
-  }
-
-  var iconMap = { reply: '💬', like: '❤️', new_survey: '📋', badge_earned: '🏆' };
-
-  return (
-    <div ref={dropRef} style={{ position: 'relative' }}>
-      <button onClick={toggleDropdown} style={{
-        width: 40, height: 40, borderRadius: 10, background: showDropdown ? 'rgba(197,150,12,0.15)' : 'rgba(255,255,255,0.08)',
-        border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative', transition: 'all 0.2s',
+// ── Avatar ────────────────────────────────────────────────────────────────────
+const Avatar = ({ name, size = 38, verified = false }) => (
+  <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)",
+      border: "2px solid " + T.gold + "33",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: T.serif, fontWeight: 700, fontSize: size * 0.33, color: T.gold,
+    }}>
+      {initials(name)}
+    </div>
+    {verified && (
+      <div style={{
+        position: "absolute", bottom: -1, right: -1,
+        width: size * 0.38, height: size * 0.38, borderRadius: "50%",
+        background: T.navy, border: "1.5px solid " + T.gold,
+        display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={showDropdown ? C.gold : 'rgba(255,255,255,0.6)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
-        </svg>
-        {unreadCount > 0 && (
-          <span style={{
-            position: 'absolute', top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8,
-            background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 800,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
-            fontFamily: sans, animation: 'pulse 2s ease infinite',
-          }}>
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
+        <Ico d={ICONS.shield} size={size * 0.2} />
+      </div>
+    )}
+  </div>
+);
 
-      {showDropdown && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 340, maxWidth: 'calc(100vw - 32px)', maxHeight: 440,
-          background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.1)',
-          boxShadow: '0 12px 40px rgba(11,37,69,0.2)', zIndex: 100, overflow: 'hidden',
-        }}>
-          {/* Header */}
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(11,37,69,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: C.navy }}>Notifications</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {unreadCount > 0 && (
-                <button onClick={markAllRead} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 11, fontWeight: 600, color: C.gold }}>
-                  Mark all read
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button onClick={clearAll} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: sans, fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
+const VerifiedBadge = () => (
+  <span style={{
+    display: "inline-flex", alignItems: "center", gap: 3,
+    padding: "2px 7px", borderRadius: 20,
+    background: T.gold + "18", border: "1px solid " + T.gold + "44",
+    fontSize: 10, fontWeight: 700, color: T.gold,
+    fontFamily: T.sans, textTransform: "uppercase", letterSpacing: "0.05em",
+  }}>
+    <Ico d={ICONS.shield} size={9} />
+    Verified
+  </span>
+);
 
-          {/* Notifications list */}
-          <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-            {loading ? (
-              <div style={{ padding: '40px 0', textAlign: 'center' }}>
-                <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid ' + C.gold, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
-              </div>
-            ) : notifications.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>🔔</div>
-                <p style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.navy, margin: '0 0 4px' }}>All caught up!</p>
-                <p style={{ fontFamily: sans, fontSize: 12, color: '#94a3b8', margin: 0 }}>You have no notifications right now.</p>
-              </div>
-            ) : notifications.map(function (n) {
-              return (
-                <div key={n.id} style={{
-                  padding: '12px 16px', borderBottom: '1px solid rgba(11,37,69,0.04)',
-                  background: n.read ? '#fff' : 'rgba(197,150,12,0.04)',
-                  display: 'flex', gap: 10, alignItems: 'flex-start', transition: 'background 0.15s',
-                  cursor: 'pointer',
-                }}
-                  onMouseEnter={function (e) { e.currentTarget.style.background = C.cream; }}
-                  onMouseLeave={function (e) { e.currentTarget.style.background = n.read ? '#fff' : 'rgba(197,150,12,0.04)'; }}
-                >
-                  <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{iconMap[n.type] || '📌'}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontFamily: sans, fontSize: 13, fontWeight: n.read ? 400 : 600, color: C.navy, margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
-                    {n.body && <p style={{ fontFamily: sans, fontSize: 12, color: '#94a3b8', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
-                    <span style={{ fontFamily: sans, fontSize: 10, color: '#94a3b8' }}>{timeAgo(n.created_at)}</span>
-                  </div>
-                  {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.gold, flexShrink: 0, marginTop: 6 }} />}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      <style>{'@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }'}</style>
+// ── Emoji Picker ──────────────────────────────────────────────────────────────
+const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
+  const [cat, setCat] = useState("Smileys");
+  const pickerRef = useRef(null);
+
+  useEffect(() => {
+    // Position via direct DOM — no state, no re-render, never moves
+    if (pickerRef.current && anchorRef?.current) {
+      const anchor = anchorRef.current.getBoundingClientRect();
+      const pw = 300, ph = 290;
+      let left = anchor.left;
+      let top = anchor.top - ph - 8;
+      if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+      if (left < 12) left = 12;
+      if (top < 12) top = anchor.bottom + 8;
+      pickerRef.current.style.top = top + "px";
+      pickerRef.current.style.left = left + "px";
+      pickerRef.current.style.visibility = "visible";
+    }
+    // Close on outside click — delay 100ms so opening click doesn't immediately close
+    const handler = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target) &&
+          anchorRef?.current && !anchorRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    const t = setTimeout(() => document.addEventListener("mousedown", handler), 100);
+    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+  }, []); // runs ONCE on mount only
+
+  const picker = (
+    <div ref={pickerRef} style={{
+      position: "fixed", top: -9999, left: -9999, visibility: "hidden",
+      width: 300, background: "#fff", borderRadius: 16,
+      border: "1px solid " + T.border,
+      boxShadow: "0 8px 32px rgba(11,37,69,0.18)",
+      zIndex: 9999, overflow: "hidden",
+    }}>
+      <div style={{ display: "flex", overflowX: "auto", borderBottom: "1px solid " + T.border, padding: "8px 8px 0" }}>
+        {Object.keys(EMOJI_CATEGORIES).map((c) => (
+          <button key={c} onClick={() => setCat(c)} style={{
+            flexShrink: 0, padding: "4px 10px 8px", background: "none", border: "none",
+            cursor: "pointer", fontFamily: T.sans, fontSize: 11, fontWeight: 600,
+            color: cat === c ? T.navy : T.muted,
+            borderBottom: cat === c ? "2px solid " + T.gold : "2px solid transparent",
+            transition: "all 0.15s", whiteSpace: "nowrap",
+          }}>{c}</button>
+        ))}
+      </div>
+      <div style={{ padding: 10, maxHeight: 200, overflowY: "auto", display: "flex", flexWrap: "wrap", gap: 2 }}>
+        {EMOJI_CATEGORIES[cat].map((e) => (
+          <button key={e} onClick={() => onSelect(e)} style={{
+            width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 20, background: "none", border: "none", cursor: "pointer", borderRadius: 8,
+          }}
+            onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
+            onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
+          >{e}</button>
+        ))}
+      </div>
     </div>
   );
-}
 
-export default function CitizenLayout() {
-  var [open, setOpen] = useState(false);
-  var navigate = useNavigate();
-  var auth = useAuth();
-  var profile = auth.profile;
-  var user = auth.user;
+  // Portal: renders on document.body — completely outside parent tree
+  // Parent re-renders (typing) CANNOT affect this component
+  return createPortal(picker, document.body);
+};
 
-  async function logout() {
-    await supabase.auth.signOut();
-    navigate('/');
-  }
-
-  var isVerified = profile && (profile.is_verified || profile.identity_verified);
-  var activeStyle = { background: 'rgba(197,150,12,0.12)', color: '#C5960C', fontWeight: 700 };
-  var normalStyle = { color: 'rgba(255,255,255,0.5)' };
+// ── Reaction Bar ──────────────────────────────────────────────────────────────
+const ReactionBar = ({ reactions, onReact }) => {
+  const [showPicker, setShowPicker] = useState(false);
+  const grouped = (reactions || []).reduce((a, r) => {
+    a[r.emoji] = (a[r.emoji] || 0) + 1; return a;
+  }, {});
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
-      {/* Mobile overlay */}
-      {open && <div onClick={function(){setOpen(false)}} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />}
+    <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+      {Object.entries(grouped).map(([emoji, count]) => (
+        <button key={emoji} onClick={() => onReact(emoji)} style={{
+          display: "inline-flex", alignItems: "center", gap: 4,
+          padding: "3px 8px", borderRadius: 20, border: "1px solid " + T.border,
+          background: T.cream, cursor: "pointer", fontSize: 14,
+          fontFamily: T.sans, fontWeight: 600, color: T.navy, fontSize: 12,
+          transition: "all 0.15s",
+        }}>
+          {emoji} <span style={{ fontSize: 11 }}>{count}</span>
+        </button>
+      ))}
+      <button onClick={() => setShowPicker(!showPicker)} style={{
+        width: 28, height: 28, borderRadius: "50%", border: "1px dashed " + T.border,
+        background: "none", cursor: "pointer", display: "flex", alignItems: "center",
+        justifyContent: "center", color: T.muted, fontSize: 14, transition: "all 0.15s",
+      }}>+</button>
+      {showPicker && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 50,
+          background: "#fff", borderRadius: 12, padding: 8, border: "1px solid " + T.border,
+          boxShadow: "0 4px 20px rgba(11,37,69,0.12)", display: "flex", gap: 4 }}>
+          {REACTION_EMOJIS.map((e) => (
+            <button key={e} onClick={() => { onReact(e); setShowPicker(false); }} style={{
+              width: 36, height: 36, fontSize: 20, background: "none", border: "none",
+              cursor: "pointer", borderRadius: 8, transition: "background 0.1s",
+            }}
+              onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
+              onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
+            >{e}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
-      {/* Sidebar */}
-      <aside style={{
-        width: 260, background: 'linear-gradient(180deg, #0B2545 0%, #0d2e55 100%)', position: 'fixed', top: 0, bottom: 0, left: open ? 0 : -260, zIndex: 50,
-        display: 'flex', flexDirection: 'column', transition: 'left 0.3s ease', overflowY: 'auto'
-      }} className="cv-sidebar">
-        {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){navigate('/')}}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 12 }}>CV</span>
+// ── Post Composer ─────────────────────────────────────────────────────────────
+const Composer = ({ user, onPost }) => {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+  const textRef = useRef(null);
+  const emojiButtonRef = useRef(null);
+  const MAX = 280;
+
+  const insertEmoji = (emoji) => {
+    const el = textRef.current;
+    if (!el) { setText((t) => t + emoji); return; }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const next = text.slice(0, start) + emoji + text.slice(end);
+    setText(next.slice(0, MAX));
+    setShowEmoji(false);
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
+  };
+
+  const pickImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => { setImageFile(null); setImagePreview(null); };
+
+  const post = async () => {
+    if ((!text.trim() && !imageFile) || busy) return;
+    setBusy(true);
+    let imageUrl = null;
+    if (imageFile) {
+      setUploading(true);
+      const ext = imageFile.name.split(".").pop();
+      const path = "community/" + Date.now() + "." + ext;
+      const { data: upData, error: upErr } = await supabase.storage
+        .from("community-images").upload(path, imageFile, { cacheControl: "3600", upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
+        imageUrl = urlData?.publicUrl;
+      }
+      setUploading(false);
+    }
+    await onPost(text.trim(), imageUrl);
+    setText("");
+    setImageFile(null);
+    setImagePreview(null);
+    setBusy(false);
+  };
+
+  const left = MAX - text.length;
+  const hasContent = text.trim() || imageFile;
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, boxShadow: "0 2px 16px rgba(11,37,69,0.08)", overflow: "visible" }}>
+      <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)", borderRadius: "20px 20px 0 0" }} />
+      <div style={{ padding: "16px 20px 14px" }}>
+        <div style={{ display: "flex", gap: 12 }}>
+          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <textarea
+              ref={textRef}
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, MAX))}
+              placeholder="What's on your civic mind? Share a thought, ask a question..."
+              rows={3}
+              style={{
+                width: "100%", resize: "none", border: "none", outline: "none",
+                fontFamily: T.sans, fontSize: 15, lineHeight: 1.6,
+                color: T.ink, background: "transparent", boxSizing: "border-box",
+              }}
+            />
+
+            {/* Image preview */}
+            {imagePreview && (
+              <div style={{ position: "relative", marginBottom: 10, borderRadius: 12, overflow: "hidden", display: "inline-block" }}>
+                <img src={imagePreview} alt="preview" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 12, display: "block" }} />
+                <button onClick={removeImage} style={{
+                  position: "absolute", top: 6, right: 6, width: 24, height: 24,
+                  borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+                }}>
+                  <Ico d={ICONS.x} size={12} />
+                </button>
+              </div>
+            )}
+
+            {/* Toolbar */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid " + T.border }}>
+              <div style={{ display: "flex", gap: 4, position: "relative" }}>
+                {/* Image upload */}
+                <button onClick={() => fileRef.current?.click()} style={{
+                  width: 34, height: 34, borderRadius: 10, background: "none",
+                  border: "1px solid " + T.border, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", color: T.muted,
+                  transition: "all 0.15s",
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; e.currentTarget.style.color = T.navy; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; }}
+                >
+                  <Ico d={ICONS.image} size={16} />
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" onChange={pickImage} style={{ display: "none" }} />
+
+                {/* Emoji */}
+                <div style={{ position: "relative" }}>
+                  <button ref={emojiButtonRef} onClick={() => setShowEmoji(!showEmoji)} style={{
+                    width: 34, height: 34, borderRadius: 10, background: showEmoji ? T.cream : "none",
+                    border: "1px solid " + (showEmoji ? T.gold + "44" : T.border),
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    color: showEmoji ? T.gold : T.muted, fontSize: 16, transition: "all 0.15s",
+                  }}>😊</button>
+                  {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={emojiButtonRef} />}
+                </div>
+
+                {/* Quick emojis */}
+                <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>
+                  {["❤️","👍","🔥","🎉"].map((e) => (
+                    <button key={e} onClick={() => insertEmoji(e)} style={{
+                      width: 30, height: 30, fontSize: 16, background: "none", border: "none",
+                      cursor: "pointer", borderRadius: 8, transition: "background 0.1s",
+                    }}
+                      onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
+                      onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
+                    >{e}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 11, fontFamily: T.sans, fontWeight: 500, color: left < 40 ? "#e53e3e" : T.muted }}>
+                  {left}
+                </span>
+                <button onClick={post} disabled={!hasContent || busy} style={{
+                  padding: "8px 20px", borderRadius: 20, border: "none",
+                  background: hasContent ? "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)" : "#f1f5f9",
+                  color: hasContent ? T.gold : T.muted,
+                  fontFamily: T.sans, fontSize: 13, fontWeight: 700,
+                  cursor: hasContent ? "pointer" : "default", transition: "all 0.2s",
+                  boxShadow: hasContent ? "0 2px 8px " + T.navy + "40" : "none",
+                }}>
+                  {uploading ? "Uploading..." : busy ? "Posting..." : "Post"}
+                </button>
+              </div>
             </div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
           </div>
-          {/* Close button - mobile only */}
-          <button onClick={function(){setOpen(false)}} className="cv-close-btn" style={{ display: 'none', width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 18, cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}>{'\u2715'}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Single comment row ────────────────────────────────────────────────────────
+const CommentRow = ({ c }) => (
+  <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} />
+    <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
+      <div style={{
+        background: T.cream, borderRadius: "12px 12px 12px 3px",
+        padding: "7px 12px", border: "1px solid " + T.border,
+        display: "inline-block", maxWidth: "100%",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+          <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy }}>
+            {c.users?.full_name || "Citizen"}
+          </span>
+          {c.users?.identity_verified && (
+            <span style={{ fontSize: 9, fontWeight: 700, color: T.gold, fontFamily: T.sans }}>✓</span>
+          )}
+          <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, marginLeft: 2 }}>
+            · {timeAgo(c.created_at)}
+          </span>
+        </div>
+        {c.content && (
+          <p style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+        )}
+        {c.image_url && (
+          <img src={c.image_url} alt="reply" style={{ maxWidth: "100%", maxHeight: 140, borderRadius: 8, marginTop: c.content ? 6 : 0, display: "block" }} />
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// ── Comments List with smooth slide expand ────────────────────────────────────
+const CommentsList = ({ comments }) => {
+  const [expanded, setExpanded] = useState(false);
+  const SHOW = 3;
+  const hiddenCount = Math.max(0, comments.length - SHOW);
+  const latest = comments.slice(-SHOW); // always show the 3 most recent
+  const older = comments.slice(0, -SHOW); // the rest hidden by default
+
+  if (comments.length === 0) return null;
+
+  return (
+    <div style={{ borderLeft: "2px solid " + T.gold + "33", marginLeft: 14, paddingLeft: 8, marginBottom: 4 }}>
+      {/* Older replies — slide open */}
+      {hiddenCount > 0 && (
+        <>
+          <button onClick={() => setExpanded((v) => !v)} style={{
+            display: "flex", alignItems: "center", gap: 5, padding: "4px 0 8px",
+            background: "none", border: "none", cursor: "pointer",
+            fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.navy + "99",
+          }}>
+            <span style={{ fontSize: 13, transition: "transform 0.2s", display: "inline-block", transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+            {expanded ? "Hide older replies" : "View " + hiddenCount + " more " + (hiddenCount === 1 ? "reply" : "replies")}
+          </button>
+          {/* Slide wrapper using max-height transition */}
+          <div style={{
+            overflow: "hidden",
+            maxHeight: expanded ? older.length * 120 + "px" : "0px",
+            transition: "max-height 0.35s ease",
+          }}>
+            {older.map((c) => <CommentRow key={c.id} c={c} />)}
+          </div>
+        </>
+      )}
+      {/* Always-visible latest replies */}
+      {latest.map((c) => <CommentRow key={c.id} c={c} />)}
+    </div>
+  );
+};
+
+// ── Reply Box (isolated to prevent parent re-renders moving the emoji picker) ─
+const ReplyBox = ({ postId, onComment }) => {
+  const [reply, setReply] = useState("");
+  const [showEmojiReply, setShowEmojiReply] = useState(false);
+  const [replyImageFile, setReplyImageFile] = useState(null);
+  const [replyImagePreview, setReplyImagePreview] = useState(null);
+  const replyRef = useRef(null);
+  const replyFileRef = useRef(null);
+  const replyEmojiRef = useRef(null);
+
+  const insertReplyEmoji = (emoji) => {
+    setReply((r) => r + emoji);
+    setShowEmojiReply(false);
+    replyRef.current?.focus();
+  };
+
+  const submitReply = async () => {
+    if (!reply.trim() && !replyImageFile) return;
+    let imageUrl = null;
+    if (replyImageFile) {
+      const ext = replyImageFile.name.split(".").pop();
+      const path = "community/" + Date.now() + "-reply." + ext;
+      const { error: upErr } = await supabase.storage
+        .from("community-images").upload(path, replyImageFile, { cacheControl: "3600", upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
+        imageUrl = urlData?.publicUrl;
+      }
+    }
+    await onComment(postId, reply.trim(), imageUrl);
+    setReply("");
+    setReplyImageFile(null);
+    setReplyImagePreview(null);
+  };
+
+  return (
+    <div style={{ marginTop: 12, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
+      <textarea
+        ref={replyRef}
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && submitReply()}
+        placeholder="Write a thoughtful reply..."
+        rows={2}
+        style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
+      />
+      {replyImagePreview && (
+        <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
+          <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
+          <button onClick={() => { setReplyImageFile(null); setReplyImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+            <Ico d={ICONS.x} size={10} />
+          </button>
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
+            <Ico d={ICONS.image} size={14} />
+          </button>
+          <input ref={replyFileRef} type="file" accept="image/*" onChange={(e) => {
+            const file = e.target.files[0]; if (!file) return;
+            setReplyImageFile(file);
+            const reader = new FileReader();
+            reader.onload = (ev) => setReplyImagePreview(ev.target.result);
+            reader.readAsDataURL(file);
+          }} style={{ display: "none" }} />
+          <div style={{ position: "relative" }}>
+            <button ref={replyEmojiRef} onClick={() => setShowEmojiReply((v) => !v)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
+            {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
+          </div>
+          {["❤️","👍","🔥","😂"].map((e) => (
+            <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter</span>
+          <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
+            Reply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const PostCard = ({ post, onLike, onComment, onReact }) => {
+  const [liked, setLiked] = useState(post.my_vote === "like");
+  const [likes, setLikes] = useState(post.likes_count || 0);
+  const [disliked, setDisliked] = useState(post.my_vote === "dislike");
+  const [dislikes, setDislikes] = useState(post.dislikes_count || 0);
+  const [showReply, setShowReply] = useState(false);
+  const [reply, setReply] = useState("");
+  const [showEmojiReply, setShowEmojiReply] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [replyImageFile, setReplyImageFile] = useState(null);
+  const [replyImagePreview, setReplyImagePreview] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.comments_count || 0);
+  const replyRef = useRef(null);
+  const replyFileRef = useRef(null);
+  const replyEmojiRef = useRef(null);
+
+  const toggleLike = async () => {
+    const next = !liked;
+    if (disliked) { setDisliked(false); setDislikes((d) => d - 1); }
+    setLiked(next);
+    setLikes((l) => l + (next ? 1 : -1));
+    await onLike(post.id, "like", next, disliked);
+  };
+
+  const toggleDislike = async () => {
+    const next = !disliked;
+    if (liked) { setLiked(false); setLikes((l) => l - 1); }
+    setDisliked(next);
+    setDislikes((d) => d + (next ? 1 : -1));
+    await onLike(post.id, "dislike", next, liked);
+  };
+
+  const loadComments = async () => {
+    setLoadingComments(true);
+    const { data } = await supabase
+      .from("community_post_comments")
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .eq("post_id", post.id)
+      .order("created_at", { ascending: true });
+    setComments(data || []);
+    setLoadingComments(false);
+  };
+
+  const toggleReplies = () => {
+    const next = !showReply;
+    setShowReply(next);
+    if (next && comments.length === 0) loadComments();
+  };
+
+  const submitReply = async () => {
+    if (!reply.trim() && !replyImageFile) return;
+    let imageUrl = null;
+    if (replyImageFile) {
+      const ext = replyImageFile.name.split(".").pop();
+      const path = "community/" + Date.now() + "-reply." + ext;
+      const { error: upErr } = await supabase.storage
+        .from("community-images").upload(path, replyImageFile, { cacheControl: "3600", upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
+        imageUrl = urlData?.publicUrl;
+      }
+    }
+    const saved = await onComment(post.id, reply.trim(), imageUrl);
+    const newComment = saved || {
+      id: Date.now(),
+      content: reply.trim(),
+      image_url: imageUrl,
+      created_at: new Date().toISOString(),
+      users: { full_name: post._currentUserName, identity_verified: post._currentUserVerified },
+    };
+    setComments((prev) => [...prev, newComment]);
+    setCommentCount((c) => c + 1);
+    setReply("");
+    setReplyImageFile(null);
+    setReplyImagePreview(null);
+  };
+
+  const insertReplyEmoji = (emoji) => {
+    setReply((r) => r + emoji);
+    setShowEmojiReply(false);
+    replyRef.current?.focus();
+  };
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: "#fff", borderRadius: 20,
+        border: "1px solid " + (hovered ? T.gold + "33" : T.border),
+        boxShadow: hovered ? "0 6px 24px rgba(11,37,69,0.1)" : "0 1px 6px rgba(11,37,69,0.05)",
+        transform: hovered ? "translateY(-2px)" : "none",
+        transition: "all 0.2s", overflow: "hidden",
+      }}
+    >
+      <div style={{ padding: "18px 20px 14px" }}>
+        {/* Author */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+          <Avatar name={post.author_name} size={44} verified={post.author_verified} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+              <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy }}>
+                {post.author_name || "Anonymous Citizen"}
+              </span>
+              {post.author_verified && <VerifiedBadge />}
+              {post.survey_tag && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontSize: 10, color: T.muted, fontFamily: T.sans }}>
+                  <Ico d={ICONS.hash} size={8} /> {post.survey_tag}
+                </span>
+              )}
+            </div>
+            <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{timeAgo(post.created_at)}</span>
+          </div>
         </div>
 
-        {/* Nav links */}
-        <nav style={{ flex: 1, padding: '8px 12px' }}>
-          {links.map(function(link) {
-            return (
-              <NavLink key={link.to} to={link.to} end={link.end || false} onClick={function(){setOpen(false)}}
-                style={function(p) {
-                  return Object.assign({
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, marginBottom: 4,
-                    textDecoration: 'none', fontSize: 14, transition: 'all 0.2s'
-                  }, p.isActive ? activeStyle : normalStyle);
-                }}>
-                <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{link.icon}</span>
-                {link.label}
-              </NavLink>
-            );
-          })}
-        </nav>
+        {/* Content */}
+        {post.content && (
+          <p style={{ fontFamily: T.sans, fontSize: 15, lineHeight: 1.65, color: T.ink, margin: "0 0 12px" }}>
+            {post.content}
+          </p>
+        )}
 
-        {/* User info */}
-        <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile ? profile.full_name : '...'}</p>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile ? profile.email : ''}</p>
-            <span style={{ fontSize: 10, fontWeight: 700, color: isVerified ? '#34d399' : '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>
-              {isVerified ? '\u25CF VERIFIED' : '\u25CB UNVERIFIED'}
+        {/* Image */}
+        {post.image_url && (
+          <div style={{ marginBottom: 14, borderRadius: 14, overflow: "hidden" }}>
+            <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 360, objectFit: "cover", display: "block" }} />
+          </div>
+        )}
+
+        {/* Reactions */}
+        {(post.reactions && post.reactions.length > 0) && (
+          <div style={{ marginBottom: 10 }}>
+            <ReactionBar reactions={post.reactions} onReact={(emoji) => onReact(post.id, emoji)} />
+          </div>
+        )}
+
+        {/* Action bar */}
+        <div style={{ paddingTop: 10, borderTop: "1px solid " + T.border }}>
+          {/* Stats row */}
+          {(likes > 0 || commentCount > 0) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid " + T.border }}>
+              {likes > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: T.muted }}>
+                  <span style={{ fontSize: 14 }}>❤️</span> <strong style={{ color: T.ink }}>{likes}</strong> {likes === 1 ? "like" : "likes"}
+                </span>
+              )}
+              {commentCount > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: T.muted }}>
+                  <span style={{ fontSize: 14 }}>💬</span> <strong style={{ color: T.ink }}>{commentCount}</strong> {commentCount === 1 ? "reply" : "replies"}
+                </span>
+              )}
+            </div>
+          )}
+          {/* Buttons row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {/* Thumbs up */}
+            <button onClick={toggleLike} style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+              borderRadius: 20, background: liked ? "#fee2e2" : "none",
+              border: "1px solid " + (liked ? "#fca5a5" : T.border),
+              cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
+              color: liked ? "#e53e3e" : T.muted, transition: "all 0.15s",
+            }}>
+              <span style={{ fontSize: 15 }}>{liked ? "👍" : "👍"}</span>
+              <span>{likes > 0 ? likes : ""}</span>
+            </button>
+
+            {/* Thumbs down */}
+            <button onClick={toggleDislike} style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+              borderRadius: 20, background: disliked ? "#fef3c7" : "none",
+              border: "1px solid " + (disliked ? "#fcd34d" : T.border),
+              cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
+              color: disliked ? "#d97706" : T.muted, transition: "all 0.15s",
+            }}>
+              <span style={{ fontSize: 15 }}>👎</span>
+              <span>{dislikes > 0 ? dislikes : ""}</span>
+            </button>
+
+            {/* Reply */}
+            <button onClick={toggleReplies} style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+              borderRadius: 20, background: showReply ? T.navy + "08" : "none",
+              border: "1px solid " + (showReply ? T.navy + "22" : T.border),
+              cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
+              color: showReply ? T.navy : T.muted, transition: "all 0.15s",
+            }}>
+              <Ico d={ICONS.chat} size={14} />
+              {commentCount > 0 ? commentCount : "Reply"}
+            </button>
+
+            {/* Quick emoji reactions */}
+            <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
+              {["❤️","🔥","😂"].map((e) => (
+                <button key={e} onClick={() => onReact(post.id, e)} style={{
+                  width: 30, height: 30, fontSize: 15, background: "none", border: "none",
+                  cursor: "pointer", borderRadius: 8, transition: "all 0.15s",
+                }}
+                  onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; el.currentTarget.style.transform = "scale(1.2)"; }}
+                  onMouseLeave={(el) => { el.currentTarget.style.background = "none"; el.currentTarget.style.transform = "none"; }}
+                >{e}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Comments + Reply box */}
+        {showReply && (
+          <div style={{ marginTop: 14 }}>
+            {/* Existing comments — show 4, expand rest */}
+            {loadingComments ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+              </div>
+            ) : (
+              <CommentsList comments={comments} />
+            )}
+          </div>
+        )}
+        {/* Reply composer */}
+        {showReply && (
+          <div style={{ marginTop: 4, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
+            <textarea
+              ref={replyRef}
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && submitReply()}
+              placeholder="Write a thoughtful reply..."
+              rows={2}
+              style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
+            />
+            {/* Reply image preview */}
+            {replyImagePreview && (
+              <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
+                <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
+                <button onClick={() => { setReplyImageFile(null); setReplyImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                  <Ico d={ICONS.x} size={10} />
+                </button>
+              </div>
+            )}
+            {/* Reply toolbar */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                {/* Image upload */}
+                <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
+                  <Ico d={ICONS.image} size={14} />
+                </button>
+                <input ref={replyFileRef} type="file" accept="image/*" onChange={(e) => {
+                  const file = e.target.files[0]; if (!file) return;
+                  setReplyImageFile(file);
+                  const reader = new FileReader();
+                  reader.onload = (ev) => setReplyImagePreview(ev.target.result);
+                  reader.readAsDataURL(file);
+                }} style={{ display: "none" }} />
+                {/* Emoji picker */}
+                <div style={{ position: "relative" }}>
+                  <button ref={replyEmojiRef} onClick={() => setShowEmojiReply(!showEmojiReply)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
+                  {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
+                </div>
+                {/* Quick emojis */}
+                {["❤️","👍","🔥","😂"].map((e) => (
+                  <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter to send</span>
+                <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: (reply.trim() || replyImageFile) ? "pointer" : "default", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
+                  Reply
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Room Card ─────────────────────────────────────────────────────────────────
+const RoomCard = ({ survey, onEnter }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button onClick={() => onEnter(survey)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: "100%", textAlign: "left", background: "#fff",
+        borderRadius: 20, border: "1px solid " + (hovered ? T.gold + "44" : T.border),
+        boxShadow: hovered ? "0 6px 24px rgba(11,37,69,0.1)" : "0 1px 6px rgba(11,37,69,0.05)",
+        padding: "18px 20px", cursor: "pointer",
+        transform: hovered ? "translateY(-2px)" : "none",
+        transition: "all 0.2s", display: "block",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+        <div style={{ width: 46, height: 46, borderRadius: 14, flexShrink: 0, background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px " + T.navy + "30" }}>
+          <Ico d={ICONS.hash} size={20} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+            <p style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 15, color: T.navy, margin: 0, lineHeight: 1.4 }}>{survey.title}</p>
+            {survey.message_count > 0 && (
+              <span style={{ flexShrink: 0, minWidth: 24, height: 24, borderRadius: 12, background: T.gold, color: "#fff", fontFamily: T.sans, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px" }}>
+                {survey.message_count > 99 ? "99+" : survey.message_count}
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 6 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: T.muted }}>
+              <Ico d={ICONS.users} size={11} /> {survey.participant_count || 0} participants
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: T.sans, fontSize: 12, color: "#16a34a", fontWeight: 600 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#16a34a", display: "inline-block", animation: "pulse 2s infinite" }} />
+              Live
             </span>
           </div>
-          <button onClick={logout} style={{ width: '100%', marginTop: 8, padding: '10px', background: 'rgba(184,53,46,0.1)', border: 'none', borderRadius: 8, color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Sign Out</button>
         </div>
-      </aside>
+      </div>
+    </button>
+  );
+};
 
-      {/* Main content */}
-      <div style={{ flex: 1, marginLeft: 0, overflowX: 'hidden' }} className="cv-main">
-        {/* Mobile header */}
-        <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '12px 16px', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={function(){setOpen(true)}} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u2630'}</button>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
-          <NotificationBell userId={user?.id} />
-        </header>
+// ── Chat Room ─────────────────────────────────────────────────────────────────
+const ChatRoom = ({ survey, currentUser, onBack }) => {
+  const [msgs, setMsgs] = useState([]);
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+  const chatEmojiRef = useRef(null);
 
-        {/* Desktop notification bar */}
-        <div className="cv-desktop-topbar" style={{ display: 'none', padding: '12px 24px', justifyContent: 'flex-end', background: C.navy, position: 'sticky', top: 0, zIndex: 30 }}>
-          <NotificationBell userId={user?.id} />
+  useEffect(() => {
+    load();
+    const ch = supabase.channel("room-" + survey.id)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "survey_chat_messages", filter: "survey_id=eq." + survey.id },
+        (p) => { setMsgs((prev) => [...prev, p.new]); setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50); })
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }, [survey.id]);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("survey_chat_messages")
+      .select("id, content, created_at, user_id, users:user_id(full_name, identity_verified)")
+      .eq("survey_id", survey.id).order("created_at", { ascending: true }).limit(100);
+    setMsgs(data || []);
+    setLoading(false);
+    setTimeout(() => bottomRef.current?.scrollIntoView(), 50);
+  };
+
+  const send = async () => {
+    if (!text.trim()) return;
+    const msg = text.trim(); setText("");
+    await supabase.from("survey_chat_messages").insert({ survey_id: survey.id, user_id: currentUser.id, content: msg });
+  };
+
+  const insertEmoji = (emoji) => {
+    setText((t) => t + emoji);
+    setShowEmoji(false);
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: "#fff", borderBottom: "1px solid " + T.border, flexShrink: 0, boxShadow: "0 1px 4px rgba(11,37,69,0.05)" }}>
+        <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: 10, background: T.cream, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.navy }}>
+          <Ico d={ICONS.back} size={16} />
+        </button>
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Ico d={ICONS.hash} size={18} />
         </div>
-
-        <div className="cv-content-area" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', boxSizing: 'border-box', width: '100%' }}>
-          <Outlet />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 14, color: T.navy, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{survey.title}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", display: "inline-block" }} />
+            <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{survey.participant_count || 0} participants</span>
+          </div>
         </div>
       </div>
 
-      {/* Responsive styles */}
-      <style>{'\
-        @media (min-width: 769px) {\
-          .cv-sidebar { left: 0 !important; }\
-          .cv-main { margin-left: 260px !important; }\
-          .cv-mobile-header { display: none !important; }\
-          .cv-desktop-topbar { display: flex !important; }\
-        }\
-        @media (max-width: 768px) {\
-          .cv-mobile-header { display: flex !important; }\
-          .cv-close-btn { display: flex !important; }\
-          .cv-main { margin-left: 0 !important; }\
-          .cv-desktop-topbar { display: none !important; }\
-          .cv-content-area { padding: 20px 16px !important; }\
-        }\
-        @media (max-width: 420px) {\
-          .cv-content-area { padding: 16px 12px !important; }\
-        }\
-      '}</style>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px", background: T.cream, minHeight: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+            <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+          </div>
+        ) : msgs.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "60px 0" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>👋</div>
+            <p style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 15, color: T.navy, margin: "0 0 4px" }}>Start the conversation!</p>
+            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share your thoughts on this survey.</p>
+          </div>
+        ) : msgs.map((msg) => {
+          const isMe = msg.user_id === currentUser?.id;
+          const name = msg.users?.full_name || "Citizen";
+          return (
+            <div key={msg.id} style={{ display: "flex", gap: 8, flexDirection: isMe ? "row-reverse" : "row", alignItems: "flex-end" }}>
+              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} />}
+              <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 3 }}>
+                {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4 }}>{name}</span>}
+                <div style={{ padding: "10px 14px", background: isMe ? T.navy : "#fff", color: isMe ? T.cream : T.ink, borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontFamily: T.sans, fontSize: 14, lineHeight: 1.5, boxShadow: "0 1px 4px rgba(11,37,69,0.08)", border: isMe ? "none" : "1px solid " + T.border }}>
+                  {msg.content}
+                </div>
+                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, padding: "0 4px" }}>{timeAgo(msg.created_at)}</span>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      <div style={{ background: "#fff", borderTop: "1px solid " + T.border, flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 10, padding: "10px 14px", alignItems: "flex-end" }}>
+          <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} />
+            <div style={{ flex: 1, position: "relative" }}>
+            <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} placeholder="Message the room..." style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none", boxSizing: "border-box" }} />
+              <button ref={chatEmojiRef} onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
+                😊
+              </button>
+              {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={chatEmojiRef} />}
+            </div>
+          <button onClick={send} disabled={!text.trim()} style={{ width: 40, height: 40, borderRadius: "50%", background: T.navy, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, opacity: text.trim() ? 1 : 0.35, transition: "all 0.15s", flexShrink: 0, boxShadow: text.trim() ? "0 2px 8px " + T.navy + "40" : "none" }}>
+            <Ico d={ICONS.send} size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Skeleton = () => (
+  <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "18px 20px" }}>
+    <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#f1f5f9" }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "30%", marginBottom: 10 }} />
+        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "100%", marginBottom: 6 }} />
+        <div style={{ height: 12, background: "#f1f5f9", borderRadius: 6, width: "65%" }} />
+      </div>
+    </div>
+  </div>
+);
+
+const TOPICS = [
+  { tag: "LocalGovernment", n: "1.2k" }, { tag: "ClimatePolicy", n: "847" },
+  { tag: "PublicTransit", n: "623" }, { tag: "Education", n: "510" },
+  { tag: "Healthcare", n: "489" }, { tag: "HousingCrisis", n: "391" },
+];
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+export default function Community() {
+  const { user } = useAuth();
+  const [tab, setTab] = useState("feed");
+  const [posts, setPosts] = useState([]);
+  const [surveys, setSurveys] = useState([]);
+  const [activeRoom, setActiveRoom] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE = 15;
+
+  useEffect(() => { if (user?.id) init(); }, [user?.id]);
+
+  const init = async () => {
+    setLoading(true);
+    await Promise.all([fetchProfile(), fetchPosts(0), fetchSurveys()]);
+    setLoading(false);
+  };
+
+  const fetchProfile = async () => {
+    const { data } = await supabase.from("users").select("id, full_name, identity_verified").eq("id", user.id).single();
+    setCurrentUser(data);
+  };
+
+  const fetchPosts = async (p) => {
+    const from = p * PAGE;
+    const { data } = await supabase
+      .from("community_posts")
+      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
+      .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+    // Load this user's votes for these posts
+    const ids = (data || []).map((x) => x.id);
+    let myVotes = {};
+    if (ids.length && user?.id) {
+      const { data: votes } = await supabase
+        .from("community_post_likes")
+        .select("post_id, type").eq("user_id", user.id).in("post_id", ids);
+      (votes || []).forEach((v) => { myVotes[v.post_id] = v.type; });
+    }
+    const shaped = (data || []).map((x) => ({
+      ...x,
+      author_name: x.users?.full_name,
+      author_verified: x.users?.identity_verified,
+      linked_survey: x.linked_survey_data,
+      my_vote: myVotes[x.id] || null,
+    }));
+    if (p === 0) setPosts(shaped); else setPosts((prev) => [...prev, ...shaped]);
+    setHasMore((data || []).length === PAGE);
+    setPage(p);
+  };
+
+  const fetchSurveys = async () => {
+    const { data } = await supabase.from("surveys").select("id, title, status, participant_count:survey_responses(count)").eq("status", "active").order("created_at", { ascending: false }).limit(20);
+    if (!data?.length) { setSurveys([]); return; }
+    const ids = data.map((s) => s.id);
+    const { data: counts } = await supabase.from("survey_chat_messages").select("survey_id").in("survey_id", ids);
+    const cmap = (counts || []).reduce((a, r) => { a[r.survey_id] = (a[r.survey_id] || 0) + 1; return a; }, {});
+    setSurveys(data.map((s) => ({ ...s, participant_count: s.participant_count?.[0]?.count || 0, message_count: cmap[s.id] || 0 })));
+  };
+
+  const handlePost = async (content, imageUrl) => {
+    const { data, error } = await supabase.from("community_posts")
+      .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 })
+      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified)").single();
+    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
+  };
+
+  const handleLike = async (postId, type, active, removingOpposite) => {
+    if (!user?.id) return;
+    if (!active) {
+      // Remove vote
+      await supabase.from("community_post_likes")
+        .delete().eq("post_id", postId).eq("user_id", user.id);
+    } else {
+      // Upsert vote (handles switching from like->dislike automatically)
+      await supabase.from("community_post_likes")
+        .upsert({ post_id: postId, user_id: user.id, type }, { onConflict: "post_id,user_id" });
+    }
+    // Sync counts in DB
+    await supabase.rpc("sync_post_like_counts", { p_post_id: postId });
+  };
+
+  const handleComment = async (postId, content, imageUrl) => {
+    const insertData = { post_id: postId, user_id: user.id, content: content || null };
+    if (imageUrl) insertData.image_url = imageUrl;
+    const { data, error } = await supabase
+      .from("community_post_comments")
+      .insert(insertData)
+      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .single();
+    if (error) { console.error("Comment save error:", error); return null; }
+    // Increment count in DB so it persists on refresh
+    await supabase.rpc("increment_comment_count", { post_id: postId });
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
+    return data;
+  };
+
+  const handleReact = async (postId, emoji) => {
+    await supabase.from("community_post_reactions").insert({ post_id: postId, user_id: user.id, emoji }).select();
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, reactions: [...(p.reactions || []), { emoji, user_id: user.id }] } : p));
+  };
+
+  if (activeRoom) {
+    return (
+      <div style={{ height: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}>
+        <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }"}</style>
+        <ChatRoom survey={activeRoom} currentUser={currentUser} onBack={() => setActiveRoom(null)} />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans }}>
+      <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }"}</style>
+
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <h1 style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 30, color: T.navy, margin: "0 0 4px", lineHeight: 1.2 }}>Community</h1>
+            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Verified civic voices — discuss, react, and engage.</p>
+          </div>
+          <div style={{ padding: "7px 14px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, color: T.navy, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            <Ico d={ICONS.users} size={12} />
+            {surveys.length} Live Rooms
+          </div>
+        </div>
+        <div style={{ height: 3, marginTop: 16, borderRadius: 2, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 60%, transparent 100%)" }} />
+      </div>
+
+      {/* Trending */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+          <Ico d={ICONS.trending} size={13} />
+          <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Trending</span>
+        </div>
+        <div style={{ overflowX: "auto", paddingBottom: 2 }}>
+          <div style={{ display: "flex", gap: 8, minWidth: "max-content" }}>
+            {TOPICS.map((t) => (
+              <button key={t.tag} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 20, background: "#fff", border: "1px solid " + T.border, fontFamily: T.sans, fontSize: 12, fontWeight: 500, color: T.navy, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 1px 3px rgba(11,37,69,0.06)", transition: "all 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold + "66"; e.currentTarget.style.background = T.cream; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = "#fff"; }}
+              >
+                <Ico d={ICONS.hash} size={10} />
+                {t.tag}
+                <span style={{ fontSize: 10, color: T.muted, fontWeight: 400 }}>{t.n}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 2, marginBottom: 20, padding: 4, background: T.navy + "08", borderRadius: 16, border: "1px solid " + T.border }}>
+        {[
+          { id: "feed", label: "Feed", icon: ICONS.chat },
+          { id: "rooms", label: "Survey Rooms", icon: ICONS.hash, count: surveys.length },
+        ].map((t) => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "10px 12px", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 13, fontWeight: 600, transition: "all 0.2s", background: tab === t.id ? "#fff" : "transparent", color: tab === t.id ? T.navy : T.muted, boxShadow: tab === t.id ? "0 1px 6px rgba(11,37,69,0.1)" : "none" }}>
+            <Ico d={t.icon} size={14} />
+            {t.label}
+            {t.count > 0 && (
+              <span style={{ padding: "1px 7px", borderRadius: 10, background: tab === t.id ? T.gold + "22" : T.navy + "10", color: tab === t.id ? T.gold : T.muted, fontSize: 10, fontWeight: 700 }}>
+                {t.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Feed */}
+      {tab === "feed" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Composer user={currentUser} onPost={handlePost} />
+          {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
+            posts.length === 0 ? (
+              <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
+                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>No posts yet</p>
+                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share a civic thought with your community.</p>
+              </div>
+            ) : (
+              <>
+                {posts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified}} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
+                {hasMore && (
+                  <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
+                  >
+                    Load more posts
+                  </button>
+                )}
+              </>
+            )
+          }
+        </div>
+      )}
+
+      {/* Rooms */}
+      {tab === "rooms" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
+            surveys.length === 0 ? (
+              <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+                <p style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 16, color: T.navy, margin: "0 0 6px" }}>No active rooms</p>
+                <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Check back when surveys go live.</p>
+              </div>
+            ) : surveys.map((s) => <RoomCard key={s.id} survey={s} onEnter={setActiveRoom} />)
+          }
+        </div>
+      )}
     </div>
   );
 }
+
