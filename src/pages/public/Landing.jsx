@@ -928,7 +928,30 @@ export default function Landing() {
       <style>{`
         @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
         @keyframes spin { to { transform:rotate(360deg) } }
+        @media (max-width: 768px) {
+  section > div {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+@media (max-width: 420px) {
+  section > div {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
         * { box-sizing:border-box; margin:0; }
+        html, body, #root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+}
+img, video, iframe, svg, table { max-width: 100% !important; }
+```
+
+**Edit C** — In the same `<style>` block, find:
+```
+html { scroll-behavior: smooth; }
 
         .cv-pulse { animation: pulse 2s ease-in-out infinite; }
 
