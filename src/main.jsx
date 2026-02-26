@@ -1,7 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-import './index.css'
+import './index.css
+import './styles/mobile-overflow-fix.css';
 // Global styles
 const style = document.createElement('style')
 style.textContent = `
