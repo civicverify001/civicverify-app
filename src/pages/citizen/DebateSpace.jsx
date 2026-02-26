@@ -184,9 +184,10 @@ function PollCard({ poll, onVote }) {
 function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected, setAudioConnected, isMuted, setIsMuted }) {
   var [joining, setJoining] = useState(false);
   var [audioError, setAudioError] = useState(null);
+  var audioContainerRef = useRef(null);
 
   async function joinAudio() {
-    if (joining) return; // Prevent double-click
+    if (joining) return;
     setJoining(true); setAudioError(null);
     try {
       // Destroy any existing instance first to prevent duplicates
@@ -196,11 +197,24 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
         callObjRef.current = null;
       }
 
-      // Get Daily.co token from edge function
+      // Step 1: Request mic permission BEFORE Daily (debaters only)
+      if (isDebater) {
+        try {
+          var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // Stop tracks immediately - Daily will create its own
+          stream.getTracks().forEach(function(t) { t.stop(); });
+          console.log('[CivicVerify Audio] Mic permission granted');
+        } catch(micErr) {
+          throw new Error('Microphone access denied. Please allow mic permission and try again.');
+        }
+      }
+
+      // Step 2: Get Daily.co token from edge function
       var tokenData = await apiGetDailyToken(debate.id);
       if (!tokenData.token) throw new Error('No token received');
+      console.log('[CivicVerify Audio] Token received, is_debater:', tokenData.is_debater);
 
-      // Load Daily.co SDK if not loaded
+      // Step 3: Load Daily.co SDK if not loaded
       if (!window.DailyIframe) {
         await new Promise(function(resolve, reject) {
           var s = document.createElement('script');
@@ -210,46 +224,94 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
         });
       }
 
-      var callObj = window.DailyIframe.createCallObject({
-        audioSource: true,
-        videoSource: false,
-      });
+      // Step 4: Create call object
+      var callObj = window.DailyIframe.createCallObject();
       callObjRef.current = callObj;
+
+      // Remote audio playback - THIS IS CRITICAL for createCallObject
+      callObj.on('track-started', function(ev) {
+        console.log('[CivicVerify Audio] Track started:', ev.participant?.user_name, ev.track?.kind, 'local:', ev.participant?.local);
+        if (ev.participant?.local) return; // Skip local tracks
+        if (ev.track?.kind !== 'audio') return; // Only audio
+        
+        // Create audio element for remote participant
+        var audioEl = document.createElement('audio');
+        audioEl.srcObject = new MediaStream([ev.track]);
+        audioEl.autoplay = true;
+        audioEl.setAttribute('data-participant-id', ev.participant.session_id);
+        if (audioContainerRef.current) {
+          audioContainerRef.current.appendChild(audioEl);
+        }
+        console.log('[CivicVerify Audio] Playing remote audio from:', ev.participant?.user_name);
+      });
+
+      callObj.on('track-stopped', function(ev) {
+        console.log('[CivicVerify Audio] Track stopped:', ev.participant?.user_name, ev.track?.kind);
+        if (ev.participant?.local) return;
+        // Remove audio element for this participant
+        if (audioContainerRef.current) {
+          var els = audioContainerRef.current.querySelectorAll('[data-participant-id="' + ev.participant.session_id + '"]');
+          els.forEach(function(el) { el.remove(); });
+        }
+      });
+
+      callObj.on('participant-left', function(ev) {
+        console.log('[CivicVerify Audio] Participant left:', ev.participant?.user_name);
+        if (audioContainerRef.current) {
+          var els = audioContainerRef.current.querySelectorAll('[data-participant-id="' + ev.participant.session_id + '"]');
+          els.forEach(function(el) { el.remove(); });
+        }
+      });
+
+      callObj.on('participant-joined', function(ev) {
+        console.log('[CivicVerify Audio] Participant joined:', ev.participant.user_name, 'audio:', ev.participant.audio);
+      });
+      callObj.on('participant-updated', function(ev) {
+        console.log('[CivicVerify Audio] Participant updated:', ev.participant.user_name, 'audio:', ev.participant.audio);
+      });
 
       callObj.on('joined-meeting', function() {
         setAudioConnected(true);
         setJoining(false);
-        // Debaters auto-unmute, listeners stay muted
+        console.log('[CivicVerify Audio] Joined meeting! isDebater:', isDebater);
+        // Debaters unmute after joining
         if (isDebater) {
           callObj.setLocalAudio(true);
           setIsMuted(false);
+          console.log('[CivicVerify Audio] Debater unmuted');
         } else {
+          callObj.setLocalAudio(false);
           setIsMuted(true);
         }
+        // Log local participant info
+        var local = callObj.participants().local;
+        console.log('[CivicVerify Audio] Local participant:', local?.user_name, 'audio:', local?.audio, 'tracks:', local?.tracks);
       });
+
       callObj.on('error', function(e) {
+        console.error('[CivicVerify Audio] Error:', e);
         var msg = e.errorMsg || 'Audio error';
         if (msg.indexOf('payment') !== -1) msg = 'Audio provider requires billing setup. Debate features work without audio.';
         setAudioError(msg);
         setJoining(false);
-        // Destroy on error to prevent duplicate instance
         try { callObj.destroy(); } catch(ex) {}
         callObjRef.current = null;
       });
-      callObj.on('left-meeting', function() { setAudioConnected(false); });
-      callObj.on('participant-counts-updated', function(e) {
-        // Could update listener count here
-      });
 
+      callObj.on('left-meeting', function() { setAudioConnected(false); });
+
+      // Step 5: Join the room - debaters join with audio ON
       await callObj.join({
         url: debate.audio_room_url,
         token: tokenData.token,
         startVideoOff: true,
-        startAudioOff: true, // Always join muted, then unmute debaters in joined-meeting callback
+        startAudioOff: !isDebater, // Debaters start with mic ON
       });
 
+      console.log('[CivicVerify Audio] Join call complete');
+
     } catch (err) {
-      // Destroy orphaned instance on failure to prevent "duplicate" error
+      console.error('[CivicVerify Audio] Join failed:', err);
       if (callObjRef.current) {
         try { callObjRef.current.destroy(); } catch(e) {}
         callObjRef.current = null;
@@ -268,6 +330,10 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
       try { callObjRef.current.leave(); } catch(e) {}
       try { callObjRef.current.destroy(); } catch(e) {}
       callObjRef.current = null;
+    }
+    // Clean up remote audio elements
+    if (audioContainerRef.current) {
+      audioContainerRef.current.innerHTML = '';
     }
     setAudioConnected(false);
   }
@@ -295,6 +361,8 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
 
   return (
     <div style={{ padding: '14px 18px', borderRadius: 16, background: audioConnected ? 'rgba(22,163,74,0.06)' : 'rgba(11,37,69,0.03)', border: '1px solid ' + (audioConnected ? 'rgba(22,163,74,0.15)' : 'rgba(11,37,69,0.06)') }}>
+      {/* Hidden container for remote audio elements */}
+      <div ref={audioContainerRef} style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: audioConnected ? C.green : '#94a3b8', animation: audioConnected ? 'liveDot 1.5s ease-in-out infinite' : 'none' }} />
