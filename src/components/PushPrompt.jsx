@@ -30,13 +30,14 @@ export default function PushPrompt({ userId }) {
   async function handleEnable() {
     if (!userId) return;
     setSubscribing(true);
-    var result = await subscribeToPush(userId);
-    setSubscribing(false);
-    if (result.success) {
-      setShow(false);
-    } else if (result.reason === 'denied') {
-      setShow(false);
+    try {
+      await subscribeToPush(userId);
+    } catch (e) {
+      console.error('Push subscribe error:', e);
     }
+    setSubscribing(false);
+    setShow(false);
+    localStorage.setItem('push_prompt_dismissed', String(Date.now()));
   }
 
   function handleDismiss() {
