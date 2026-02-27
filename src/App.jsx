@@ -99,6 +99,8 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="export" element={<AdminExport />} />
             <Route path="org-review" element={<OrgReview />} />
+            <Route path="debates" element={<CitizenDebates />} />
+            <Route path="debates/:id" element={<CitizenDebateSpace />} />
           </Route>
 
           <Route path="/org" element={
