@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -36,18 +37,17 @@ const ICONS = {
   x:        "M6 18L18 6M6 6l12 12",
   smile:    "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   poll:     "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+  search:   "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  bookmark: "M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z",
+  userPlus: "M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2m13 8l4-4m0 0l4 4m-4-4v12M13 7a4 4 0 11-8 0 4 4 0 018 0z",
+  mail:     "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+  at:       "M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9",
 };
 
-// Emoji sets
 const EMOJI_CATEGORIES = {
   "Smileys": ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡"],
   "Gestures": ["👍","👎","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👋","🤚","🖐","✋","🖖","🤜","🤛","✊","👊","🙌","👏","🤲","🙏","✍️","💪","🦾"],
-  "People": ["👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","👴","👵","🧓","👮","🕵️","💂","🥷","👷","🫅","🤴","👸","👰","🤵","🦸","🦹","🧙","🧚","🧛","🧜","🧝"],
   "Nature": ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜"],
-  "Food": ["🍎","🍊","🍋","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🥑","🫒","🍆","🥔","🥕","🌽","🌶️","🫑","🧄","🧅","🥜","🌰","🍞","🥐","🧆","🧇","🥞","🧈"],
-  "Activities": ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🏓","🏸","🏒","🥊","🥋","🎽","⛷️","🏂","🪂","🏋️","🤸","⛹️","🤺","🤼","🤽","🤾","🏌️","🏇","🧘"],
-  "Travel": ["🚗","🚕","🚙","🚌","🚎","🏎️","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🛵","🏍️","🚲","🛴","🛹","🛼","🚁","🛸","✈️","🚀","🛶","⛵","🚤","🛥️","🛳️"],
-  "Objects": ["💡","🔦","🕯️","🪔","🧱","💎","🔮","🪄","🎭","📺","📷","📸","🎸","🎹","🥁","🎷","🎺","🎻","🪕","📱","💻","🖥️","🖨️","⌨️","🖱️","📝","📖","📚","📰"],
   "Symbols": ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","☮️","✝️","☯️","🕊️","🌈","⭐","🌟","💫","✨","🎉","🎊","🏆"],
 };
 
@@ -65,8 +65,8 @@ const initials = (name) =>
   (name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
-const Avatar = ({ name, size = 38, verified = false }) => (
-  <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+const Avatar = ({ name, size = 38, verified = false, onClick }) => (
+  <div style={{ position: "relative", width: size, height: size, flexShrink: 0, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
     <div style={{
       width: size, height: size, borderRadius: "50%",
       background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)",
@@ -102,13 +102,89 @@ const VerifiedBadge = () => (
   </span>
 );
 
+// ── Render @mentions in text ──────────────────────────────────────────────────
+const RenderContent = ({ text, mentionMap, navigate }) => {
+  if (!text) return null;
+  const parts = text.split(/(@\w[\w\s]*?)(?=\s@|\s|$)/g);
+  const regex = /@([\w][\w\s]*)/;
+  return (
+    <span>
+      {text.split(/(@[\w][\w ]*)/g).map((part, i) => {
+        if (part.startsWith("@")) {
+          const name = part.slice(1).trim();
+          const userId = mentionMap?.[name];
+          return (
+            <span key={i}
+              onClick={(e) => { e.stopPropagation(); if (userId) navigate("/citizen/profile/" + userId); }}
+              style={{
+                color: T.gold, fontWeight: 700, cursor: userId ? "pointer" : "default",
+                background: T.gold + "12", padding: "1px 4px", borderRadius: 4,
+              }}>
+              {part}
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+};
+
+// ── @Mention Autocomplete ─────────────────────────────────────────────────────
+const MentionAutocomplete = ({ query, onSelect, anchorRef }) => {
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!query || query.length < 1) { setResults([]); return; }
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.rpc("search_users_by_name", { search_query: query, lim: 6 });
+      setResults(data || []);
+      setLoading(false);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  if (!query || (results.length === 0 && !loading)) return null;
+
+  return (
+    <div style={{
+      position: "absolute", bottom: "100%", left: 0, right: 0,
+      background: "#fff", borderRadius: 12, border: "1px solid " + T.border,
+      boxShadow: "0 -4px 20px rgba(11,37,69,0.12)", zIndex: 100,
+      maxHeight: 220, overflowY: "auto", marginBottom: 4,
+    }}>
+      {loading ? (
+        <div style={{ padding: "12px 16px", fontSize: 12, color: T.muted }}>Searching...</div>
+      ) : results.map((u) => (
+        <button key={u.id} onClick={() => onSelect(u)}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 14px", background: "none", border: "none",
+            cursor: "pointer", fontFamily: T.sans, textAlign: "left",
+            borderBottom: "1px solid " + T.border,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+        >
+          <Avatar name={u.full_name} size={28} verified={u.identity_verified} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.navy }}>{u.full_name}</div>
+            {u.identity_verified && <span style={{ fontSize: 10, color: T.gold }}>✓ Verified</span>}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+};
+
 // ── Emoji Picker ──────────────────────────────────────────────────────────────
 const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
   const [cat, setCat] = useState("Smileys");
   const pickerRef = useRef(null);
 
   useEffect(() => {
-    // Position via direct DOM — no state, no re-render, never moves
     if (pickerRef.current && anchorRef?.current) {
       const anchor = anchorRef.current.getBoundingClientRect();
       const pw = 300, ph = 290;
@@ -121,7 +197,6 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
       pickerRef.current.style.left = left + "px";
       pickerRef.current.style.visibility = "visible";
     }
-    // Close on outside click — delay 100ms so opening click doesn't immediately close
     const handler = (e) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target) &&
           anchorRef?.current && !anchorRef.current.contains(e.target)) {
@@ -130,7 +205,7 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
     };
     const t = setTimeout(() => document.addEventListener("mousedown", handler), 100);
     return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
-  }, []); // runs ONCE on mount only
+  }, []);
 
   const picker = (
     <div ref={pickerRef} style={{
@@ -165,8 +240,6 @@ const EmojiPicker = ({ onSelect, onClose, anchorRef }) => {
     </div>
   );
 
-  // Portal: renders on document.body — completely outside parent tree
-  // Parent re-renders (typing) CANNOT affect this component
   return createPortal(picker, document.body);
 };
 
@@ -214,18 +287,226 @@ const ReactionBar = ({ reactions, onReact }) => {
   );
 };
 
-// ── Post Composer ─────────────────────────────────────────────────────────────
-const Composer = ({ user, onPost }) => {
+// ── Search Bar ────────────────────────────────────────────────────────────────
+const SearchBar = ({ onSearchPosts, onSearchUsers, navigate }) => {
+  const [query, setQuery] = useState("");
+  const [mode, setMode] = useState("posts");
+  const [results, setResults] = useState([]);
+  const [userResults, setUserResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setFocused(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); setUserResults([]); return; }
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      if (mode === "posts") {
+        const { data } = await supabase.rpc("search_community_posts", { search_query: query, lim: 10 });
+        setResults(data || []);
+      } else {
+        const { data } = await supabase.rpc("search_users_by_name", { search_query: query, lim: 10 });
+        setUserResults(data || []);
+      }
+      setLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, mode]);
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative", marginBottom: 16 }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: "#fff", borderRadius: 16, border: focused ? "2px solid " + T.gold + "66" : "1px solid " + T.border,
+        padding: focused ? "11px 15px" : "12px 16px", transition: "all 0.2s",
+        boxShadow: focused ? "0 4px 20px rgba(197,150,12,0.1)" : "0 1px 6px rgba(11,37,69,0.05)",
+      }}>
+        <Ico d={ICONS.search} size={16} />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          placeholder="Search posts or find people..."
+          style={{
+            flex: 1, border: "none", outline: "none", background: "transparent",
+            fontFamily: T.sans, fontSize: 14, color: T.ink,
+          }}
+        />
+        {query && (
+          <button onClick={() => { setQuery(""); setResults([]); setUserResults([]); }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, padding: 0 }}>
+            <Ico d={ICONS.x} size={14} />
+          </button>
+        )}
+        <div style={{ display: "flex", gap: 2, padding: 2, background: T.navy + "06", borderRadius: 8 }}>
+          {["posts", "people"].map((m) => (
+            <button key={m} onClick={() => setMode(m)} style={{
+              padding: "4px 10px", borderRadius: 6, border: "none", cursor: "pointer",
+              fontFamily: T.sans, fontSize: 11, fontWeight: 600,
+              background: mode === m ? "#fff" : "transparent",
+              color: mode === m ? T.navy : T.muted,
+              boxShadow: mode === m ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.15s",
+            }}>{m === "posts" ? "Posts" : "People"}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dropdown results */}
+      {focused && query.trim() && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4,
+          background: "#fff", borderRadius: 14, border: "1px solid " + T.border,
+          boxShadow: "0 8px 32px rgba(11,37,69,0.12)", zIndex: 90,
+          maxHeight: 320, overflowY: "auto",
+        }}>
+          {loading ? (
+            <div style={{ padding: "16px", textAlign: "center", fontSize: 12, color: T.muted }}>Searching...</div>
+          ) : mode === "posts" ? (
+            results.length === 0 ? (
+              <div style={{ padding: "16px", textAlign: "center", fontSize: 13, color: T.muted }}>No posts found</div>
+            ) : results.map((p) => (
+              <div key={p.id} onClick={() => { setFocused(false); setQuery(""); }}
+                style={{
+                  padding: "12px 16px", borderBottom: "1px solid " + T.border,
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+              >
+                <p style={{ fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>
+                  {p.content?.slice(0, 120)}{p.content?.length > 120 ? "..." : ""}
+                </p>
+                <span style={{ fontSize: 11, color: T.muted }}>{timeAgo(p.created_at)}</span>
+              </div>
+            ))
+          ) : (
+            userResults.length === 0 ? (
+              <div style={{ padding: "16px", textAlign: "center", fontSize: 13, color: T.muted }}>No people found</div>
+            ) : userResults.map((u) => (
+              <div key={u.id}
+                onClick={() => { navigate("/citizen/profile/" + u.id); setFocused(false); setQuery(""); }}
+                style={{
+                  padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
+                  borderBottom: "1px solid " + T.border, cursor: "pointer",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+              >
+                <Avatar name={u.full_name} size={32} verified={u.identity_verified} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: T.navy }}>{u.full_name}</div>
+                  {u.identity_verified && <span style={{ fontSize: 10, color: T.gold }}>✓ Verified Citizen</span>}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Follow Button ─────────────────────────────────────────────────────────────
+const FollowButton = ({ targetUserId, currentUserId, followingSet, onToggle }) => {
+  const [busy, setBusy] = useState(false);
+  const isFollowing = followingSet.has(targetUserId);
+
+  if (targetUserId === currentUserId) return null;
+
+  const toggle = async (e) => {
+    e.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    if (isFollowing) {
+      await supabase.from("user_follows").delete().eq("follower_id", currentUserId).eq("following_id", targetUserId);
+    } else {
+      await supabase.from("user_follows").insert({ follower_id: currentUserId, following_id: targetUserId });
+    }
+    onToggle(targetUserId, !isFollowing);
+    setBusy(false);
+  };
+
+  return (
+    <button onClick={toggle} disabled={busy} style={{
+      padding: "3px 10px", borderRadius: 14, fontSize: 11, fontWeight: 700,
+      fontFamily: T.sans, cursor: "pointer", transition: "all 0.15s",
+      background: isFollowing ? "transparent" : T.navy,
+      color: isFollowing ? T.muted : T.gold,
+      border: isFollowing ? "1px solid " + T.border : "1px solid " + T.navy,
+    }}>
+      {busy ? "..." : isFollowing ? "Following" : "Follow"}
+    </button>
+  );
+};
+
+// ── Bookmark Button ───────────────────────────────────────────────────────────
+const BookmarkBtn = ({ postId, isBookmarked, onToggle }) => {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button onClick={async (e) => {
+      e.stopPropagation();
+      if (busy) return;
+      setBusy(true);
+      await onToggle(postId, !isBookmarked);
+      setBusy(false);
+    }} style={{
+      width: 30, height: 30, borderRadius: 8, border: "none",
+      background: isBookmarked ? T.gold + "15" : "none",
+      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+      color: isBookmarked ? T.gold : T.muted, transition: "all 0.15s",
+    }}
+      title={isBookmarked ? "Remove bookmark" : "Bookmark post"}
+    >
+      <Ico d={ICONS.bookmark} size={14} fill={isBookmarked ? T.gold : "none"} />
+    </button>
+  );
+};
+
+// ── Composer with @mention ────────────────────────────────────────────────────
+const Composer = ({ user, onPost, navigate }) => {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [mentionMap, setMentionMap] = useState({});
   const fileRef = useRef(null);
   const textRef = useRef(null);
   const emojiButtonRef = useRef(null);
   const MAX = 280;
+
+  const handleTextChange = (e) => {
+    const val = e.target.value.slice(0, MAX);
+    setText(val);
+    // Detect @mention
+    const cursor = e.target.selectionStart;
+    const beforeCursor = val.slice(0, cursor);
+    const atMatch = beforeCursor.match(/@(\w*)$/);
+    setMentionQuery(atMatch ? atMatch[1] : null);
+  };
+
+  const insertMention = (user) => {
+    const cursor = textRef.current?.selectionStart || text.length;
+    const beforeCursor = text.slice(0, cursor);
+    const afterCursor = text.slice(cursor);
+    const atIdx = beforeCursor.lastIndexOf("@");
+    const newText = beforeCursor.slice(0, atIdx) + "@" + user.full_name + " " + afterCursor;
+    setText(newText.slice(0, MAX));
+    setMentionQuery(null);
+    setMentionMap((prev) => ({ ...prev, [user.full_name]: user.id }));
+    setTimeout(() => textRef.current?.focus(), 0);
+  };
 
   const insertEmoji = (emoji) => {
     const el = textRef.current;
@@ -257,7 +538,7 @@ const Composer = ({ user, onPost }) => {
       setUploading(true);
       const ext = imageFile.name.split(".").pop();
       const path = "community/" + Date.now() + "." + ext;
-      const { data: upData, error: upErr } = await supabase.storage
+      const { error: upErr } = await supabase.storage
         .from("community-images").upload(path, imageFile, { cacheControl: "3600", upsert: false });
       if (!upErr) {
         const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
@@ -265,10 +546,13 @@ const Composer = ({ user, onPost }) => {
       }
       setUploading(false);
     }
-    await onPost(text.trim(), imageUrl);
+    // Extract mention IDs
+    const mentionIds = Object.values(mentionMap).filter((id) => text.includes("@"));
+    await onPost(text.trim(), imageUrl, mentionIds, mentionMap);
     setText("");
     setImageFile(null);
     setImagePreview(null);
+    setMentionMap({});
     setBusy(false);
   };
 
@@ -280,13 +564,13 @@ const Composer = ({ user, onPost }) => {
       <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)", borderRadius: "20px 20px 0 0" }} />
       <div style={{ padding: "16px 20px 14px" }}>
         <div style={{ display: "flex", gap: 12 }}>
-          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} />
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} onClick={() => navigate("/citizen/profile/" + user?.id)} />
+          <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
             <textarea
               ref={textRef}
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, MAX))}
-              placeholder="What's on your civic mind? Share a thought, ask a question..."
+              onChange={handleTextChange}
+              placeholder="What's on your civic mind? Use @name to mention someone..."
               rows={3}
               style={{
                 width: "100%", resize: "none", border: "none", outline: "none",
@@ -295,7 +579,11 @@ const Composer = ({ user, onPost }) => {
               }}
             />
 
-            {/* Image preview */}
+            {/* @mention autocomplete */}
+            {mentionQuery !== null && (
+              <MentionAutocomplete query={mentionQuery} onSelect={insertMention} />
+            )}
+
             {imagePreview && (
               <div style={{ position: "relative", marginBottom: 10, borderRadius: 12, overflow: "hidden", display: "inline-block" }}>
                 <img src={imagePreview} alt="preview" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 12, display: "block" }} />
@@ -309,24 +597,18 @@ const Composer = ({ user, onPost }) => {
               </div>
             )}
 
-            {/* Toolbar */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid " + T.border }}>
-              <div style={{ display: "flex", gap: 4, position: "relative" }}>
-                {/* Image upload */}
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <button onClick={() => fileRef.current?.click()} style={{
                   width: 34, height: 34, borderRadius: 10, background: "none",
                   border: "1px solid " + T.border, cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", color: T.muted,
                   transition: "all 0.15s",
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; e.currentTarget.style.color = T.navy; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; }}
-                >
+                }}>
                   <Ico d={ICONS.image} size={16} />
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" onChange={pickImage} style={{ display: "none" }} />
 
-                {/* Emoji */}
                 <div style={{ position: "relative" }}>
                   <button ref={emojiButtonRef} onClick={() => setShowEmoji(!showEmoji)} style={{
                     width: 34, height: 34, borderRadius: 10, background: showEmoji ? T.cream : "none",
@@ -337,18 +619,15 @@ const Composer = ({ user, onPost }) => {
                   {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={emojiButtonRef} />}
                 </div>
 
-                {/* Quick emojis */}
-                <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>
-                  {["❤️","👍","🔥","🎉"].map((e) => (
-                    <button key={e} onClick={() => insertEmoji(e)} style={{
-                      width: 30, height: 30, fontSize: 16, background: "none", border: "none",
-                      cursor: "pointer", borderRadius: 8, transition: "background 0.1s",
-                    }}
-                      onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
-                      onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
-                    >{e}</button>
-                  ))}
-                </div>
+                {["❤️","👍","🔥","🎉"].map((e) => (
+                  <button key={e} onClick={() => insertEmoji(e)} style={{
+                    width: 30, height: 30, fontSize: 16, background: "none", border: "none",
+                    cursor: "pointer", borderRadius: 8, transition: "background 0.1s",
+                  }}
+                    onMouseEnter={(el) => { el.currentTarget.style.background = T.cream; }}
+                    onMouseLeave={(el) => { el.currentTarget.style.background = "none"; }}
+                  >{e}</button>
+                ))}
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -374,10 +653,11 @@ const Composer = ({ user, onPost }) => {
   );
 };
 
-// ── Single comment row ────────────────────────────────────────────────────────
-const CommentRow = ({ c }) => (
+// ── Comment Row ───────────────────────────────────────────────────────────────
+const CommentRow = ({ c, navigate }) => (
   <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
-    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} />
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified}
+      onClick={() => c.user_id && navigate("/citizen/profile/" + c.user_id)} />
     <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
       <div style={{
         background: T.cream, borderRadius: "12px 12px 12px 3px",
@@ -385,7 +665,8 @@ const CommentRow = ({ c }) => (
         display: "inline-block", maxWidth: "100%",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
-          <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy }}>
+          <span onClick={() => c.user_id && navigate("/citizen/profile/" + c.user_id)}
+            style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy, cursor: "pointer" }}>
             {c.users?.full_name || "Citizen"}
           </span>
           {c.users?.identity_verified && (
@@ -406,19 +687,18 @@ const CommentRow = ({ c }) => (
   </div>
 );
 
-// ── Comments List with smooth slide expand ────────────────────────────────────
-const CommentsList = ({ comments }) => {
+// ── Comments List ─────────────────────────────────────────────────────────────
+const CommentsList = ({ comments, navigate }) => {
   const [expanded, setExpanded] = useState(false);
   const SHOW = 3;
   const hiddenCount = Math.max(0, comments.length - SHOW);
-  const latest = comments.slice(-SHOW); // always show the 3 most recent
-  const older = comments.slice(0, -SHOW); // the rest hidden by default
+  const latest = comments.slice(-SHOW);
+  const older = comments.slice(0, -SHOW);
 
   if (comments.length === 0) return null;
 
   return (
     <div style={{ borderLeft: "2px solid " + T.gold + "33", marginLeft: 14, paddingLeft: 8, marginBottom: 4 }}>
-      {/* Older replies — slide open */}
       {hiddenCount > 0 && (
         <>
           <button onClick={() => setExpanded((v) => !v)} style={{
@@ -429,107 +709,22 @@ const CommentsList = ({ comments }) => {
             <span style={{ fontSize: 13, transition: "transform 0.2s", display: "inline-block", transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
             {expanded ? "Hide older replies" : "View " + hiddenCount + " more " + (hiddenCount === 1 ? "reply" : "replies")}
           </button>
-          {/* Slide wrapper using max-height transition */}
           <div style={{
             overflow: "hidden",
             maxHeight: expanded ? older.length * 120 + "px" : "0px",
             transition: "max-height 0.35s ease",
           }}>
-            {older.map((c) => <CommentRow key={c.id} c={c} />)}
+            {older.map((c) => <CommentRow key={c.id} c={c} navigate={navigate} />)}
           </div>
         </>
       )}
-      {/* Always-visible latest replies */}
-      {latest.map((c) => <CommentRow key={c.id} c={c} />)}
+      {latest.map((c) => <CommentRow key={c.id} c={c} navigate={navigate} />)}
     </div>
   );
 };
 
-// ── Reply Box (isolated to prevent parent re-renders moving the emoji picker) ─
-const ReplyBox = ({ postId, onComment }) => {
-  const [reply, setReply] = useState("");
-  const [showEmojiReply, setShowEmojiReply] = useState(false);
-  const [replyImageFile, setReplyImageFile] = useState(null);
-  const [replyImagePreview, setReplyImagePreview] = useState(null);
-  const replyRef = useRef(null);
-  const replyFileRef = useRef(null);
-  const replyEmojiRef = useRef(null);
-
-  const insertReplyEmoji = (emoji) => {
-    setReply((r) => r + emoji);
-    setShowEmojiReply(false);
-    replyRef.current?.focus();
-  };
-
-  const submitReply = async () => {
-    if (!reply.trim() && !replyImageFile) return;
-    let imageUrl = null;
-    if (replyImageFile) {
-      const ext = replyImageFile.name.split(".").pop();
-      const path = "community/" + Date.now() + "-reply." + ext;
-      const { error: upErr } = await supabase.storage
-        .from("community-images").upload(path, replyImageFile, { cacheControl: "3600", upsert: false });
-      if (!upErr) {
-        const { data: urlData } = supabase.storage.from("community-images").getPublicUrl(path);
-        imageUrl = urlData?.publicUrl;
-      }
-    }
-    await onComment(postId, reply.trim(), imageUrl);
-    setReply("");
-    setReplyImageFile(null);
-    setReplyImagePreview(null);
-  };
-
-  return (
-    <div style={{ marginTop: 12, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
-      <textarea
-        ref={replyRef}
-        value={reply}
-        onChange={(e) => setReply(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && submitReply()}
-        placeholder="Write a thoughtful reply..."
-        rows={2}
-        style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
-      />
-      {replyImagePreview && (
-        <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
-          <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
-          <button onClick={() => { setReplyImageFile(null); setReplyImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-            <Ico d={ICONS.x} size={10} />
-          </button>
-        </div>
-      )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
-            <Ico d={ICONS.image} size={14} />
-          </button>
-          <input ref={replyFileRef} type="file" accept="image/*" onChange={(e) => {
-            const file = e.target.files[0]; if (!file) return;
-            setReplyImageFile(file);
-            const reader = new FileReader();
-            reader.onload = (ev) => setReplyImagePreview(ev.target.result);
-            reader.readAsDataURL(file);
-          }} style={{ display: "none" }} />
-          <div style={{ position: "relative" }}>
-            <button ref={replyEmojiRef} onClick={() => setShowEmojiReply((v) => !v)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
-            {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
-          </div>
-          {["❤️","👍","🔥","😂"].map((e) => (
-            <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter</span>
-          <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
-            Reply
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-const PostCard = ({ post, onLike, onComment, onReact }) => {
+// ── Post Card ─────────────────────────────────────────────────────────────────
+const PostCard = ({ post, onLike, onComment, onReact, currentUserId, followingSet, onFollowToggle, bookmarkSet, onBookmarkToggle, navigate }) => {
   const [liked, setLiked] = useState(post.my_vote === "like");
   const [likes, setLikes] = useState(post.likes_count || 0);
   const [disliked, setDisliked] = useState(post.my_vote === "dislike");
@@ -543,9 +738,14 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentCount, setCommentCount] = useState(post.comments_count || 0);
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [mentionMap, setMentionMap] = useState({});
   const replyRef = useRef(null);
   const replyFileRef = useRef(null);
   const replyEmojiRef = useRef(null);
+
+  const authorUserId = post.user_id || post.users?.id;
+  const isBookmarked = bookmarkSet.has(post.id);
 
   const toggleLike = async () => {
     const next = !liked;
@@ -567,7 +767,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
     setLoadingComments(true);
     const { data } = await supabase
       .from("community_post_comments")
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, image_url, user_id, users:user_id(full_name, identity_verified)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     setComments(data || []);
@@ -578,6 +778,27 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
     const next = !showReply;
     setShowReply(next);
     if (next && comments.length === 0) loadComments();
+  };
+
+  const handleReplyChange = (e) => {
+    const val = e.target.value;
+    setReply(val);
+    const cursor = e.target.selectionStart;
+    const before = val.slice(0, cursor);
+    const atMatch = before.match(/@(\w*)$/);
+    setMentionQuery(atMatch ? atMatch[1] : null);
+  };
+
+  const insertReplyMention = (user) => {
+    const cursor = replyRef.current?.selectionStart || reply.length;
+    const before = reply.slice(0, cursor);
+    const after = reply.slice(cursor);
+    const atIdx = before.lastIndexOf("@");
+    const newText = before.slice(0, atIdx) + "@" + user.full_name + " " + after;
+    setReply(newText);
+    setMentionQuery(null);
+    setMentionMap((prev) => ({ ...prev, [user.full_name]: user.id }));
+    setTimeout(() => replyRef.current?.focus(), 0);
   };
 
   const submitReply = async () => {
@@ -606,6 +827,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
     setReply("");
     setReplyImageFile(null);
     setReplyImagePreview(null);
+    setMentionMap({});
   };
 
   const insertReplyEmoji = (emoji) => {
@@ -627,15 +849,21 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
       }}
     >
       <div style={{ padding: "18px 20px 14px" }}>
-        {/* Author */}
+        {/* Author row with follow + bookmark */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-          <Avatar name={post.author_name} size={44} verified={post.author_verified} />
+          <Avatar name={post.author_name} size={44} verified={post.author_verified}
+            onClick={() => authorUserId && navigate("/citizen/profile/" + authorUserId)} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-              <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy }}>
+              <span onClick={() => authorUserId && navigate("/citizen/profile/" + authorUserId)}
+                style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy, cursor: "pointer" }}>
                 {post.author_name || "Anonymous Citizen"}
               </span>
               {post.author_verified && <VerifiedBadge />}
+              {currentUserId && authorUserId && (
+                <FollowButton targetUserId={authorUserId} currentUserId={currentUserId}
+                  followingSet={followingSet} onToggle={onFollowToggle} />
+              )}
               {post.survey_tag && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontSize: 10, color: T.muted, fontFamily: T.sans }}>
                   <Ico d={ICONS.hash} size={8} /> {post.survey_tag}
@@ -644,6 +872,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
             </div>
             <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{timeAgo(post.created_at)}</span>
           </div>
+          <BookmarkBtn postId={post.id} isBookmarked={isBookmarked} onToggle={onBookmarkToggle} />
         </div>
 
         {/* Content */}
@@ -669,7 +898,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
 
         {/* Action bar */}
         <div style={{ paddingTop: 10, borderTop: "1px solid " + T.border }}>
-          {/* Stats row */}
           {(likes > 0 || commentCount > 0) && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid " + T.border }}>
               {likes > 0 && (
@@ -684,9 +912,7 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               )}
             </div>
           )}
-          {/* Buttons row */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {/* Thumbs up */}
             <button onClick={toggleLike} style={{
               display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
               borderRadius: 20, background: liked ? "#fee2e2" : "none",
@@ -694,11 +920,10 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               cursor: "pointer", fontFamily: T.sans, fontSize: 12, fontWeight: 700,
               color: liked ? "#e53e3e" : T.muted, transition: "all 0.15s",
             }}>
-              <span style={{ fontSize: 15 }}>{liked ? "👍" : "👍"}</span>
+              <span style={{ fontSize: 15 }}>👍</span>
               <span>{likes > 0 ? likes : ""}</span>
             </button>
 
-            {/* Thumbs down */}
             <button onClick={toggleDislike} style={{
               display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
               borderRadius: 20, background: disliked ? "#fef3c7" : "none",
@@ -710,7 +935,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               <span>{dislikes > 0 ? dislikes : ""}</span>
             </button>
 
-            {/* Reply */}
             <button onClick={toggleReplies} style={{
               display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
               borderRadius: 20, background: showReply ? T.navy + "08" : "none",
@@ -722,7 +946,6 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
               {commentCount > 0 ? commentCount : "Reply"}
             </button>
 
-            {/* Quick emoji reactions */}
             <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
               {["❤️","🔥","😂"].map((e) => (
                 <button key={e} onClick={() => onReact(post.id, e)} style={{
@@ -740,29 +963,30 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
         {/* Comments + Reply box */}
         {showReply && (
           <div style={{ marginTop: 14 }}>
-            {/* Existing comments — show 4, expand rest */}
             {loadingComments ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}>
                 <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
               </div>
             ) : (
-              <CommentsList comments={comments} />
+              <CommentsList comments={comments} navigate={navigate} />
             )}
           </div>
         )}
-        {/* Reply composer */}
+        {/* Reply composer with @mention */}
         {showReply && (
-          <div style={{ marginTop: 4, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px" }}>
+          <div style={{ marginTop: 4, background: T.cream, borderRadius: 16, border: "1px solid " + T.border, padding: "12px 14px", position: "relative" }}>
+            {mentionQuery !== null && (
+              <MentionAutocomplete query={mentionQuery} onSelect={insertReplyMention} />
+            )}
             <textarea
               ref={replyRef}
               value={reply}
-              onChange={(e) => setReply(e.target.value)}
+              onChange={handleReplyChange}
               onKeyDown={(e) => e.key === "Enter" && e.ctrlKey && submitReply()}
-              placeholder="Write a thoughtful reply..."
+              placeholder="Write a reply... use @name to mention"
               rows={2}
               style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: T.sans, fontSize: 13, color: T.ink, lineHeight: 1.6, boxSizing: "border-box" }}
             />
-            {/* Reply image preview */}
             {replyImagePreview && (
               <div style={{ position: "relative", marginBottom: 8, display: "inline-block" }}>
                 <img src={replyImagePreview} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 10, display: "block" }} />
@@ -771,10 +995,8 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
                 </button>
               </div>
             )}
-            {/* Reply toolbar */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid " + T.border }}>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                {/* Image upload */}
                 <button onClick={() => replyFileRef.current?.click()} style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", border: "1px solid " + T.border, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.muted }}>
                   <Ico d={ICONS.image} size={14} />
                 </button>
@@ -785,18 +1007,16 @@ const PostCard = ({ post, onLike, onComment, onReact }) => {
                   reader.onload = (ev) => setReplyImagePreview(ev.target.result);
                   reader.readAsDataURL(file);
                 }} style={{ display: "none" }} />
-                {/* Emoji picker */}
                 <div style={{ position: "relative" }}>
                   <button ref={replyEmojiRef} onClick={() => setShowEmojiReply(!showEmojiReply)} style={{ width: 30, height: 30, borderRadius: 8, background: showEmojiReply ? T.navy + "10" : "#fff", border: "1px solid " + (showEmojiReply ? T.gold + "44" : T.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>😊</button>
                   {showEmojiReply && <EmojiPicker onSelect={insertReplyEmoji} onClose={() => setShowEmojiReply(false)} anchorRef={replyEmojiRef} />}
                 </div>
-                {/* Quick emojis */}
                 {["❤️","👍","🔥","😂"].map((e) => (
                   <button key={e} onClick={() => insertReplyEmoji(e)} style={{ width: 28, height: 28, fontSize: 14, background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}>{e}</button>
                 ))}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter to send</span>
+                <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted }}>Ctrl+Enter</span>
                 <button onClick={submitReply} disabled={!reply.trim() && !replyImageFile} style={{ padding: "6px 16px", borderRadius: 20, background: (reply.trim() || replyImageFile) ? T.navy : "#e2e8f0", color: (reply.trim() || replyImageFile) ? T.gold : T.muted, border: "none", cursor: (reply.trim() || replyImageFile) ? "pointer" : "default", fontFamily: T.sans, fontSize: 12, fontWeight: 700, transition: "all 0.15s" }}>
                   Reply
                 </button>
@@ -862,6 +1082,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const chatEmojiRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     load();
@@ -884,7 +1105,8 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
 
   const send = async () => {
     if (!text.trim()) return;
-    const msg = text.trim(); setText("");
+    const msg = text.trim();
+    setText("");
     await supabase.from("survey_chat_messages").insert({ survey_id: survey.id, user_id: currentUser.id, content: msg });
   };
 
@@ -895,42 +1117,32 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: "#fff", borderBottom: "1px solid " + T.border, flexShrink: 0, boxShadow: "0 1px 4px rgba(11,37,69,0.05)" }}>
+    <>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 12, background: "#fff", flexShrink: 0 }}>
         <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: 10, background: T.cream, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.navy }}>
           <Ico d={ICONS.back} size={16} />
         </button>
-        <div style={{ width: 38, height: 38, borderRadius: 12, background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Ico d={ICONS.hash} size={18} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 14, color: T.navy, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{survey.title}</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", display: "inline-block" }} />
-            <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted }}>{survey.participant_count || 0} participants</span>
-          </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 15, color: T.navy, margin: 0 }}>{survey.title}</p>
+          <span style={{ fontFamily: T.sans, fontSize: 11, color: "#16a34a", fontWeight: 600 }}>● Live</span>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px", background: T.cream, minHeight: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 10, background: T.cream }}>
         {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+          <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
             <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + T.gold, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-          </div>
-        ) : msgs.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>👋</div>
-            <p style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 15, color: T.navy, margin: "0 0 4px" }}>Start the conversation!</p>
-            <p style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, margin: 0 }}>Be the first to share your thoughts on this survey.</p>
           </div>
         ) : msgs.map((msg) => {
           const isMe = msg.user_id === currentUser?.id;
           const name = msg.users?.full_name || "Citizen";
           return (
             <div key={msg.id} style={{ display: "flex", gap: 8, flexDirection: isMe ? "row-reverse" : "row", alignItems: "flex-end" }}>
-              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} />}
+              {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified}
+                onClick={() => navigate("/citizen/profile/" + msg.user_id)} />}
               <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 3 }}>
-                {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4 }}>{name}</span>}
+                {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4, cursor: "pointer" }}
+                  onClick={() => navigate("/citizen/profile/" + msg.user_id)}>{name}</span>}
                 <div style={{ padding: "10px 14px", background: isMe ? T.navy : "#fff", color: isMe ? T.cream : T.ink, borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontFamily: T.sans, fontSize: 14, lineHeight: 1.5, boxShadow: "0 1px 4px rgba(11,37,69,0.08)", border: isMe ? "none" : "1px solid " + T.border }}>
                   {msg.content}
                 </div>
@@ -945,19 +1157,19 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
       <div style={{ background: "#fff", borderTop: "1px solid " + T.border, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 10, padding: "10px 14px", alignItems: "flex-end" }}>
           <Avatar name={currentUser?.full_name} size={34} verified={currentUser?.identity_verified} />
-            <div style={{ flex: 1, position: "relative" }}>
+          <div style={{ flex: 1, position: "relative" }}>
             <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} placeholder="Message the room..." style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 20, border: "1px solid " + T.border, background: T.cream, fontFamily: T.sans, fontSize: 13, color: T.ink, outline: "none", boxSizing: "border-box" }} />
-              <button ref={chatEmojiRef} onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
-                😊
-              </button>
-              {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={chatEmojiRef} />}
-            </div>
+            <button ref={chatEmojiRef} onClick={() => setShowEmoji(!showEmoji)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>
+              😊
+            </button>
+            {showEmoji && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} anchorRef={chatEmojiRef} />}
+          </div>
           <button onClick={send} disabled={!text.trim()} style={{ width: 40, height: 40, borderRadius: "50%", background: T.navy, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, opacity: text.trim() ? 1 : 0.35, transition: "all 0.15s", flexShrink: 0, boxShadow: text.trim() ? "0 2px 8px " + T.navy + "40" : "none" }}>
             <Ico d={ICONS.send} size={14} />
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -983,6 +1195,7 @@ const TOPICS = [
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Community() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState("feed");
   const [posts, setPosts] = useState([]);
   const [surveys, setSurveys] = useState([]);
@@ -991,13 +1204,15 @@ export default function Community() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [followingSet, setFollowingSet] = useState(new Set());
+  const [bookmarkSet, setBookmarkSet] = useState(new Set());
   const PAGE = 15;
 
   useEffect(() => { if (user?.id) init(); }, [user?.id]);
 
   const init = async () => {
     setLoading(true);
-    await Promise.all([fetchProfile(), fetchPosts(0), fetchSurveys()]);
+    await Promise.all([fetchProfile(), fetchPosts(0), fetchSurveys(), fetchFollowing(), fetchBookmarks()]);
     setLoading(false);
   };
 
@@ -1006,13 +1221,43 @@ export default function Community() {
     setCurrentUser(data);
   };
 
+  const fetchFollowing = async () => {
+    const { data } = await supabase.from("user_follows").select("following_id").eq("follower_id", user.id);
+    setFollowingSet(new Set((data || []).map((f) => f.following_id)));
+  };
+
+  const fetchBookmarks = async () => {
+    const { data } = await supabase.from("community_bookmarks").select("post_id").eq("user_id", user.id);
+    setBookmarkSet(new Set((data || []).map((b) => b.post_id)));
+  };
+
+  const handleFollowToggle = (targetId, nowFollowing) => {
+    setFollowingSet((prev) => {
+      const next = new Set(prev);
+      if (nowFollowing) next.add(targetId); else next.delete(targetId);
+      return next;
+    });
+  };
+
+  const handleBookmarkToggle = async (postId, nowBookmarked) => {
+    if (nowBookmarked) {
+      await supabase.from("community_bookmarks").insert({ user_id: user.id, post_id: postId });
+    } else {
+      await supabase.from("community_bookmarks").delete().eq("user_id", user.id).eq("post_id", postId);
+    }
+    setBookmarkSet((prev) => {
+      const next = new Set(prev);
+      if (nowBookmarked) next.add(postId); else next.delete(postId);
+      return next;
+    });
+  };
+
   const fetchPosts = async (p) => {
     const from = p * PAGE;
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, user_id, users:user_id(full_name, identity_verified)")
       .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
-    // Load this user's votes for these posts
     const ids = (data || []).map((x) => x.id);
     let myVotes = {};
     if (ids.length && user?.id) {
@@ -1042,25 +1287,35 @@ export default function Community() {
     setSurveys(data.map((s) => ({ ...s, participant_count: s.participant_count?.[0]?.count || 0, message_count: cmap[s.id] || 0 })));
   };
 
-  const handlePost = async (content, imageUrl) => {
+  const handlePost = async (content, imageUrl, mentionIds, mentionMap) => {
     const { data, error } = await supabase.from("community_posts")
-      .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 })
-      .select("id, content, created_at, likes_count, comments_count, image_url, users:user_id(full_name, identity_verified)").single();
-    if (!error && data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
+      .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0, mentions: mentionIds || [] })
+      .select("id, content, created_at, likes_count, comments_count, image_url, user_id, users:user_id(full_name, identity_verified)").single();
+    if (!error && data) {
+      setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
+      // Send mention notifications
+      if (mentionIds && mentionIds.length > 0) {
+        const notifs = mentionIds.map((uid) => ({
+          user_id: uid,
+          type: "mention",
+          content: (currentUser?.full_name || "Someone") + " mentioned you in a post",
+          link: "/citizen/community",
+          is_read: false,
+        }));
+        await supabase.from("notifications").insert(notifs);
+      }
+    }
   };
 
   const handleLike = async (postId, type, active, removingOpposite) => {
     if (!user?.id) return;
     if (!active) {
-      // Remove vote
       await supabase.from("community_post_likes")
         .delete().eq("post_id", postId).eq("user_id", user.id);
     } else {
-      // Upsert vote (handles switching from like->dislike automatically)
       await supabase.from("community_post_likes")
         .upsert({ post_id: postId, user_id: user.id, type }, { onConflict: "post_id,user_id" });
     }
-    // Sync counts in DB
     await supabase.rpc("sync_post_like_counts", { p_post_id: postId });
   };
 
@@ -1070,10 +1325,9 @@ export default function Community() {
     const { data, error } = await supabase
       .from("community_post_comments")
       .insert(insertData)
-      .select("id, content, created_at, image_url, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, image_url, user_id, users:user_id(full_name, identity_verified)")
       .single();
     if (error) { console.error("Comment save error:", error); return null; }
-    // Increment count in DB so it persists on refresh
     await supabase.rpc("increment_comment_count", { post_id: postId });
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
     return data;
@@ -1094,7 +1348,7 @@ export default function Community() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", fontFamily: T.sans }}>
+    <div style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans }}>
       <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }"}</style>
 
       {/* Header */}
@@ -1111,6 +1365,9 @@ export default function Community() {
         </div>
         <div style={{ height: 3, marginTop: 16, borderRadius: 2, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 60%, transparent 100%)" }} />
       </div>
+
+      {/* Search */}
+      <SearchBar navigate={navigate} />
 
       {/* Trending */}
       <div style={{ marginBottom: 20 }}>
@@ -1155,7 +1412,7 @@ export default function Community() {
       {/* Feed */}
       {tab === "feed" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Composer user={currentUser} onPost={handlePost} />
+          <Composer user={currentUser} onPost={handlePost} navigate={navigate} />
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} />) :
             posts.length === 0 ? (
               <div style={{ background: "#fff", borderRadius: 20, border: "1px solid " + T.border, padding: "60px 24px", textAlign: "center" }}>
@@ -1165,7 +1422,15 @@ export default function Community() {
               </div>
             ) : (
               <>
-                {posts.map((p) => <PostCard key={p.id} post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified}} onLike={handleLike} onComment={handleComment} onReact={handleReact} />)}
+                {posts.map((p) => (
+                  <PostCard key={p.id}
+                    post={{...p, _currentUserName: currentUser?.full_name, _currentUserVerified: currentUser?.identity_verified}}
+                    onLike={handleLike} onComment={handleComment} onReact={handleReact}
+                    currentUserId={user?.id} followingSet={followingSet} onFollowToggle={handleFollowToggle}
+                    bookmarkSet={bookmarkSet} onBookmarkToggle={handleBookmarkToggle}
+                    navigate={navigate}
+                  />
+                ))}
                 {hasMore && (
                   <button onClick={() => fetchPosts(page + 1)} style={{ width: "100%", padding: "13px", background: "#fff", border: "1px solid " + T.border, borderRadius: 14, fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.navy, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.cream; }}
