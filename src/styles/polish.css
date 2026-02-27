@@ -401,9 +401,17 @@ body { background: var(--cv-cream); margin: 0; font-family: 'DM Sans', sans-seri
   .cv-grid-3 { grid-template-columns: 1fr !important; }
   .cv-grid-4 { grid-template-columns: 1fr 1fr !important; }
 
-  /* Debate room mobile */
-  .cv-ds-speakers { flex-direction: column !important; gap: 10px !important; }
-  .cv-ds-speakers > div { min-width: 0 !important; }
+  /* Debate speakers stay side-by-side but shrink */
+  .cv-ds-speakers { gap: 6px !important; }
+  .cv-speakers-container { padding: 16px 10px !important; border-radius: 16px !important; }
+  .cv-speaker-card { padding: 14px 8px !important; border-radius: 14px !important; }
+  .cv-speaker-avatar { width: 52px !important; height: 52px !important; }
+  .cv-speaker-initial { font-size: 20px !important; }
+  .cv-speaker-name { font-size: 12px !important; }
+  .cv-speaker-timer { padding: 6px 12px !important; }
+  .cv-speaker-timer span { font-size: 18px !important; letter-spacing: 1px !important; }
+
+  /* Debate room sidebar mobile */
   .cv-ds-main { flex-direction: column !important; }
   .cv-ds-main > div { min-height: 300px !important; }
 
@@ -423,7 +431,10 @@ body { background: var(--cv-cream); margin: 0; font-family: 'DM Sans', sans-seri
 
 @media (max-width: 480px) {
   .cv-grid-4 { grid-template-columns: 1fr !important; }
-  .cv-ds-speakers > div { padding: 12px !important; }
+  .cv-speaker-avatar { width: 44px !important; height: 44px !important; }
+  .cv-speaker-initial { font-size: 17px !important; }
+  .cv-speaker-name { font-size: 11px !important; }
+  .cv-speaker-timer span { font-size: 16px !important; }
 }
 
 /* Tablet */
