@@ -92,12 +92,14 @@ export default function CitizenLayout() {
   var notifIcons = { follow: '\uD83D\uDC64', mention: '@', reply: '\uD83D\uDCAC', like: '\u2764\uFE0F', debate_invite: '\uD83C\uDFDB', poll: '\uD83D\uDCCA' };
 
   function renderDropdown() {
+    var rect = bellRef.current ? bellRef.current.getBoundingClientRect() : { top: 50, left: 100 };
+    var dropLeft = Math.max(8, Math.min(rect.left - 140, window.innerWidth - 328));
     return (
       <div style={{
-        position: 'absolute', top: '100%', right: 0, marginTop: 8,
+        position: 'fixed', top: rect.bottom + 8, left: dropLeft,
         width: 320, maxHeight: 400, overflowY: 'auto',
         background: '#fff', borderRadius: 14, border: '1px solid rgba(11,37,69,0.08)',
-        boxShadow: '0 12px 40px rgba(11,37,69,0.15)', zIndex: 100,
+        boxShadow: '0 12px 40px rgba(11,37,69,0.15)', zIndex: 9999,
       }}>
         <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(11,37,69,0.06)' }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>Notifications</span>
