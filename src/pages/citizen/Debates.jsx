@@ -107,6 +107,26 @@ export default function Debates() {
       .order('scheduled_at', { ascending: true });
     
     if (data && data.length > 0) {
+      // Auto-expire stale debates: pending/confirmed and scheduled time passed by 1+ hour
+      var now = new Date();
+      var staleIds = [];
+      data.forEach(function(d) {
+        if ((d.status === 'pending' || d.status === 'confirmed' || d.status === 'waiting_room') && d.scheduled_at) {
+          var scheduled = new Date(d.scheduled_at);
+          var hoursPassed = (now - scheduled) / (1000 * 60 * 60);
+          if (hoursPassed > 1) staleIds.push(d.id);
+        }
+      });
+      // Batch cancel stale debates
+      if (staleIds.length > 0) {
+        await supabase.from('debates').update({ status: 'cancelled' }).in('id', staleIds);
+        // Update local data
+        data = data.map(function(d) {
+          if (staleIds.indexOf(d.id) !== -1) return Object.assign({}, d, { status: 'cancelled' });
+          return d;
+        });
+      }
+
       setDebates(data);
       var userIds = [];
       data.forEach(function(d) {
@@ -829,16 +849,16 @@ export default function Debates() {
                       📋 View Details
                     </button>
                   )}
-                  {d.status === 'pending' && isCreator && (
+                  {(d.status === 'pending' || d.status === 'confirmed' || d.status === 'waiting_room') && isParticipant && (
                     <button
                       onClick={function(e) { e.stopPropagation(); cancelDebate(d.id); }}
                       style={{
-                        padding: '10px 18px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.06)',
-                        fontSize: 12, fontWeight: 500, background: '#fff', color: 'rgba(11,37,69,0.6)',
+                        padding: '10px 18px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.15)',
+                        fontSize: 12, fontWeight: 600, background: 'rgba(239,68,68,0.04)', color: '#ef4444',
                         cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                       }}
                     >
-                      Cancel
+                      ✕ Cancel Debate
                     </button>
                   )}
                   {d.status === 'completed' && d.summary && (
@@ -859,3 +879,4 @@ export default function Debates() {
     </div>
   );
 }
+
