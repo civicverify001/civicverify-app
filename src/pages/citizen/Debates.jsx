@@ -875,11 +875,11 @@ export default function Debates() {
                       ✕ Cancel Debate
                     </button>
                   )}
-                  {d.status === 'live' && isParticipant && (
+                  {d.status === 'live' && profile && profile.role === 'admin' && (
                     <button
                       onClick={function(e) {
                         e.stopPropagation();
-                        if (!confirm('End this debate and mark it as completed?')) return;
+                        if (!confirm('Admin: Force end this debate and mark as completed?')) return;
                         supabase.from('debates').update({ status: 'completed' }).eq('id', d.id).then(function() { loadDebates(); });
                       }}
                       style={{
@@ -888,7 +888,7 @@ export default function Debates() {
                         cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                       }}
                     >
-                      ⏹ End Debate
+                      🛑 Admin: End Debate
                     </button>
                   )}
                   {d.status === 'completed' && d.summary && (
