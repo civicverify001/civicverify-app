@@ -94,3 +94,68 @@ self.addEventListener('notificationclick', function (event) {
     clients.openWindow(event.notification.data.url || '/')
   );
 });
+// ============================================================
+// ADD THIS to your existing service worker file (public/sw.js)
+// Paste at the BOTTOM of your existing sw.js
+// ============================================================
+
+// Listen for push notifications
+self.addEventListener('push', function(event) {
+  var data = { title: 'CivicVerify', body: 'You have a new notification', icon: '/civicverifyicon.png' };
+  
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  var options = {
+    body: data.body || '',
+    icon: data.icon || '/civicverifyicon.png',
+    badge: '/civicverifyicon.png',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || data.link || '/citizen',
+    },
+    actions: data.actions || [],
+    tag: data.tag || 'civicverify-notification',
+    renotify: true,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'CivicVerify', options)
+  );
+});
+
+// Handle notification click — open the app to the right page
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  
+  var url = event.notification.data && event.notification.data.url
+    ? event.notification.data.url
+    : '/citizen';
+
+  // If it's a relative URL, make it absolute
+  if (url.startsWith('/')) {
+    url = self.location.origin + url;
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+      // Try to focus an existing tab
+      for (var i = 0; i < windowClients.length; i++) {
+        var client = windowClients[i];
+        if (client.url.includes('civicverify.org') && 'focus' in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      // Open a new window if none found
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
