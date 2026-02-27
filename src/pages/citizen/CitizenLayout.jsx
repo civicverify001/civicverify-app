@@ -267,6 +267,21 @@ export default function CitizenLayout() {
               </NavLink>
             );
           })}
+          {user && (
+            <NavLink to={'/citizen/profile/' + user.id} onClick={function(){setOpen(false)}}
+              style={function(p) {
+                return Object.assign({
+                  display: 'flex', alignItems: 'center', gap: 11, padding: '10px 14px',
+                  borderRadius: 10, marginBottom: 2, textDecoration: 'none', fontSize: 13,
+                  transition: 'all 0.2s', position: 'relative',
+                }, p.isActive ? activeStyle : normalStyle);
+              }}>
+              <span style={{ width: 22, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                <Ico d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" size={17} />
+              </span>
+              <span>My Profile</span>
+            </NavLink>
+          )}
         </nav>
 
         {/* User info */}
