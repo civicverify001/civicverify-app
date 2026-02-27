@@ -184,27 +184,31 @@ export default function Landing() {
           </Link>
 
           {/* Desktop nav */}
-          <div className="nav-mobile-hide" style={{ alignItems: 'center', gap: 28 }}>
-            {['How It Works', 'Live Polls', 'Community', 'For Organizations'].map((item) => (
-              <a key={item} href={'#' + item.toLowerCase().replace(/ /g, '-')} className="nav-link"
-                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.75)', textDecoration: 'none', transition: 'color 0.2s', letterSpacing: '0.01em' }}>
-                {item}
-              </a>
-            ))}
-            <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Nav links - hidden on mobile */}
+            <div className="nav-mobile-hide" style={{ alignItems: 'center', gap: 28 }}>
+              {['How It Works', 'Live Polls', 'Community', 'For Organizations'].map((item) => (
+                <a key={item} href={'#' + item.toLowerCase().replace(/ /g, '-')} className="nav-link"
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.75)', textDecoration: 'none', transition: 'color 0.2s', letterSpacing: '0.01em' }}>
+                  {item}
+                </a>
+              ))}
+              <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
+            </div>
+            {/* Auth buttons - always visible */}
             {user ? (
               <button onClick={() => navigate('/citizen')} className="btn-primary"
-                style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 12px rgba(197,150,12,0.25)' }}>
+                style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 12px rgba(197,150,12,0.25)', whiteSpace: 'nowrap' }}>
                 Dashboard
               </button>
             ) : (
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => navigate('/login')} className="btn-secondary"
-                  style={{ padding: '9px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  style={{ padding: '9px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
                   Sign In
                 </button>
-                <button onClick={() => navigate('/signup')} className="btn-primary"
-                  style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 12px rgba(197,150,12,0.25)' }}>
+                <button onClick={() => navigate('/signup')} className="btn-primary nav-mobile-hide"
+                  style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 12px rgba(197,150,12,0.25)', alignItems: 'center', whiteSpace: 'nowrap' }}>
                   Get Started
                 </button>
               </div>
