@@ -420,8 +420,8 @@ export default function CitizenDashboard() {
   var tierColor = trust <= 2 ? 'rgba(11,37,69,0.35)' : trust <= 10 ? C.gold : trust <= 25 ? C.green : C.purple;
 
   return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 980 }}>
-      <style>{'@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}'}</style>
+    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 980, overflowX: 'hidden' }}>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @media(max-width:768px){.cv-stats-grid{grid-template-columns:repeat(2,1fr)!important} .cv-social-grid{grid-template-columns:1fr!important} .cv-dash-cols{grid-template-columns:1fr!important}}'}</style>
 
       <h1 style={{ fontSize: 27, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Welcome back{name ? ', ' + name : ''}</h1>
       <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Your civic voice matters.</p>
@@ -458,7 +458,7 @@ export default function CitizenDashboard() {
       </div>
 
       {/* Social Stats Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
+      <div className="cv-social-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
         <div
           onClick={function() { setShowFollowers(!showFollowers); setShowFollowing(false); }}
           style={{ background: '#fff', borderRadius: 13, padding: '16px 20px', border: showFollowers ? '2px solid ' + C.gold : '1px solid rgba(11,37,69,0.06)', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -549,7 +549,7 @@ export default function CitizenDashboard() {
       )}
 
       {/* Two-col layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+      <div className="cv-dash-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
 
         {/* LEFT — Poll Discussions */}
         <div>
