@@ -151,7 +151,7 @@ export default function Debates() {
     if (form.challengeType === 'direct' && !form.directOpponentId) return alert('Please select an opponent');
 
     var scheduled = new Date(form.scheduledDate + 'T' + form.scheduledTime);
-    if (scheduled < new Date()) return alert('Scheduled time must be in the future');
+    if (scheduled < new Date(Date.now() - 5 * 60000)) return alert('Scheduled time must not be in the past');
 
     setCreating(true);
     var { error } = await supabase.from('debates').insert({
@@ -502,6 +502,23 @@ export default function Debates() {
             </div>
           </div>
 
+          <div style={{ marginBottom: 14 }}>
+            <button onClick={function() {
+              var now = new Date();
+              now.setMinutes(now.getMinutes() + 1);
+              var y = now.getFullYear(); var m = String(now.getMonth() + 1).padStart(2, '0'); var d = String(now.getDate()).padStart(2, '0');
+              var h = String(now.getHours()).padStart(2, '0'); var mi = String(now.getMinutes()).padStart(2, '0');
+              setForm(Object.assign({}, form, { scheduledDate: y + '-' + m + '-' + d, scheduledTime: h + ':' + mi }));
+            }}
+              style={{
+                padding: '12px 24px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif', background: 'linear-gradient(135deg, rgba(22,163,74,0.08), rgba(22,163,74,0.15))',
+                border: '1px solid rgba(22,163,74,0.2)', color: '#16a34a', transition: 'all 0.2s',
+              }}>
+              ⚡ Start Now (set to 1 min from now)
+            </button>
+          </div>
+
           <div className="cv-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 24 }}>
             <div>
               <label style={labelStyle}>Date</label>
@@ -510,7 +527,7 @@ export default function Debates() {
                 type="date"
                 style={inputStyle}
                 value={form.scheduledDate}
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0')}
                 onChange={function(e) { setForm(Object.assign({}, form, { scheduledDate: e.target.value })); }}
               />
             </div>
