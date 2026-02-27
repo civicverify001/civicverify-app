@@ -34,6 +34,7 @@ import AdminUsers from './pages/admin/Users'
 import AdminAnalytics from './pages/admin/Analytics'
 import AdminExport from './pages/admin/Export'
 import OrgReview from './pages/admin/OrgReview'
+import AdminModeration from './pages/admin/Moderation'
 
 // Org pages
 import OrgDashboard from './pages/org/Dashboard'
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="export" element={<AdminExport />} />
             <Route path="org-review" element={<OrgReview />} />
+            <Route path="moderation" element={<AdminModeration />} />
           </Route>
 
           <Route path="/org" element={
