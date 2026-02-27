@@ -50,7 +50,7 @@ function Avatar({ name, url, size }) {
   size = size || 60;
   var initials = (name || '?').split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
   if (url) return (
-    <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'center top', border: '3px solid ' + C.gold + '44', flexShrink: 0 }} />
+    <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'center 20%', border: '3px solid ' + C.gold + '44', flexShrink: 0 }} />
   );
   return (
     <div style={{
@@ -453,12 +453,14 @@ export default function UserProfile() {
           </div>
         </div>
 
-        <div style={{ padding: '0 28px 28px', marginTop: -36 }}>
+        <div style={{ padding: '0 28px 28px', marginTop: -30 }}>
           <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 16 }}>
-                <Avatar name={profile.full_name} url={profile.avatar_url} size={78} />
-                <div style={{ paddingTop: 40 }}>
+                <div style={{ marginTop: -20 }}>
+                  <Avatar name={profile.full_name} url={profile.avatar_url} size={82} />
+                </div>
+                <div style={{ paddingTop: 30 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <h1 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>{profile.full_name}</h1>
                     {profile.identity_verified && (
