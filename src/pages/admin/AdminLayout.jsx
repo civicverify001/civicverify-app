@@ -8,15 +8,16 @@ var C = { navy: '#0B2545', gold: '#C5960C' };
 var font = 'Libre Baskerville, Georgia, serif';
 
 var links = [
-  { to: '/admin', icon: '\uD83D\uDCCA', label: 'Dashboard', end: true },
-  { to: '/admin/surveys', icon: '\uD83D\uDCCB', label: 'Surveys' },
-  { to: '/admin/surveys/new', icon: '\u2795', label: 'Create Survey' },
-  { to: '/admin/review', icon: '\uD83D\uDD0D', label: 'Review Queue' },
-  { to: '/admin/users', icon: '\uD83D\uDC65', label: 'Users' },
-  { to: '/admin/analytics', icon: '\uD83D\uDCC8', label: 'Analytics' },
-  { to: '/admin/export', icon: '\uD83D\uDCE5', label: 'Export' },
-{ to: '/admin/org-review', icon: '🏢', label: 'Org Review' },
-{ to: '/admin/debates', icon: '🎙', label: 'Debates' },
+  { to: '/admin', icon: '📊', label: 'Dashboard', end: true },
+  { to: '/admin/surveys', icon: '📋', label: 'Surveys' },
+  { to: '/admin/surveys/new', icon: '+', label: 'Create Survey' },
+  { to: '/admin/review', icon: '🔍', label: 'Review Queue' },
+  { to: '/admin/users', icon: '👥', label: 'Users' },
+  { to: '/admin/analytics', icon: '📈', label: 'Analytics' },
+  { to: '/admin/export', icon: '📥', label: 'Export' },
+  { to: '/admin/org-review', icon: '🏢', label: 'Org Review' },
+  { to: '/admin/community', icon: '💬', label: 'Community' },
+  { to: '/admin/debates', icon: '🎙', label: 'Debates' },
 ];
 
 export default function AdminLayout() {
@@ -117,3 +118,4 @@ export default function AdminLayout() {
     </div>
   );
 }
+
