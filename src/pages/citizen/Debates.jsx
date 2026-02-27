@@ -723,7 +723,7 @@ export default function Debates() {
               <div
                 key={d.id}
                 className="cv-debate-card"
-                onClick={function() { navigate('/citizen/debates/' + d.id); }}
+                onClick={function() { navigate(d.id); }}
                 style={{
                   background: '#fff', borderRadius: 18, padding: '22px 24px',
                   border: isLive ? '2px solid rgba(185,27,46,0.2)' : '1px solid rgba(11,37,69,0.04)',
