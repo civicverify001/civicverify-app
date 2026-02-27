@@ -418,6 +418,7 @@ const SearchBar = ({ onSearchPosts, onSearchUsers, navigate }) => {
 // ── Follow Button ─────────────────────────────────────────────────────────────
 const FollowButton = ({ targetUserId, currentUserId, followingSet, onToggle }) => {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
   const isFollowing = followingSet.has(targetUserId);
 
   if (targetUserId === currentUserId) return null;
@@ -426,12 +427,27 @@ const FollowButton = ({ targetUserId, currentUserId, followingSet, onToggle }) =
     e.stopPropagation();
     if (busy) return;
     setBusy(true);
+    setError(null);
     if (isFollowing) {
-      await supabase.from("user_follows").delete().eq("follower_id", currentUserId).eq("following_id", targetUserId);
+      const { error: delErr } = await supabase.from("user_follows").delete().eq("follower_id", currentUserId).eq("following_id", targetUserId);
+      if (delErr) { console.error("Unfollow error:", delErr); setError("!"); }
+      else onToggle(targetUserId, false);
     } else {
-      await supabase.from("user_follows").insert({ follower_id: currentUserId, following_id: targetUserId });
+      // Use upsert to handle duplicate attempts gracefully
+      const { error: insErr } = await supabase.from("user_follows")
+        .upsert({ follower_id: currentUserId, following_id: targetUserId }, { onConflict: "follower_id,following_id" });
+      if (insErr) {
+        console.error("Follow error:", insErr);
+        setError("!");
+        // Fallback: try plain insert
+        const { error: insErr2 } = await supabase.from("user_follows")
+          .insert({ follower_id: currentUserId, following_id: targetUserId });
+        if (insErr2) console.error("Follow insert fallback error:", insErr2);
+        else onToggle(targetUserId, true);
+      } else {
+        onToggle(targetUserId, true);
+      }
     }
-    onToggle(targetUserId, !isFollowing);
     setBusy(false);
   };
 
@@ -1212,22 +1228,33 @@ export default function Community() {
 
   const init = async () => {
     setLoading(true);
-    await Promise.all([fetchProfile(), fetchPosts(0), fetchSurveys(), fetchFollowing(), fetchBookmarks()]);
+    console.log("[Community] init with user.id:", user.id);
+    // Run independently so one failure doesn't break others
+    await fetchProfile();
+    await fetchFollowing();
+    await fetchBookmarks().catch(() => {});
+    await Promise.all([fetchPosts(0), fetchSurveys()]);
     setLoading(false);
   };
 
   const fetchProfile = async () => {
-    const { data } = await supabase.from("users").select("id, full_name, identity_verified").eq("id", user.id).single();
+    const { data, error } = await supabase.from("users").select("id, full_name, identity_verified").eq("id", user.id).single();
+    if (error) console.error("[Community] fetchProfile error:", error);
     setCurrentUser(data);
   };
 
   const fetchFollowing = async () => {
-    const { data } = await supabase.from("user_follows").select("following_id").eq("follower_id", user.id);
-    setFollowingSet(new Set((data || []).map((f) => f.following_id)));
+    const { data, error } = await supabase.from("user_follows").select("following_id").eq("follower_id", user.id);
+    console.log("[Community] fetchFollowing result:", { data, error, userId: user.id });
+    if (error) console.error("[Community] fetchFollowing error:", error);
+    const ids = (data || []).map((f) => f.following_id);
+    console.log("[Community] Following IDs loaded:", ids);
+    setFollowingSet(new Set(ids));
   };
 
   const fetchBookmarks = async () => {
-    const { data } = await supabase.from("community_bookmarks").select("post_id").eq("user_id", user.id);
+    const { data, error } = await supabase.from("community_bookmarks").select("post_id").eq("user_id", user.id);
+    if (error) console.warn("[Community] fetchBookmarks error (table may not exist yet):", error.message);
     setBookmarkSet(new Set((data || []).map((b) => b.post_id)));
   };
 
