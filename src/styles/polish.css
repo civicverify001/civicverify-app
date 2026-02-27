@@ -341,39 +341,6 @@ body { background: var(--cv-cream); margin: 0; font-family: 'DM Sans', sans-seri
 .cv-sidebar { scrollbar-width: none; }
 .cv-sidebar::-webkit-scrollbar { display: none; }
 
-.cv-nav-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 16px;
-  border-radius: 10px;
-  margin-bottom: 2px;
-  text-decoration: none;
-  font-size: 13.5px;
-  color: rgba(255,255,255,0.45);
-  transition: all 0.2s ease;
-  position: relative;
-  font-weight: 500;
-}
-.cv-nav-link:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.04); }
-.cv-nav-link.active {
-  color: var(--cv-gold);
-  background: rgba(197,150,12,0.1);
-  font-weight: 700;
-}
-.cv-nav-link.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--cv-gold);
-  animation: cv-fadeIn 0.2s ease;
-}
-
-.cv-nav-icon { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
 
 /* ═══════════════════════════════════════════════════════════════
    NOTIFICATION BELL
@@ -429,19 +396,16 @@ body { background: var(--cv-cream); margin: 0; font-family: 'DM Sans', sans-seri
    MOBILE RESPONSIVE — DEBATE ROOM
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  /* Layout */
-  .cv-main > div { padding: 16px 12px !important; }
+  /* Cards stack on mobile */
+  .cv-grid-2 { grid-template-columns: 1fr !important; }
+  .cv-grid-3 { grid-template-columns: 1fr !important; }
+  .cv-grid-4 { grid-template-columns: 1fr 1fr !important; }
 
   /* Debate room mobile */
   .cv-ds-speakers { flex-direction: column !important; gap: 10px !important; }
   .cv-ds-speakers > div { min-width: 0 !important; }
   .cv-ds-main { flex-direction: column !important; }
   .cv-ds-main > div { min-height: 300px !important; }
-
-  /* Cards stack on mobile */
-  .cv-grid-2 { grid-template-columns: 1fr !important; }
-  .cv-grid-3 { grid-template-columns: 1fr !important; }
-  .cv-grid-4 { grid-template-columns: 1fr 1fr !important; }
 
   /* Debate header row */
   .cv-debate-header { flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
@@ -455,9 +419,6 @@ body { background: var(--cv-cream); margin: 0; font-family: 'DM Sans', sans-seri
   /* Toasts */
   .cv-toast-container { left: 12px; right: 12px; top: 12px; }
   .cv-toast { max-width: 100%; }
-
-  /* Bigger tap targets */
-  .cv-nav-link { padding: 14px 16px; }
 }
 
 @media (max-width: 480px) {
