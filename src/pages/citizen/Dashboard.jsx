@@ -68,7 +68,6 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
   async function loadFeed(silent) {
     if (!silent) setLoading(true);
     try {
-      // Get surveys (active + ended)
       var sr = await supabase.from('surveys')
         .select('id,title,status,response_count,target_responses')
         .in('status', ['active', 'completed', 'closed', 'inactive'])
@@ -76,11 +75,9 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         .limit(30);
       var surveys = sr.data || [];
 
-      // Also include active ones
       var sr2 = await supabase.from('surveys').select('id,title,status,response_count,target_responses').eq('status','active');
       var activeSurveys = sr2.data || [];
       
-      // Merge and dedupe
       var allSurveys = surveys.slice();
       activeSurveys.forEach(function(s) {
         if (!allSurveys.find(function(x){return x.id===s.id;})) allSurveys.push(s);
@@ -90,7 +87,6 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
 
       var ids = allSurveys.map(function(s) { return s.id; });
 
-      // Try to get comments with survey_id column
       var cr = await supabase.from('comments')
         .select('*')
         .in('survey_id', ids)
@@ -98,7 +94,6 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         .limit(100);
 
       if (cr.error) {
-        // survey_id column may not exist yet
         setError('sql_missing');
         setLoading(false);
         return;
@@ -106,7 +101,6 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
 
       var allComments = cr.data || [];
 
-      // Fetch profiles for all comment authors
       var userIds = [...new Set(allComments.map(function(c) { return c.user_id; }).filter(Boolean))];
       var profileMap = {};
       if (userIds.length) {
@@ -131,7 +125,6 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
           return (b.comments[0]?.created_at || '') > (a.comments[0]?.created_at || '') ? 1 : -1;
         });
 
-      // If no comments yet, show the surveys anyway so users can start discussing
       if (!result.length) {
         result = allSurveys.map(function(s) { return { survey: s, comments: [] }; });
       }
@@ -174,7 +167,6 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
     loadFeed(true);
   }
 
-  // SQL patch not run yet — show clear instructions
   if (error === 'sql_missing') return (
     <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(197,150,12,0.25)', padding: '22px 24px', boxShadow: '0 2px 12px rgba(11,37,69,0.04)' }}>
       <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 8px' }}>&#9888; One-time database setup required</p>
@@ -336,13 +328,11 @@ export default function CitizenDashboard() {
       setLoading(false);
     });
 
-    // Load social data
     loadSocialData();
   }, [user, profile]);
 
   async function loadSocialData() {
     if (!user) return;
-    // Followers (people who follow me)
     var { data: followerRows } = await supabase
       .from('user_follows')
       .select('follower_id, created_at')
@@ -357,7 +347,6 @@ export default function CitizenDashboard() {
       setFollowers(followerRows.map(function(f) { return Object.assign({}, f, fMap[f.follower_id] || {}); }));
     }
 
-    // Following (people I follow)
     var { data: followingRows } = await supabase
       .from('user_follows')
       .select('following_id, created_at')
@@ -372,7 +361,6 @@ export default function CitizenDashboard() {
       setFollowing(followingRows.map(function(f) { return Object.assign({}, f, gMap[f.following_id] || {}); }));
     }
 
-    // Notifications
     var { data: notifs } = await supabase
       .from('notifications')
       .select('*')
@@ -381,7 +369,6 @@ export default function CitizenDashboard() {
       .limit(10);
     if (notifs) setNotifications(notifs);
 
-    // Debate stats
     var { data: debates } = await supabase
       .from('debates')
       .select('id, status')
@@ -497,7 +484,7 @@ export default function CitizenDashboard() {
         </div>
       </div>
 
-      {/* Followers/Following List (expandable) */}
+      {/* Followers/Following List (expandable) — FIXED: names are now clickable */}
       {(showFollowers || showFollowing) && (
         <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.07)', boxShadow: '0 2px 12px rgba(11,37,69,0.04)', marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -526,12 +513,14 @@ export default function CitizenDashboard() {
                     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
                     borderRadius: 10, background: 'rgba(11,37,69,0.02)', border: '1px solid rgba(11,37,69,0.04)',
                   }}>
-                    <Avatar name={personName} size={36} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: C.navy, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{personName}</p>
-                      {f.identity_verified && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: C.green }}>✓ Verified</span>
-                      )}
+                    <div onClick={function() { navigate('/citizen/profile/' + personId); }} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                      <Avatar name={personName} size={36} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: C.navy, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{personName}</p>
+                        {f.identity_verified && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: C.green }}>✓ Verified</span>
+                        )}
+                      </div>
                     </div>
                     <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.25)' }}>{timeAgo(f.created_at)}</span>
                     {showFollowing && (
@@ -673,4 +662,3 @@ export default function CitizenDashboard() {
     </div>
   );
 }
-
