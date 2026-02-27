@@ -1223,8 +1223,14 @@ export default function Community() {
   const [followingSet, setFollowingSet] = useState(new Set());
   const [bookmarkSet, setBookmarkSet] = useState(new Set());
   const PAGE = 15;
+  const initRef = useRef(false);
 
-  useEffect(() => { if (user?.id) init(); }, [user?.id]);
+  useEffect(() => {
+    if (user?.id && !initRef.current) {
+      initRef.current = true;
+      init();
+    }
+  }, [user?.id]);
 
   const init = async () => {
     setLoading(true);
@@ -1306,31 +1312,25 @@ export default function Community() {
   };
 
   const fetchSurveys = async () => {
-    const { data } = await supabase.from("surveys").select("id, title, status, participant_count:survey_responses(count)").eq("status", "active").order("created_at", { ascending: false }).limit(20);
-    if (!data?.length) { setSurveys([]); return; }
-    const ids = data.map((s) => s.id);
-    const { data: counts } = await supabase.from("survey_chat_messages").select("survey_id").in("survey_id", ids);
-    const cmap = (counts || []).reduce((a, r) => { a[r.survey_id] = (a[r.survey_id] || 0) + 1; return a; }, {});
-    setSurveys(data.map((s) => ({ ...s, participant_count: s.participant_count?.[0]?.count || 0, message_count: cmap[s.id] || 0 })));
+    try {
+      const { data, error } = await supabase.from("surveys").select("id, title, status").eq("status", "active").order("created_at", { ascending: false }).limit(20);
+      if (error) { console.warn("[Community] fetchSurveys error:", error.message); setSurveys([]); return; }
+      if (!data?.length) { setSurveys([]); return; }
+      const ids = data.map((s) => s.id);
+      const { data: counts } = await supabase.from("survey_chat_messages").select("survey_id").in("survey_id", ids);
+      const cmap = (counts || []).reduce((a, r) => { a[r.survey_id] = (a[r.survey_id] || 0) + 1; return a; }, {});
+      setSurveys(data.map((s) => ({ ...s, participant_count: 0, message_count: cmap[s.id] || 0 })));
+    } catch (e) { console.warn("[Community] fetchSurveys caught:", e); setSurveys([]); }
   };
 
   const handlePost = async (content, imageUrl, mentionIds, mentionMap) => {
+    const insertData = { user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 };
     const { data, error } = await supabase.from("community_posts")
-      .insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0, mentions: mentionIds || [] })
+      .insert(insertData)
       .select("id, content, created_at, likes_count, comments_count, image_url, user_id, users:user_id(full_name, identity_verified)").single();
-    if (!error && data) {
+    if (error) { console.error("[Community] post error:", error); return; }
+    if (data) {
       setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
-      // Send mention notifications
-      if (mentionIds && mentionIds.length > 0) {
-        const notifs = mentionIds.map((uid) => ({
-          user_id: uid,
-          type: "mention",
-          content: (currentUser?.full_name || "Someone") + " mentioned you in a post",
-          link: "/citizen/community",
-          is_read: false,
-        }));
-        await supabase.from("notifications").insert(notifs);
-      }
     }
   };
 
