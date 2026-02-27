@@ -50,7 +50,7 @@ function Avatar({ name, url, size }) {
   size = size || 60;
   var initials = (name || '?').split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
   if (url) return (
-    <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'center 0%', border: '3px solid ' + C.gold + '44', flexShrink: 0, background: '#f1f5f9' }} />
+    <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'center center', border: '3px solid ' + C.gold + '44', flexShrink: 0 }} />
   );
   return (
     <div style={{
