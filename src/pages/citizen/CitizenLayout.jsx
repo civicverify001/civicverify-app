@@ -68,7 +68,7 @@ export default function CitizenLayout() {
         }}>
           {/* Logo */}
           <div style={{ padding: '22px 20px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){ navigate('/citizen'); }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){ navigate('/'); }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, ' + C.gold + ', #a07a0a)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(197,150,12,0.3)' }}>
                 <span style={{ color: '#fff', fontWeight: 800, fontSize: 11, letterSpacing: 0.5 }}>CV</span>
               </div>
