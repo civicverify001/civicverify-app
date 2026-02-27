@@ -1,15 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import './styles/polish.css'
 
 // Public pages
-import Landing from './pages/public/Landing' 
-import Contact from './pages/public/Contact' 
-import ScrollToTop from './components/ScrollToTop'
+import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
-import About from './pages/public/About'
-import Privacy from './pages/public/Privacy'
-import Terms from './pages/public/Terms'
 
 // Layouts
 import CitizenLayout from './pages/citizen/CitizenLayout'
@@ -25,11 +21,10 @@ import CitizenImpact from './pages/citizen/Impact'
 import CitizenAccount from './pages/citizen/Account'
 import CitizenCommunity from './pages/citizen/Community'
 import CitizenDebates from './pages/citizen/Debates'
-import DebateSpace from './pages/citizen/DebateSpace'
+import CitizenDebateSpace from './pages/citizen/DebateSpace'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
-import AdminDebates from './pages/admin/AdminDebates'
 import AdminSurveys from './pages/admin/Surveys'
 import AdminSurveyBuilder from './pages/admin/SurveyBuilder'
 import AdminReviewQueue from './pages/admin/ReviewQueue'
@@ -47,7 +42,7 @@ import OrgResults from './pages/org/Results'
 // Remaining placeholders
 import {
   AdminOrganizations, AdminSettings,
-  ForgotPassword, PublicSurvey, PublicResults
+  ForgotPassword, Contact, PublicSurvey, PublicResults
 } from './pages/Placeholders'
 
 import OrgBilling from './pages/org/Billing'
@@ -64,16 +59,12 @@ function AuthRedirect() {
 
 export default function App() {
   return (
-    <BrowserRouter>       
-      <ScrollToTop />
+    <BrowserRouter>
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/survey/:id" element={<PublicSurvey />} />
@@ -91,7 +82,7 @@ export default function App() {
             <Route path="account" element={<CitizenAccount />} />
             <Route path="community" element={<CitizenCommunity />} />
             <Route path="debates" element={<CitizenDebates />} />
-            <Route path="debates/:id" element={<DebateSpace />} />
+            <Route path="debates/:id" element={<CitizenDebateSpace />} />
           </Route>
 
           <Route path="/admin" element={
@@ -108,7 +99,6 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="export" element={<AdminExport />} />
             <Route path="org-review" element={<OrgReview />} />
-            <Route path="debates" element={<AdminDebates />} />
           </Route>
 
           <Route path="/org" element={
