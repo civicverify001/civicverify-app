@@ -10,6 +10,11 @@ import {
   createAudioRoom as apiCreateAudioRoom,
   getDailyToken as apiGetDailyToken,
   generateSummary as apiGenerateSummary,
+  timerWarning as apiTimerWarning,
+  aiModerateChat as apiModerateChat,
+  aiAnalyzeTranscript as apiAnalyzeTranscript,
+  aiScorecard as apiScorecard,
+  generateReport as apiGenerateReport,
 } from '../../lib/debateApi';
 
 var C = { navy: '#0B2545', gold: '#C5960C', darkGold: '#a07a0a', cream: '#F5F1EC', green: '#16a34a', darkGreen: '#15803d', red: '#ef4444' };
@@ -90,12 +95,47 @@ function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAu
 }
 
 function ModMessage({ message, eventType, time }) {
-  var icons = { mute: '🔇', unmute: '🎙', warning: '⚠️', summary: '📋', announcement: '📜' };
+  var icons = { mute: '🔇', unmute: '🎙', warning: '⚠️', summary: '📋', announcement: '📜', fact_check: '🔍', topic_drift: '🔀', auto_poll: '📊', question_suggestion: '💡', section_summary: '📋', scorecard: '🏆', report: '📄' };
+  var borderColors = { fact_check: '#ef4444', topic_drift: '#f59e0b', warning: '#ef4444', scorecard: C.gold, auto_poll: '#3b82f6', question_suggestion: '#8b5cf6' };
+  var bgColors = { fact_check: 'rgba(239,68,68,0.04)', topic_drift: 'rgba(245,158,11,0.04)', warning: 'rgba(239,68,68,0.04)', scorecard: 'rgba(197,150,12,0.06)', question_suggestion: 'rgba(139,92,246,0.04)' };
+
+  // Scorecard gets special rendering
+  if (eventType === 'scorecard') {
+    try {
+      var sc = JSON.parse(message);
+      return (
+        <div style={{ padding: '16px', borderRadius: 14, marginBottom: 12, background: 'linear-gradient(135deg, rgba(197,150,12,0.04), rgba(197,150,12,0.08))', borderLeft: '3px solid ' + C.gold, animation: 'slideUp 0.3s ease' }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: '0 0 12px' }}>🏆 Argument Scorecard</p>
+          {[sc.debater_a, sc.debater_b].filter(Boolean).map(function(d, i) {
+            var avg = d.overall || Math.round(((d.clarity || 0) + (d.evidence || 0) + (d.relevance || 0) + (d.persuasion || 0)) / 4);
+            return (
+              <div key={i} style={{ padding: '10px 12px', borderRadius: 10, background: '#fff', marginBottom: 8, border: '1px solid rgba(11,37,69,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? C.green : C.darkGold }}>{d.name}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: C.navy }}>{avg}/10</span>
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
+                  {[['Clarity', d.clarity], ['Evidence', d.evidence], ['Relevance', d.relevance], ['Persuasion', d.persuasion]].map(function(s) {
+                    return <span key={s[0]} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.6)' }}>{s[0]}: <strong>{s[1]}</strong></span>;
+                  })}
+                </div>
+                {d.strength && <p style={{ fontSize: 11, color: C.green, margin: '2px 0', fontWeight: 500 }}>💪 {d.strength}</p>}
+                {d.improvement && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.5)', margin: '2px 0', fontStyle: 'italic' }}>📝 {d.improvement}</p>}
+              </div>
+            );
+          })}
+          {sc.summary && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.6)', margin: '6px 0 0', lineHeight: 1.5 }}>{sc.summary}</p>}
+          <p style={{ fontSize: 10, color: 'rgba(11,37,69,0.35)', margin: '6px 0 0' }}>{timeAgo(time)}</p>
+        </div>
+      );
+    } catch (e) { /* fall through to default */ }
+  }
+
   return (
     <div style={{
       padding: '12px 16px', borderRadius: 12, marginBottom: 10,
-      background: 'linear-gradient(135deg, rgba(11,37,69,0.03), rgba(197,150,12,0.04))',
-      borderLeft: '3px solid ' + C.gold, animation: 'slideUp 0.3s ease',
+      background: bgColors[eventType] || 'linear-gradient(135deg, rgba(11,37,69,0.03), rgba(197,150,12,0.04))',
+      borderLeft: '3px solid ' + (borderColors[eventType] || C.gold), animation: 'slideUp 0.3s ease',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
         <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{icons[eventType] || '⚖️'}</span>
@@ -666,6 +706,8 @@ export default function DebateSpace() {
   var recognitionRef = useRef(null);
   var [isTranscribing, setIsTranscribing] = useState(false);
   var autoTimerFired = useRef(false);
+  var warningFired = useRef(false);
+  var analysisTriggered = useRef(false);
   var debateStartTimeRef = useRef(null);
 
   // Phase 5 state: live voting + listeners
@@ -880,6 +922,13 @@ export default function DebateSpace() {
 
       setTimer(function(t) {
         var newT = Math.max(0, t - 1);
+
+        // 30-second warning — only fire once per turn
+        if (newT === 30 && !warningFired.current && currentUser && debate.active_speaker_id === currentUser.id) {
+          warningFired.current = true;
+          apiTimerWarning(debate.id, 30).catch(function(e) { console.error('Timer warning error:', e); });
+        }
+
         // Auto-advance: only the active speaker's client triggers next_turn
         if (newT === 0 && !autoTimerFired.current && currentUser && debate.active_speaker_id === currentUser.id) {
           autoTimerFired.current = true;
@@ -888,7 +937,7 @@ export default function DebateSpace() {
         return newT;
       });
 
-      // ENFORCE mic mute every second — if it's not your turn, you MUST be muted
+      // ENFORCE mic mute every second
       if (callObjRef.current && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id)) {
         var shouldBeUnmuted = debate.active_speaker_id === currentUser.id;
         var localParticipant = callObjRef.current.participants().local;
@@ -900,6 +949,24 @@ export default function DebateSpace() {
     }, 1000);
     return function() { clearInterval(timerRef.current); };
   }, [debate, currentUser]);
+
+  // Reset warning ref on turn change
+  useEffect(function() {
+    if (debate) { warningFired.current = false; analysisTriggered.current = false; }
+  }, [debate && debate.active_speaker_id]);
+
+  // Trigger AI transcript analysis on section changes (debater's client only)
+  useEffect(function() {
+    if (!debate || debate.status !== 'live' || !currentUser) return;
+    if (debate.active_speaker_id === currentUser.id && !analysisTriggered.current && debate.moderator_type !== 'user') {
+      analysisTriggered.current = true;
+      // Delay analysis to let transcript build up
+      var timer = setTimeout(function() {
+        apiAnalyzeTranscript(debate.id).catch(function(e) { console.error('Transcript analysis error:', e); });
+      }, 10000); // 10 seconds after turn starts
+      return function() { clearTimeout(timer); };
+    }
+  }, [debate && debate.current_section, currentUser]);
 
   // Web Speech API transcription
   useEffect(function() {
@@ -987,8 +1054,13 @@ export default function DebateSpace() {
   async function sendChat() {
     if (!chatInput.trim() || sendingChat || !currentUser) return;
     setSendingChat(true);
-    await supabase.from('debate_chat_messages').insert({ debate_id: id, user_id: currentUser.id, content: chatInput.trim() });
+    var content = chatInput.trim();
+    var { data: inserted } = await supabase.from('debate_chat_messages').insert({ debate_id: id, user_id: currentUser.id, content: content }).select().single();
     setChatInput(''); setSendingChat(false);
+    // AI chat moderation (async, non-blocking)
+    if (inserted && debate && debate.moderator_type !== 'user') {
+      apiModerateChat(debate.id, inserted.id, content, profile ? profile.full_name : 'User').catch(function(e) { console.error('Chat mod error:', e); });
+    }
   }
   async function votePoll(pollId, choice) {
     if (!currentUser) return;
@@ -1002,6 +1074,14 @@ export default function DebateSpace() {
   async function handleStartDebate() {
     if (!currentUser || !debate) return;
     try { await apiStartDebate(debate.id); } catch (err) { console.error('Start error:', err); }
+  }
+  async function handleGenerateScorecard() {
+    if (!debate) return;
+    try { await apiScorecard(debate.id); } catch (err) { console.error('Scorecard error:', err); }
+  }
+  async function handleGenerateReport() {
+    if (!debate) return;
+    try { await apiGenerateReport(debate.id); } catch (err) { console.error('Report error:', err); }
   }
 
   var isDebater = debate && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id);
@@ -1235,7 +1315,7 @@ export default function DebateSpace() {
                     return <div key={e[0]} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, background: 'rgba(11,37,69,0.03)', marginBottom: 5, border: '1px solid rgba(11,37,69,0.04)' }}><span style={{ fontSize: 13, color: C.navy, fontWeight: 600 }}>{e[0]}</span><span style={{ fontSize: 13, color: C.gold, fontWeight: 700, fontFamily: 'monospace' }}>{Math.round(e[1] / 60)} min</span></div>;
                   })}
                 </div>
-                <div>
+                <div style={{ marginBottom: 22 }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1.5 }}>Debaters</p>
                   {[debaterA, debaterB].filter(Boolean).map(function(d, i) {
                     var isG = i === 0;
@@ -1245,10 +1325,49 @@ export default function DebateSpace() {
                     </div>;
                   })}
                 </div>
+
+                {/* AI Actions for completed debates */}
+                {isCompleted && (
+                  <div style={{ marginBottom: 22 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1.5 }}>🤖 AI Analysis</p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button onClick={handleGenerateScorecard} style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(197,150,12,0.2)', background: 'rgba(197,150,12,0.06)', color: C.darkGold, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>🏆 Scorecard</button>
+                      <button onClick={handleGenerateReport} style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.1)', background: 'rgba(11,37,69,0.04)', color: C.navy, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>📄 Full Report</button>
+                    </div>
+                  </div>
+                )}
+
                 {debate.summary && (
-                  <div style={{ marginTop: 22, padding: '16px 18px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(197,150,12,0.06), rgba(197,150,12,0.1))', border: '1px solid rgba(197,150,12,0.15)' }}>
+                  <div style={{ marginTop: 14, padding: '16px 18px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(197,150,12,0.06), rgba(197,150,12,0.1))', border: '1px solid rgba(197,150,12,0.15)' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 1.5 }}>⚖️ AI Summary</p>
                     <p style={{ fontSize: 13, color: C.navy, margin: 0, lineHeight: 1.6 }}>{debate.summary}</p>
+                  </div>
+                )}
+
+                {/* Report Card Display */}
+                {debate.report_card && (
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ padding: '16px 18px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(11,37,69,0.02), rgba(197,150,12,0.04))', border: '1px solid rgba(197,150,12,0.12)' }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: '0 0 10px' }}>📄 {debate.report_card.title || 'Debate Report Card'}</p>
+                      {debate.report_card.overview && <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.65)', margin: '0 0 14px', lineHeight: 1.5 }}>{debate.report_card.overview}</p>}
+                      {[debate.report_card.debater_a, debate.report_card.debater_b].filter(Boolean).map(function(d, i) {
+                        return (
+                          <div key={i} style={{ padding: '12px 14px', borderRadius: 12, marginBottom: 10, background: '#fff', border: '1px solid rgba(11,37,69,0.06)' }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? C.green : C.darkGold, margin: '0 0 8px' }}>{d.name}</p>
+                            {d.scores && (
+                              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+                                {Object.entries(d.scores).map(function(s) {
+                                  return <span key={s[0]} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 6, background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.7)', fontWeight: 600 }}>{s[0]}: {s[1]}/10</span>;
+                                })}
+                              </div>
+                            )}
+                            {d.strengths && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.6)', margin: '0 0 4px', lineHeight: 1.4 }}>💪 {d.strengths}</p>}
+                            {d.areas_to_improve && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.5)', margin: 0, lineHeight: 1.4, fontStyle: 'italic' }}>📝 {d.areas_to_improve}</p>}
+                          </div>
+                        );
+                      })}
+                      {debate.report_card.recommendations && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.55)', margin: '8px 0 0', lineHeight: 1.5 }}>💡 {debate.report_card.recommendations}</p>}
+                    </div>
                   </div>
                 )}
               </div>
