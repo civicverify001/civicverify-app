@@ -36,58 +36,62 @@ function timeAgo(d) {
 function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAudioConnected }) {
   var initial = (name || '?').charAt(0).toUpperCase();
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, flex: 1, minWidth: 150,
-      padding: '24px 16px', borderRadius: 20,
+    <div className="cv-speaker-card" style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flex: 1,
+      padding: '20px 12px', borderRadius: 18,
       background: isActive ? 'linear-gradient(135deg, rgba(197,150,12,0.06), rgba(197,150,12,0.12))' : 'rgba(11,37,69,0.02)',
       border: isActive ? '2px solid rgba(197,150,12,0.25)' : '2px solid transparent',
-      transition: 'all 0.4s ease',
+      transition: 'all 0.4s ease', minWidth: 0,
     }}>
       <div style={{
-        position: 'relative', width: 88, height: 88, borderRadius: '50%',
-        background: isActive ? 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')' : 'linear-gradient(135deg, #94a3b8, #64748b)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: isActive ? '0 0 0 5px rgba(197,150,12,0.15), 0 8px 24px rgba(197,150,12,0.2)' : '0 4px 12px rgba(11,37,69,0.08)',
-        transition: 'all 0.4s ease',
+        position: 'relative',
       }}>
-        <span style={{ fontSize: 32, fontWeight: 700, color: '#fff' }}>{initial}</span>
+        <div className="cv-speaker-avatar" style={{
+          width: 72, height: 72, borderRadius: '50%',
+          background: isActive ? 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')' : 'linear-gradient(135deg, #94a3b8, #64748b)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: isActive ? '0 0 0 4px rgba(197,150,12,0.15), 0 6px 20px rgba(197,150,12,0.2)' : '0 4px 12px rgba(11,37,69,0.08)',
+          transition: 'all 0.4s ease',
+        }}>
+          <span className="cv-speaker-initial" style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{initial}</span>
+        </div>
         {isActive && (
           <div style={{
-            position: 'absolute', bottom: -2, right: -2, width: 28, height: 28, borderRadius: '50%',
+            position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, borderRadius: '50%',
             background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}>
-            <span style={{ fontSize: 14, animation: 'micPulse 1.5s ease-in-out infinite' }}>🎙</span>
+            <span style={{ fontSize: 12, animation: 'micPulse 1.5s ease-in-out infinite' }}>🎙</span>
           </div>
         )}
         {isAudioConnected && (
           <div style={{
-            position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%',
+            position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: '50%',
             background: isMuted ? C.red : C.green, border: '2px solid #fff',
           }} />
         )}
       </div>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>{name || 'TBD'}</p>
+      <div style={{ textAlign: 'center', minWidth: 0, maxWidth: '100%' }}>
+        <p className="cv-speaker-name" style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || 'TBD'}</p>
         {isVerified && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: 'rgba(22,163,74,0.08)', padding: '2px 8px', borderRadius: 10, display: 'inline-block', marginTop: 4 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.green, background: 'rgba(22,163,74,0.08)', padding: '2px 7px', borderRadius: 10, display: 'inline-block', marginTop: 3 }}>
             ✓ Verified
           </span>
         )}
       </div>
-      <div style={{
-        padding: '10px 24px', borderRadius: 14,
+      <div className="cv-speaker-timer" style={{
+        padding: '8px 18px', borderRadius: 12,
         background: isActive ? C.navy : 'rgba(11,37,69,0.06)',
         boxShadow: isActive ? '0 4px 16px rgba(11,37,69,0.2)' : 'none', transition: 'all 0.3s ease',
       }}>
         <span style={{
-          fontSize: 28, fontWeight: 700, fontFamily: 'monospace',
-          color: isActive ? (timeLeft <= 30 ? '#fca5a5' : '#fff') : 'rgba(11,37,69,0.35)', letterSpacing: 3,
+          fontSize: 22, fontWeight: 700, fontFamily: 'monospace',
+          color: isActive ? (timeLeft <= 30 ? '#fca5a5' : '#fff') : 'rgba(11,37,69,0.35)', letterSpacing: 2,
         }}>
           {fmtTimer(timeLeft)}
         </span>
       </div>
-      <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? C.gold : 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+      <span style={{ fontSize: 9, fontWeight: 700, color: isActive ? C.gold : 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
         {side}
       </span>
     </div>
@@ -1170,13 +1174,13 @@ export default function DebateSpace() {
       )}
 
       {/* Speakers */}
-      <div style={{ background: 'linear-gradient(180deg, #fff 0%, #fafafa 100%)', borderRadius: 22, padding: '28px 20px', border: isLive ? '2px solid rgba(197,150,12,0.2)' : '1px solid rgba(11,37,69,0.06)', marginBottom: 20, boxShadow: '0 4px 24px rgba(11,37,69,0.04)' }}>
+      <div className="cv-speakers-container" style={{ background: 'linear-gradient(180deg, #fff 0%, #fafafa 100%)', borderRadius: 22, padding: '24px 16px', border: isLive ? '2px solid rgba(197,150,12,0.2)' : '1px solid rgba(11,37,69,0.06)', marginBottom: 20, boxShadow: '0 4px 24px rgba(11,37,69,0.04)' }}>
         {debate.current_section && <div style={{ textAlign: 'center', marginBottom: 20 }}><span style={{ display: 'inline-block', padding: '8px 22px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(197,150,12,0.1), rgba(197,150,12,0.15))', fontSize: 13, fontWeight: 700, color: C.darkGold, border: '1px solid rgba(197,150,12,0.2)' }}>📌 {debate.current_section}</span></div>}
-        <div className="cv-ds-speakers" style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 24 }}>
+        <div className="cv-ds-speakers" style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 12 }}>
           <SpeakerCard name={debaterA ? debaterA.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.creator_id} isVerified={debaterA && debaterA.identity_verified} timeLeft={timerA} side="Proposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.creator_id === currentUser.id} />
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 8px' }}>
-            <div style={{ width: 52, height: 52, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0B2545, #163a64)', boxShadow: '0 4px 16px rgba(11,37,69,0.15)' }}>
-              <span style={{ fontSize: 18, fontWeight: 800, color: C.gold }}>VS</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0B2545, #163a64)', boxShadow: '0 4px 16px rgba(11,37,69,0.15)' }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: C.gold }}>VS</span>
             </div>
           </div>
           <SpeakerCard name={debaterB ? debaterB.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.opponent_id} isVerified={debaterB && debaterB.identity_verified} timeLeft={timerB} side="Opposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.opponent_id === currentUser.id} />
@@ -1378,3 +1382,4 @@ export default function DebateSpace() {
     </div>
   );
 }
+
