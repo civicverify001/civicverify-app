@@ -65,17 +65,24 @@ const initials = (name) =>
   (name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
-const Avatar = ({ name, size = 38, verified = false, onClick }) => (
+const Avatar = ({ name, size = 38, verified = false, onClick, url }) => (
   <div style={{ position: "relative", width: size, height: size, flexShrink: 0, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
-    <div style={{
-      width: size, height: size, borderRadius: "50%",
-      background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)",
-      border: "2px solid " + T.gold + "33",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: T.serif, fontWeight: 700, fontSize: size * 0.33, color: T.gold,
-    }}>
-      {initials(name)}
-    </div>
+    {url ? (
+      <img src={url} alt="" style={{
+        width: size, height: size, borderRadius: "50%", objectFit: "cover",
+        border: "2px solid " + T.gold + "33",
+      }} />
+    ) : (
+      <div style={{
+        width: size, height: size, borderRadius: "50%",
+        background: "linear-gradient(135deg, " + T.navy + " 0%, " + T.navyMid + " 100%)",
+        border: "2px solid " + T.gold + "33",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: T.serif, fontWeight: 700, fontSize: size * 0.33, color: T.gold,
+      }}>
+        {initials(name)}
+      </div>
+    )}
     {verified && (
       <div style={{
         position: "absolute", bottom: -1, right: -1,
@@ -580,7 +587,7 @@ const Composer = ({ user, onPost, navigate }) => {
       <div style={{ height: 3, background: "linear-gradient(90deg, " + T.navy + " 0%, " + T.gold + " 100%)", borderRadius: "20px 20px 0 0" }} />
       <div style={{ padding: "16px 20px 14px" }}>
         <div style={{ display: "flex", gap: 12 }}>
-          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} onClick={() => navigate("/citizen/profile/" + user?.id)} />
+          <Avatar name={user?.full_name} size={42} verified={user?.identity_verified} url={user?.avatar_url} onClick={() => navigate("/citizen/profile/" + user?.id)} />
           <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
             <textarea
               ref={textRef}
@@ -867,7 +874,7 @@ const PostCard = ({ post, onLike, onComment, onReact, currentUserId, followingSe
       <div style={{ padding: "18px 20px 14px" }}>
         {/* Author row with follow + bookmark */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-          <Avatar name={post.author_name} size={44} verified={post.author_verified}
+          <Avatar name={post.author_name} size={44} verified={post.author_verified} url={post.author_avatar}
             onClick={() => authorUserId && navigate("/citizen/profile/" + authorUserId)} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
@@ -1244,7 +1251,7 @@ export default function Community() {
   };
 
   const fetchProfile = async () => {
-    const { data, error } = await supabase.from("users").select("id, full_name, identity_verified").eq("id", user.id).single();
+    const { data, error } = await supabase.from("users").select("id, full_name, identity_verified, avatar_url").eq("id", user.id).single();
     if (error) console.error("[Community] fetchProfile error:", error);
     setCurrentUser(data);
   };
@@ -1289,7 +1296,7 @@ export default function Community() {
     const from = p * PAGE;
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, user_id, users:user_id(full_name, identity_verified)")
+      .select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, user_id, users:user_id(full_name, identity_verified, avatar_url)")
       .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
     const ids = (data || []).map((x) => x.id);
     let myVotes = {};
@@ -1303,6 +1310,7 @@ export default function Community() {
       ...x,
       author_name: x.users?.full_name,
       author_verified: x.users?.identity_verified,
+      author_avatar: x.users?.avatar_url,
       linked_survey: x.linked_survey_data,
       my_vote: myVotes[x.id] || null,
     }));
@@ -1327,10 +1335,10 @@ export default function Community() {
     const insertData = { user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 };
     const { data, error } = await supabase.from("community_posts")
       .insert(insertData)
-      .select("id, content, created_at, likes_count, comments_count, image_url, user_id, users:user_id(full_name, identity_verified)").single();
+      .select("id, content, created_at, likes_count, comments_count, image_url, user_id, users:user_id(full_name, identity_verified, avatar_url)").single();
     if (error) { console.error("[Community] post error:", error); return; }
     if (data) {
-      setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified }, ...prev]);
+      setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_avatar: data.users?.avatar_url }, ...prev]);
     }
   };
 
@@ -1489,4 +1497,3 @@ export default function Community() {
     </div>
   );
 }
-
