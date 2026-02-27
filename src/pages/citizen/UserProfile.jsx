@@ -50,7 +50,7 @@ function Avatar({ name, url, size }) {
   size = size || 60;
   var initials = (name || '?').split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
   if (url) return (
-    <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'center 10%', border: '3px solid ' + C.gold + '44', flexShrink: 0, background: '#f1f5f9' }} />
+    <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'center 0%', border: '3px solid ' + C.gold + '44', flexShrink: 0, background: '#f1f5f9' }} />
   );
   return (
     <div style={{
@@ -443,22 +443,26 @@ export default function UserProfile() {
       {/* ── Profile Header ──────────────────────────────────────────────── */}
       <div style={{
         background: '#fff', borderRadius: 24, border: '1px solid rgba(11,37,69,0.06)',
-        boxShadow: '0 2px 16px rgba(11,37,69,0.04)', overflow: 'visible', marginBottom: 20,
-        animation: 'fadeIn 0.4s ease',
+        boxShadow: '0 2px 16px rgba(11,37,69,0.04)', marginBottom: 20,
+        animation: 'fadeIn 0.4s ease', position: 'relative',
       }}>
-        <div style={{ height: 100, background: 'linear-gradient(135deg, ' + C.navy + ' 0%, #1a3a6a 50%, ' + C.gold + '44 100%)', position: 'relative', borderRadius: '24px 24px 0 0' }}>
+        <div style={{ height: 80, background: 'linear-gradient(135deg, ' + C.navy + ' 0%, #1a3a6a 50%, ' + C.gold + '44 100%)', borderRadius: '24px 24px 0 0', position: 'relative' }}>
           <div style={{ position: 'absolute', top: 12, right: 16, background: rank.bg, padding: '5px 14px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}>
             <span style={{ fontSize: 14 }}>{rank.icon}</span>
             <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: 1 }}>{rank.name}</span>
           </div>
+          {/* Avatar sitting on banner edge */}
+          <div style={{ position: 'absolute', bottom: -40, left: 28, background: '#fff', borderRadius: '50%', padding: 4, boxShadow: '0 2px 8px rgba(11,37,69,0.1)' }}>
+            <Avatar name={profile.full_name} url={profile.avatar_url} size={80} />
+          </div>
         </div>
 
-        <div style={{ padding: '0 28px 28px', marginTop: -20 }}>
+        <div style={{ padding: '0 28px 24px' }}>
+          {/* Spacer for avatar */}
+          <div style={{ height: 48 }} />
           <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 16 }}>
-                <Avatar name={profile.full_name} url={profile.avatar_url} size={86} />
-                <div style={{ paddingTop: 24 }}>
+              <div style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <h1 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>{profile.full_name}</h1>
                     {profile.identity_verified && (
@@ -472,7 +476,6 @@ export default function UserProfile() {
                     <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)' }}>Joined {joinDate}</span>
                     {streak > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: C.orange }}>🔥 {streak} day streak</span>}
                   </div>
-                </div>
               </div>
 
               {/* Bio */}
