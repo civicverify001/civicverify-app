@@ -30,19 +30,21 @@ export default function PushPrompt({ userId }) {
   async function handleEnable() {
     if (!userId) return;
     setSubscribing(true);
+    // Force dismiss after 5 seconds no matter what
+    var timeout = setTimeout(function () {
+      setSubscribing(false);
+      setShow(false);
+      localStorage.setItem('push_prompt_dismissed', String(Date.now()));
+    }, 5000);
     try {
       await subscribeToPush(userId);
     } catch (e) {
-      console.error('Push subscribe error:', e);
+      console.error('Push error:', e);
     }
+    clearTimeout(timeout);
     setSubscribing(false);
     setShow(false);
     localStorage.setItem('push_prompt_dismissed', String(Date.now()));
-  }
-
-  function handleDismiss() {
-    localStorage.setItem('push_prompt_dismissed', String(Date.now()));
-    setShow(false);
   }
 
   if (!show) return null;
