@@ -735,7 +735,7 @@ export default function DebateSpace() {
 
   var loadDebate = useCallback(async function() {
     var { data } = await supabase.from('debates').select('*').eq('id', id).single();
-    if (!data) { navigate('/citizen/debates'); return; }
+    if (!data) { navigate('..'); return; }
     setDebate(data);
     var ids = [data.creator_id, data.opponent_id].filter(Boolean);
     if (ids.length > 0) {
@@ -1138,7 +1138,7 @@ export default function DebateSpace() {
 
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <button onClick={function() { navigate('/citizen/debates'); }}
+        <button onClick={function() { navigate(-1); }}
           style={{ background: 'rgba(11,37,69,0.04)', border: 'none', color: C.navy, cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 10, marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>
           ← Back to Debates
         </button>
