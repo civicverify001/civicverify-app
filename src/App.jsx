@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
-import './styles/polish.css'
 
 // Public pages
 import Landing from './pages/public/Landing'
@@ -20,8 +19,7 @@ import CitizenVerify from './pages/citizen/Verify'
 import CitizenImpact from './pages/citizen/Impact'
 import CitizenAccount from './pages/citizen/Account'
 import CitizenCommunity from './pages/citizen/Community'
-import CitizenDebates from './pages/citizen/Debates'
-import CitizenDebateSpace from './pages/citizen/DebateSpace'
+import UserProfile from './pages/citizen/UserProfile'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -81,8 +79,7 @@ export default function App() {
             <Route path="impact" element={<CitizenImpact />} />
             <Route path="account" element={<CitizenAccount />} />
             <Route path="community" element={<CitizenCommunity />} />
-            <Route path="debates" element={<CitizenDebates />} />
-            <Route path="debates/:id" element={<CitizenDebateSpace />} />
+            <Route path="profile/:userId" element={<UserProfile />} />
           </Route>
 
           <Route path="/admin" element={
@@ -99,9 +96,6 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="export" element={<AdminExport />} />
             <Route path="org-review" element={<OrgReview />} />
-            <Route path="community" element={<CitizenCommunity />} />
-            <Route path="debates" element={<CitizenDebates />} />
-            <Route path="debates/:id" element={<CitizenDebateSpace />} />
           </Route>
 
           <Route path="/org" element={
