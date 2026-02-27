@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
+import PushPrompt from '../../components/PushPrompt';
 
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC' };
 var font = 'Libre Baskerville, Georgia, serif';
@@ -335,6 +336,7 @@ export default function CitizenLayout() {
         </header>
 
         <div style={{ padding: '28px 20px', maxWidth: 1200, margin: '0 auto' }}>
+<PushPrompt userId={user?.id} />
           <Outlet />
         </div>
       </div>
