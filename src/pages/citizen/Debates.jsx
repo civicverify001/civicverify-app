@@ -107,22 +107,36 @@ export default function Debates() {
       .order('scheduled_at', { ascending: true });
     
     if (data && data.length > 0) {
-      // Auto-expire stale debates: pending/confirmed and scheduled time passed by 1+ hour
+      // Auto-expire stale debates: pending/confirmed past 1hr, live past 2hrs
       var now = new Date();
       var staleIds = [];
+      var staleLiveIds = [];
       data.forEach(function(d) {
         if ((d.status === 'pending' || d.status === 'confirmed' || d.status === 'waiting_room') && d.scheduled_at) {
           var scheduled = new Date(d.scheduled_at);
           var hoursPassed = (now - scheduled) / (1000 * 60 * 60);
           if (hoursPassed > 1) staleIds.push(d.id);
         }
+        // Live debates stuck for 2+ hours get auto-completed
+        if (d.status === 'live' && d.scheduled_at) {
+          var scheduledLive = new Date(d.scheduled_at);
+          var hoursLive = (now - scheduledLive) / (1000 * 60 * 60);
+          if (hoursLive > 2) staleLiveIds.push(d.id);
+        }
       });
       // Batch cancel stale debates
       if (staleIds.length > 0) {
         await supabase.from('debates').update({ status: 'cancelled' }).in('id', staleIds);
-        // Update local data
         data = data.map(function(d) {
           if (staleIds.indexOf(d.id) !== -1) return Object.assign({}, d, { status: 'cancelled' });
+          return d;
+        });
+      }
+      // Batch complete stale live debates
+      if (staleLiveIds.length > 0) {
+        await supabase.from('debates').update({ status: 'completed' }).in('id', staleLiveIds);
+        data = data.map(function(d) {
+          if (staleLiveIds.indexOf(d.id) !== -1) return Object.assign({}, d, { status: 'completed' });
           return d;
         });
       }
@@ -859,6 +873,22 @@ export default function Debates() {
                       }}
                     >
                       ✕ Cancel Debate
+                    </button>
+                  )}
+                  {d.status === 'live' && isParticipant && (
+                    <button
+                      onClick={function(e) {
+                        e.stopPropagation();
+                        if (!confirm('End this debate and mark it as completed?')) return;
+                        supabase.from('debates').update({ status: 'completed' }).eq('id', d.id).then(function() { loadDebates(); });
+                      }}
+                      style={{
+                        padding: '10px 18px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.15)',
+                        fontSize: 12, fontWeight: 600, background: 'rgba(239,68,68,0.06)', color: '#ef4444',
+                        cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                      }}
+                    >
+                      ⏹ End Debate
                     </button>
                   )}
                   {d.status === 'completed' && d.summary && (
