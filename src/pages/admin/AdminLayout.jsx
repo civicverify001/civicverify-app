@@ -13,11 +13,10 @@ var links = [
   { to: '/admin/surveys/new', icon: '+', label: 'Create Survey' },
   { to: '/admin/review', icon: '🔍', label: 'Review Queue' },
   { to: '/admin/users', icon: '👥', label: 'Users' },
+  { to: '/admin/moderation', icon: '🛡️', label: 'Moderation' },
   { to: '/admin/analytics', icon: '📈', label: 'Analytics' },
   { to: '/admin/export', icon: '📥', label: 'Export' },
   { to: '/admin/org-review', icon: '🏢', label: 'Org Review' },
-  { to: '/admin/community', icon: '💬', label: 'Community' },
-  { to: '/admin/debates', icon: '🎙', label: 'Debates' },
 ];
 
 export default function AdminLayout() {
@@ -118,4 +117,3 @@ export default function AdminLayout() {
     </div>
   );
 }
-
