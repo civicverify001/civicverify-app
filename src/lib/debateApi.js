@@ -65,6 +65,27 @@ export function generateSummary(debateId) {
   return callDebateController('generate_summary', debateId);
 }
 
+// ─── AI Moderator Features ───
+export function timerWarning(debateId, secondsRemaining) {
+  return callDebateController('timer_warning', debateId, { seconds_remaining: secondsRemaining });
+}
+
+export function aiModerateChat(debateId, messageId, messageContent, senderName) {
+  return callDebateController('ai_moderate_chat', debateId, { message_id: messageId, message_content: messageContent, sender_name: senderName });
+}
+
+export function aiAnalyzeTranscript(debateId) {
+  return callDebateController('ai_analyze_transcript', debateId);
+}
+
+export function aiScorecard(debateId) {
+  return callDebateController('ai_scorecard', debateId);
+}
+
+export function generateReport(debateId) {
+  return callDebateController('generate_report', debateId);
+}
+
 // ─── Admin Actions ───
 export function adminCancelDebate(debateId) {
   return callDebateController('admin_cancel', debateId);
@@ -73,4 +94,3 @@ export function adminCancelDebate(debateId) {
 export function adminFlagMessage(debateId, messageId) {
   return callDebateController('admin_flag_message', debateId, { message_id: messageId });
 }
-
