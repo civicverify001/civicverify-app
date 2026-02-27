@@ -114,11 +114,11 @@ export default function Landing() {
   })
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", color: C.ink, background: C.warmWhite, overflowX: 'hidden' }}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", color: C.ink, background: C.warmWhite, overflowX: 'hidden', maxWidth: '100vw' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { overflow-x: hidden; }
+        html, body { overflow-x: hidden; max-width: 100vw; }
         @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
         @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.5 } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(30px) } to { opacity: 1; transform: none } }
@@ -135,6 +135,35 @@ export default function Landing() {
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(197,150,12,0.35) !important }
         .btn-secondary:hover { background: ${C.cream} !important; transform: translateY(-1px) }
         .card-hover:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(11,37,69,0.1) !important }
+        .hero-grid { display: grid; grid-template-columns: 1fr 420px; gap: 60; align-items: center; }
+        .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .org-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; }
+        .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .nav-links { display: flex; align-items: center; gap: 28px; }
+        .nav-mobile-hide { display: flex; }
+        @media (max-width: 768px) {
+          .hero-grid { grid-template-columns: 1fr !important; gap: 36px !important; }
+          .problem-grid { grid-template-columns: 1fr !important; }
+          .steps-grid { grid-template-columns: 1fr !important; }
+          .org-grid { grid-template-columns: 1fr !important; gap: 36px !important; }
+          .footer-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
+          .hero-h1 { font-size: 34px !important; }
+          .hero-sub { font-size: 15px !important; }
+          .nav-mobile-hide { display: none !important; }
+          .section-heading { font-size: 28px !important; }
+          .quote-text { font-size: 18px !important; }
+          .cta-heading { font-size: 28px !important; }
+        }
+        @media (max-width: 480px) {
+          .hero-h1 { font-size: 28px !important; }
+          .section-heading { font-size: 24px !important; }
+          .hero-btns { flex-direction: column; }
+          .hero-btns button { width: 100%; justify-content: center; }
+          .cta-btns { flex-direction: column; align-items: center; }
+          .cta-btns button { width: 100%; justify-content: center; }
+        }
       `}</style>
 
       {/* ═══════════════ NAV ═══════════════ */}
@@ -155,7 +184,7 @@ export default function Landing() {
           </Link>
 
           {/* Desktop nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <div className="nav-mobile-hide" style={{ alignItems: 'center', gap: 28 }}>
             {['How It Works', 'Live Polls', 'Community', 'For Organizations'].map((item) => (
               <a key={item} href={'#' + item.toLowerCase().replace(/ /g, '-')} className="nav-link"
                 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.75)', textDecoration: 'none', transition: 'color 0.2s', letterSpacing: '0.01em' }}>
@@ -197,10 +226,10 @@ export default function Landing() {
           backgroundSize: '40px 40px',
         }} />
         {/* Gradient orbs */}
-        <div style={{ position: 'absolute', top: '10%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.08) 0%, transparent 70%)', filter: 'blur(60px)', animation: 'float 8s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', bottom: '15%', left: '0%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.05) 0%, transparent 70%)', filter: 'blur(40px)', animation: 'float 10s ease-in-out infinite 2s' }} />
+        <div style={{ position: 'absolute', top: '10%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.08) 0%, transparent 70%)', filter: 'blur(60px)', animation: 'float 8s ease-in-out infinite', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '15%', left: '0%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.05) 0%, transparent 70%)', filter: 'blur(40px)', animation: 'float 10s ease-in-out infinite 2s', pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 80px', display: 'grid', gridTemplateColumns: '1fr 420px', gap: 60, alignItems: 'center', position: 'relative', zIndex: 2 }}>
+        <div className="hero-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 80px', position: 'relative', zIndex: 2 }}>
           {/* Left */}
           <div>
             <div className="hero-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28, padding: '6px 16px', borderRadius: 30, background: 'rgba(197,150,12,0.12)', border: '1px solid rgba(197,150,12,0.25)' }}>
@@ -322,13 +351,13 @@ export default function Landing() {
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, ...sectionFade(problemVis) }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 12, display: 'block' }}>Why This Matters</span>
-            <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 16, lineHeight: 1.25 }}>Traditional Polls Are Broken</h2>
+            <h2 className="section-heading" style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 16, lineHeight: 1.25 }}>Traditional Polls Are Broken</h2>
             <p style={{ fontSize: 16, color: C.muted, maxWidth: 540, margin: '0 auto', lineHeight: 1.7 }}>
               When was the last time someone asked your opinion on a policy change? For most people, the answer is never.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, ...sectionFade(problemVis, 0.2) }}>
+          <div className="problem-grid" style={sectionFade(problemVis, 0.2)}>
             {/* Problem */}
             <div style={{ padding: 36, borderRadius: 20, background: '#fff', border: '1px solid ' + C.border, boxShadow: '0 2px 16px rgba(11,37,69,0.03)' }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, fontSize: 20 }}>✕</div>
@@ -369,7 +398,7 @@ export default function Landing() {
       {/* ═══════════════ QUOTE BANNER ═══════════════ */}
       <section style={{ padding: '60px 24px', background: 'linear-gradient(135deg, ' + C.navy + ' 0%, ' + C.navyLight + ' 100%)' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 22, fontWeight: 400, fontStyle: 'italic', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: 12 }}>
+          <p className="quote-text" style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 22, fontWeight: 400, fontStyle: 'italic', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: 12 }}>
             "The strength of democracy depends on the participation of its citizens."
           </p>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>Make your verified voice count.</p>
@@ -385,10 +414,10 @@ export default function Landing() {
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, ...sectionFade(stepsVis) }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 12, display: 'block' }}>How It Works</span>
-            <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, lineHeight: 1.25 }}>Three Steps to Civic Impact</h2>
+            <h2 className="section-heading" style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, lineHeight: 1.25 }}>Three Steps to Civic Impact</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          <div className="steps-grid">
             {[
               { num: '01', icon: '🛡️', title: 'Sign Up & Verify', desc: 'Create your account and verify your identity with a quick ID scan. One-time, completely private.', color: '#dbeafe' },
               { num: '02', icon: '✅', title: 'Vote on Live Polls', desc: 'Vote directly on civic polls matched to your community. Discuss with fellow verified citizens.', color: '#d1fae5' },
@@ -414,7 +443,7 @@ export default function Landing() {
       <section id="live-polls" style={{ padding: '100px 24px', background: C.warmWhite }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 12, display: 'block' }}>Vote Now</span>
-          <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 12, lineHeight: 1.25 }}>Live Civic Polls</h2>
+          <h2 className="section-heading" style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 12, lineHeight: 1.25 }}>Live Civic Polls</h2>
           <p style={{ fontSize: 15, color: C.muted, marginBottom: 40, lineHeight: 1.7 }}>Vote, comment, and share — right here, right now</p>
 
           <div style={{ background: C.offWhite, borderRadius: 24, padding: '60px 40px', border: '1px solid ' + C.border }}>
@@ -433,13 +462,13 @@ export default function Landing() {
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48, ...sectionFade(communityVis) }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 12, display: 'block' }}>Community Forum</span>
-            <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 12, lineHeight: 1.25 }}>Civic Discussions</h2>
+            <h2 className="section-heading" style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 12, lineHeight: 1.25 }}>Civic Discussions</h2>
             <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>Share perspectives and engage with fellow citizens. Best posts rise to the top.</p>
           </div>
 
           {/* Composer preview */}
           <div style={{ background: '#fff', borderRadius: 20, border: '1px solid ' + C.border, padding: '24px 28px', marginBottom: 20, ...sectionFade(communityVis, 0.2) }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ width: 38, height: 38, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Libre Baskerville', serif", fontSize: 13, fontWeight: 700, color: C.gold }}>
                 {user ? initials(user?.user_metadata?.full_name) : 'K'}
               </div>
@@ -491,10 +520,10 @@ export default function Landing() {
 
       {/* ═══════════════ FOR ORGANIZATIONS ═══════════════ */}
       <section id="for-organizations" ref={forOrgRef} style={{ padding: '100px 24px', background: C.warmWhite }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+        <div className="org-grid" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={sectionFade(forOrgVis)}>
             <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 12, display: 'block' }}>For Organizations</span>
-            <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 36, fontWeight: 700, color: C.navy, marginBottom: 18, lineHeight: 1.3 }}>
+            <h2 className="section-heading" style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 36, fontWeight: 700, color: C.navy, marginBottom: 18, lineHeight: 1.3 }}>
               Reach Verified Citizens.<br />Get Trusted Data.
             </h2>
             <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7, marginBottom: 32 }}>
@@ -568,13 +597,13 @@ export default function Landing() {
           <div style={{ width: 64, height: 64, borderRadius: 16, background: C.gold + '15', border: '1px solid ' + C.gold + '25', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: C.gold }}>
             <Shield />
           </div>
-          <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 36, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.3 }}>
+          <h2 className="cta-heading" style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 36, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.3 }}>
             Ready to Make Your Voice Count?
           </h2>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginBottom: 36, lineHeight: 1.7 }}>
             Join a growing community of verified citizens shaping the future of civic engagement.
           </p>
-          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="cta-btns">
             <button onClick={() => navigate('/signup')} className="btn-primary"
               style={{ padding: '16px 36px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.goldDim + ')', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700, cursor: 'pointer', transition: 'all 0.25s', boxShadow: '0 6px 24px rgba(197,150,12,0.3)' }}>
               Create Free Account →
@@ -590,7 +619,7 @@ export default function Landing() {
       {/* ═══════════════ FOOTER ═══════════════ */}
       <footer style={{ padding: '60px 24px 40px', background: C.navyDark, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 40, marginBottom: 40 }}>
+          <div className="footer-grid" style={{ marginBottom: 40 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Libre Baskerville', serif", fontSize: 12, fontWeight: 700, color: C.gold }}>CV</div>
@@ -623,7 +652,7 @@ export default function Landing() {
               ))}
             </div>
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>© 2026 CivicVerify. All rights reserved.</span>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.15)' }}>Built with trust in mind.</span>
           </div>
