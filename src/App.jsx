@@ -23,6 +23,7 @@ import CitizenDebates from './pages/citizen/Debates'
 import CitizenDebateSpace from './pages/citizen/DebateSpace'
 import UserProfile from './pages/citizen/UserProfile'
 import DirectMessages from './pages/citizen/DirectMessages'
+import MessagesInbox from './pages/citizen/Messages'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="debates" element={<CitizenDebates />} />
             <Route path="debates/:debateId" element={<CitizenDebateSpace />} />
             <Route path="profile/:userId" element={<UserProfile />} />
+            <Route path="messages" element={<MessagesInbox />} />
             <Route path="messages/:userId" element={<DirectMessages />} />
           </Route>
 
@@ -121,4 +123,3 @@ export default function App() {
     </BrowserRouter>
   )
 }
-
