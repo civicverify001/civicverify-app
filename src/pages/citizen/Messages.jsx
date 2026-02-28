@@ -1,4 +1,4 @@
-// src/pages/citizen/Messages.jsx — DM Inbox listing all conversations
+// src/pages/citizen/Messages.jsx — DM Inbox with delete conversation
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -8,7 +8,6 @@ var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', muted: '#64748b' }
 var font = 'Libre Baskerville, Georgia, serif';
 var sans = 'DM Sans, system-ui, sans-serif';
 
-// Assign a gradient per conversation based on name hash
 var GRADIENTS = [
   'linear-gradient(135deg, #667eea, #764ba2)',
   'linear-gradient(135deg, #f093fb, #f5576c)',
@@ -111,6 +110,20 @@ export default function Messages() {
     setLoading(false);
   }
 
+  async function deleteConversation(partnerId, e) {
+    e.stopPropagation();
+    if (!window.confirm('Delete this entire conversation? This cannot be undone.')) return;
+    // Optimistically remove from UI
+    setConvos(function(prev) { return prev.filter(function(c) { return c.partnerId !== partnerId; }); });
+    // Delete all messages between both users
+    await supabase.from('direct_messages')
+      .delete()
+      .or(
+        'and(sender_id.eq.' + user.id + ',receiver_id.eq.' + partnerId + '),' +
+        'and(sender_id.eq.' + partnerId + ',receiver_id.eq.' + user.id + ')'
+      );
+  }
+
   var filtered = convos.filter(function(c) {
     return !search.trim() || c.name.toLowerCase().includes(search.toLowerCase());
   });
@@ -131,10 +144,12 @@ export default function Messages() {
         @keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
         .msg-row{transition:all 0.18s ease;cursor:pointer}
         .msg-row:hover{transform:translateX(4px)}
+        .msg-row:hover .delete-btn{opacity:1!important}
         .search-input:focus{border-color:${C.gold}!important;box-shadow:0 0 0 3px rgba(197,150,12,0.12)!important}
+        .delete-btn{opacity:0;transition:opacity 0.15s ease}
       `}</style>
 
-      {/* ── Colorful Hero Header ── */}
+      {/* ── Hero Header ── */}
       <div style={{
         borderRadius: 22,
         background: 'linear-gradient(135deg, #0B2545 0%, #1a3a6a 50%, #0B2545 100%)',
@@ -144,25 +159,21 @@ export default function Messages() {
         overflow: 'hidden',
         boxShadow: '0 8px 32px rgba(11,37,69,0.18)',
       }}>
-        {/* Decorative circles */}
         <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(197,150,12,0.12)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -20, right: 80, width: 80, height: 80, borderRadius: '50%', background: 'rgba(100,180,255,0.08)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: 20, right: 120, width: 40, height: 40, borderRadius: '50%', background: 'rgba(197,150,12,0.18)', pointerEvents: 'none' }} />
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, ' + C.gold + ', #e8a838)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(197,150,12,0.35)' }}>
-                <span style={{ fontSize: 22 }}>✉️</span>
-              </div>
-              <div>
-                <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, fontFamily: font }}>Messages</h1>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Citizens · Verified Conversations</p>
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, ' + C.gold + ', #e8a838)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(197,150,12,0.35)' }}>
+              <span style={{ fontSize: 22 }}>✉️</span>
+            </div>
+            <div>
+              <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, fontFamily: font }}>Messages</h1>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Citizens · Verified Conversations</p>
             </div>
           </div>
 
-          {/* Stats chips */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ padding: '8px 16px', borderRadius: 20, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{convos.length}</span>
@@ -211,7 +222,7 @@ export default function Messages() {
             {search ? 'No matching conversations' : 'No messages yet'}
           </p>
           <p style={{ fontSize: 13, color: C.muted, margin: '0 0 20px', lineHeight: 1.6 }}>
-            {search ? 'Try a different name' : 'Visit a citizen\'s profile and click "Message" to start chatting'}
+            {search ? 'Try a different name' : "Visit a citizen's profile and click \"Message\" to start chatting"}
           </p>
           <button onClick={function() { navigate('/citizen/community'); }}
             style={{ padding: '11px 28px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)', color: C.gold, fontFamily: sans, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(11,37,69,0.2)' }}>
@@ -230,7 +241,7 @@ export default function Messages() {
                 style={{
                   display: 'flex', gap: 14, padding: '14px 18px',
                   background: convo.unread > 0 ? '#fffdf5' : '#fff',
-                  borderRadius: 16,
+                  borderRadius: 16, position: 'relative',
                   border: convo.unread > 0 ? '1.5px solid rgba(197,150,12,0.2)' : '1.5px solid rgba(11,37,69,0.05)',
                   alignItems: 'center',
                   boxShadow: convo.unread > 0 ? '0 2px 12px rgba(197,150,12,0.08)' : '0 1px 6px rgba(11,37,69,0.04)',
@@ -265,9 +276,10 @@ export default function Messages() {
                     margin: 0, fontWeight: convo.unread > 0 ? 600 : 400,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     maxWidth: '90%', lineHeight: 1.4,
-                  }}>{convo.lastMessage}</p>
+                  }}>{convo.lastMessage || '📷 Photo'}</p>
                 </div>
 
+                {/* Unread badge or chevron */}
                 {convo.unread > 0 ? (
                   <div style={{
                     minWidth: 24, height: 24, borderRadius: 12,
@@ -282,6 +294,24 @@ export default function Messages() {
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                 )}
+
+                {/* Delete button — visible on hover */}
+                <button
+                  className="delete-btn"
+                  onClick={function(e) { deleteConversation(convo.partnerId, e); }}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8, border: 'none',
+                    background: 'rgba(239,68,68,0.07)', color: '#ef4444',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: 15, flexShrink: 0,
+                    marginLeft: 6,
+                  }}
+                  onMouseEnter={function(e) { e.currentTarget.style.background = 'rgba(239,68,68,0.16)'; }}
+                  onMouseLeave={function(e) { e.currentTarget.style.background = 'rgba(239,68,68,0.07)'; }}
+                  title="Delete conversation"
+                >
+                  🗑️
+                </button>
               </div>
             );
           })}
