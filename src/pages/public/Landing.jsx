@@ -12,7 +12,6 @@ const C = {
   border: 'rgba(11,37,69,0.06)',
 }
 
-/* ── useOnScreen (intersection observer for scroll reveals) ── */
 function useOnScreen(ref, threshold = 0.15) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
@@ -27,7 +26,6 @@ function useOnScreen(ref, threshold = 0.15) {
   return visible
 }
 
-/* ── Animated counter ── */
 function Counter({ target, suffix = '', duration = 2000 }) {
   const [val, setVal] = useState(0)
   const ref = useRef(null)
@@ -46,7 +44,6 @@ function Counter({ target, suffix = '', duration = 2000 }) {
   return <span ref={ref}>{val}{suffix}</span>
 }
 
-/* ── SVG icons ── */
 const Shield = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -95,7 +92,6 @@ export default function Landing() {
 
   const initials = (n) => (n || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
-  /* ── Section refs for scroll reveal ── */
   const problemRef = useRef(null)
   const problemVis = useOnScreen(problemRef)
   const stepsRef = useRef(null)
@@ -135,7 +131,7 @@ export default function Landing() {
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(197,150,12,0.35) !important }
         .btn-secondary:hover { background: ${C.cream} !important; transform: translateY(-1px) }
         .card-hover:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(11,37,69,0.1) !important }
-        .hero-grid { display: grid; grid-template-columns: 1fr 420px; gap: 60; align-items: center; }
+        .hero-grid { display: grid; grid-template-columns: 1fr 420px; gap: 60px; align-items: center; }
         .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
         .org-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
@@ -185,7 +181,6 @@ export default function Landing() {
 
           {/* Desktop nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Nav links - hidden on mobile */}
             <div className="nav-mobile-hide" style={{ alignItems: 'center', gap: 28 }}>
               {['How It Works', 'Live Polls', 'Community', 'For Organizations'].map((item) => (
                 <a key={item} href={'#' + item.toLowerCase().replace(/ /g, '-')} className="nav-link"
@@ -195,7 +190,8 @@ export default function Landing() {
               ))}
               <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
             </div>
-            {/* Auth buttons - always visible */}
+
+            {/* Auth buttons */}
             {user ? (
               <button onClick={() => navigate('/citizen')} className="btn-primary"
                 style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 12px rgba(197,150,12,0.25)', whiteSpace: 'nowrap' }}>
@@ -206,6 +202,11 @@ export default function Landing() {
                 <button onClick={() => navigate('/login')} className="btn-secondary"
                   style={{ padding: '9px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
                   Sign In
+                </button>
+                {/* ── NEW: For Organizations button ── */}
+                <button onClick={() => navigate('/org-signup')} className="btn-secondary nav-mobile-hide"
+                  style={{ padding: '9px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'rgba(255,255,255,0.8)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+                  For Organizations
                 </button>
                 <button onClick={() => navigate('/signup')} className="btn-primary nav-mobile-hide"
                   style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 12px rgba(197,150,12,0.25)', alignItems: 'center', whiteSpace: 'nowrap' }}>
@@ -223,13 +224,7 @@ export default function Landing() {
         background: 'linear-gradient(165deg, ' + C.navyDark + ' 0%, ' + C.navy + ' 40%, ' + C.navyLight + ' 100%)',
         display: 'flex', alignItems: 'center', paddingTop: 80,
       }}>
-        {/* Subtle grid pattern overlay */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.03,
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)',
-          backgroundSize: '40px 40px',
-        }} />
-        {/* Gradient orbs */}
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
         <div style={{ position: 'absolute', top: '10%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.08) 0%, transparent 70%)', filter: 'blur(60px)', animation: 'float 8s ease-in-out infinite', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '15%', left: '0%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.05) 0%, transparent 70%)', filter: 'blur(40px)', animation: 'float 10s ease-in-out infinite 2s', pointerEvents: 'none' }} />
 
@@ -243,16 +238,9 @@ export default function Landing() {
               </span>
             </div>
 
-            <h1 className="hero-h1" style={{
-              fontFamily: "'Libre Baskerville', serif", fontWeight: 700,
-              fontSize: 54, lineHeight: 1.15, color: '#fff', marginBottom: 22,
-              letterSpacing: '-0.02em',
-            }}>
+            <h1 className="hero-h1" style={{ fontFamily: "'Libre Baskerville', serif", fontWeight: 700, fontSize: 54, lineHeight: 1.15, color: '#fff', marginBottom: 22, letterSpacing: '-0.02em' }}>
               Your Voice,{' '}
-              <span style={{
-                color: C.gold, fontStyle: 'italic', position: 'relative',
-                display: 'inline-block',
-              }}>
+              <span style={{ color: C.gold, fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
                 Verified
                 <svg viewBox="0 0 200 12" style={{ position: 'absolute', bottom: -4, left: 0, width: '100%', height: 12, overflow: 'visible' }}>
                   <path d="M2 8 Q50 2 100 6 Q150 10 198 4" fill="none" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" opacity="0.5" />
@@ -290,12 +278,7 @@ export default function Landing() {
           </div>
 
           {/* Right — Live Activity Card */}
-          <div className="hero-card" style={{
-            background: 'rgba(255,255,255,0.04)', borderRadius: 20,
-            border: '1px solid rgba(255,255,255,0.08)',
-            backdropFilter: 'blur(20px)', overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-          }}>
+          <div className="hero-card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
             <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.greenSoft, animation: 'pulse 2s infinite' }} />
@@ -344,7 +327,6 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Wave divider */}
         <svg viewBox="0 0 1440 80" style={{ position: 'absolute', bottom: -1, left: 0, right: 0, width: '100%' }}>
           <path d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,40 1440,30 L1440,80 L0,80 Z" fill={C.warmWhite} />
         </svg>
@@ -362,7 +344,6 @@ export default function Landing() {
           </div>
 
           <div className="problem-grid" style={sectionFade(problemVis, 0.2)}>
-            {/* Problem */}
             <div style={{ padding: 36, borderRadius: 20, background: '#fff', border: '1px solid ' + C.border, boxShadow: '0 2px 16px rgba(11,37,69,0.03)' }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, fontSize: 20 }}>✕</div>
               <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 20, fontWeight: 700, color: C.navy, marginBottom: 16 }}>The Problem</h3>
@@ -374,7 +355,6 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* Solution */}
             <div className="card-hover" style={{ padding: 36, borderRadius: 20, background: '#fff', border: '1.5px solid ' + C.gold + '22', boxShadow: '0 4px 24px rgba(197,150,12,0.06)', transition: 'all 0.3s' }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: C.gold + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, color: C.gold }}>
                 <Shield />
@@ -425,14 +405,9 @@ export default function Landing() {
             {[
               { num: '01', icon: '🛡️', title: 'Sign Up & Verify', desc: 'Create your account and verify your identity with a quick ID scan. One-time, completely private.', color: '#dbeafe' },
               { num: '02', icon: '✅', title: 'Vote on Live Polls', desc: 'Vote directly on civic polls matched to your community. Discuss with fellow verified citizens.', color: '#d1fae5' },
-              { num: '03', icon: '📊', title: 'See Real Impact', desc: 'Watch live results, see your community\'s voice, and track how opinions shape real decisions.', color: '#fef3c7' },
+              { num: '03', icon: '📊', title: 'See Real Impact', desc: "Watch live results, see your community's voice, and track how opinions shape real decisions.", color: '#fef3c7' },
             ].map((step, i) => (
-              <div key={step.num} className="card-hover" style={{
-                background: '#fff', borderRadius: 20, padding: '36px 28px',
-                border: '1px solid ' + C.border, position: 'relative', overflow: 'hidden',
-                transition: 'all 0.3s', boxShadow: '0 2px 12px rgba(11,37,69,0.03)',
-                ...sectionFade(stepsVis, 0.15 * (i + 1)),
-              }}>
+              <div key={step.num} className="card-hover" style={{ background: '#fff', borderRadius: 20, padding: '36px 28px', border: '1px solid ' + C.border, position: 'relative', overflow: 'hidden', transition: 'all 0.3s', boxShadow: '0 2px 12px rgba(11,37,69,0.03)', ...sectionFade(stepsVis, 0.15 * (i + 1)) }}>
                 <span style={{ position: 'absolute', top: 16, right: 20, fontFamily: "'Libre Baskerville', serif", fontSize: 48, fontWeight: 700, color: C.navy + '06', lineHeight: 1 }}>{step.num}</span>
                 <div style={{ width: 52, height: 52, borderRadius: 14, background: step.color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, fontSize: 24 }}>{step.icon}</div>
                 <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 10 }}>{step.title}</h3>
@@ -451,7 +426,7 @@ export default function Landing() {
           <p style={{ fontSize: 15, color: C.muted, marginBottom: 40, lineHeight: 1.7 }}>Vote, comment, and share — right here, right now</p>
 
           <div style={{ background: C.offWhite, borderRadius: 24, padding: '60px 40px', border: '1px solid ' + C.border }}>
-            <div style={{ width: 64, height: 64, borderRadius: 16, background: C.gold + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: C.gold + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: C.gold }}>
               <Shield />
             </div>
             <p style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 8 }}>No active polls right now</p>
@@ -470,7 +445,6 @@ export default function Landing() {
             <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>Share perspectives and engage with fellow citizens. Best posts rise to the top.</p>
           </div>
 
-          {/* Composer preview */}
           <div style={{ background: '#fff', borderRadius: 20, border: '1px solid ' + C.border, padding: '24px 28px', marginBottom: 20, ...sectionFade(communityVis, 0.2) }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ width: 38, height: 38, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Libre Baskerville', serif", fontSize: 13, fontWeight: 700, color: C.gold }}>
@@ -487,7 +461,6 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Posts */}
           <div style={{ display: 'grid', gap: 14, ...sectionFade(communityVis, 0.3) }}>
             {posts.length > 0 ? posts.map((p) => (
               <div key={p.id} className="card-hover" onClick={() => navigate(user ? '/citizen/community' : '/signup')}
@@ -549,7 +522,8 @@ export default function Landing() {
               </div>
             ))}
 
-            <button onClick={() => navigate('/signup')} className="btn-primary"
+            {/* ── UPDATED: Points to /org-signup ── */}
+            <button onClick={() => navigate('/org-signup')} className="btn-primary"
               style={{ marginTop: 12, padding: '14px 30px', borderRadius: 12, border: 'none', background: C.navy, color: C.gold, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.25s', boxShadow: '0 4px 16px rgba(11,37,69,0.15)' }}>
               Register Your Organization →
             </button>
@@ -557,24 +531,17 @@ export default function Landing() {
 
           {/* Dashboard preview card */}
           <div style={{ ...sectionFade(forOrgVis, 0.3) }}>
-            <div style={{
-              background: 'linear-gradient(145deg, ' + C.navy + ' 0%, ' + C.navyLight + ' 100%)',
-              borderRadius: 20, padding: 28, boxShadow: '0 20px 60px rgba(11,37,69,0.2)',
-              border: '1px solid rgba(255,255,255,0.05)',
-            }}>
+            <div style={{ background: 'linear-gradient(145deg, ' + C.navy + ' 0%, ' + C.navyLight + ' 100%)', borderRadius: 20, padding: 28, boxShadow: '0 20px 60px rgba(11,37,69,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 20 }}>Organization Dashboard Preview</p>
-
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>Survey Responses</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: C.greenSoft }}>+12% this week</span>
               </div>
-              {/* Chart bars */}
               <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 80, marginBottom: 20 }}>
                 {[35, 55, 42, 68, 45, 72, 60, 85, 50, 78, 65, 90].map((h, i) => (
-                  <div key={i} style={{ flex: 1, height: h + '%', borderRadius: 4, background: 'linear-gradient(to top, ' + C.goldDim + ', ' + C.gold + ')', opacity: 0.7 + (i * 0.025), transition: 'height 0.3s' }} />
+                  <div key={i} style={{ flex: 1, height: h + '%', borderRadius: 4, background: 'linear-gradient(to top, ' + C.goldDim + ', ' + C.gold + ')', opacity: 0.7 + (i * 0.025) }} />
                 ))}
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ padding: '16px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <p style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 24, fontWeight: 700, color: C.gold, margin: '0 0 2px' }}>100%</p>
@@ -591,11 +558,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ FINAL CTA ═══════════════ */}
-      <section ref={ctaRef} style={{
-        padding: '100px 24px',
-        background: 'linear-gradient(165deg, ' + C.navyDark + ' 0%, ' + C.navy + ' 50%, ' + C.navyLight + ' 100%)',
-        textAlign: 'center', position: 'relative', overflow: 'hidden',
-      }}>
+      <section ref={ctaRef} style={{ padding: '100px 24px', background: 'linear-gradient(165deg, ' + C.navyDark + ' 0%, ' + C.navy + ' 50%, ' + C.navyLight + ' 100%)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,150,12,0.06) 0%, transparent 70%)', filter: 'blur(40px)' }} />
         <div style={{ maxWidth: 600, margin: '0 auto', position: 'relative', zIndex: 2, ...sectionFade(ctaVis) }}>
           <div style={{ width: 64, height: 64, borderRadius: 16, background: C.gold + '15', border: '1px solid ' + C.gold + '25', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: C.gold }}>
@@ -615,6 +578,11 @@ export default function Landing() {
             <button onClick={() => navigate('/login')} className="btn-secondary"
               style={{ padding: '16px 32px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.8)', fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'all 0.25s' }}>
               Sign In
+            </button>
+            {/* ── NEW: Org CTA ── */}
+            <button onClick={() => navigate('/org-signup')} className="btn-secondary"
+              style={{ padding: '16px 32px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.7)', fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.25s' }}>
+              🏛️ Register Organization
             </button>
           </div>
         </div>
@@ -637,11 +605,18 @@ export default function Landing() {
             </div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Platform</p>
-              {['Sign Up', 'Sign In', 'Live Polls', 'Discussions'].map((l) => (
-                <a key={l} href="#" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none', marginBottom: 10, transition: 'color 0.15s' }}
+              {/* ── UPDATED footer links with org-signup ── */}
+              {[
+                { label: 'Sign Up', href: '/signup' },
+                { label: 'Sign In', href: '/login' },
+                { label: 'Live Polls', href: '#live-polls' },
+                { label: 'Discussions', href: '#community' },
+                { label: 'For Organizations', href: '/org-signup' },
+              ].map((l) => (
+                <a key={l.label} href={l.href} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none', marginBottom: 10, transition: 'color 0.15s' }}
                   onMouseEnter={(e) => { e.target.style.color = C.gold }}
                   onMouseLeave={(e) => { e.target.style.color = 'rgba(255,255,255,0.35)' }}>
-                  {l}
+                  {l.label}
                 </a>
               ))}
             </div>
@@ -665,4 +640,3 @@ export default function Landing() {
     </div>
   )
 }
-
