@@ -173,7 +173,8 @@ export default function OrgSignup() {
     setError('');
 
     try {
-      // 1. Create auth user — trigger will create the users row automatically
+      // Pass ALL org data in options.data — the trigger reads this and saves everything
+      // in one shot via SECURITY DEFINER, bypassing RLS entirely
       var signUpResult = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -182,6 +183,21 @@ export default function OrgSignup() {
             full_name: contactName.trim(),
             role: 'org',
             org_status: 'pending',
+            org_name: orgName.trim(),
+            org_type: orgType,
+            org_website: website.trim() || null,
+            org_address: address.trim(),
+            org_city: city.trim(),
+            org_state: state.trim(),
+            org_zip: zip.trim() || null,
+            org_ein: ein.trim() || null,
+            org_description: description.trim() || null,
+            org_contact_title: contactTitle.trim() || null,
+            org_phone: phone.trim() || null,
+            org_survey_topics: JSON.stringify(selectedTopics),
+            org_audience_size: audienceSize,
+            org_survey_goal: surveyGoal.trim() || null,
+            org_target_demo: targetDemo.trim() || null,
           }
         }
       });
@@ -191,45 +207,17 @@ export default function OrgSignup() {
       var uid = signUpResult.data.user && signUpResult.data.user.id;
       if (!uid) throw new Error('Could not create account. Please try again.');
 
-      // 2. Wait for trigger to create the row
-      await new Promise(function(r) { setTimeout(r, 1000); });
-
-      // 3. Upload document if provided
-      var docUrl = null;
+      // Upload document if provided — silent fail so it doesn't block signup
       if (docFile) {
-        var ext = docFile.name.split('.').pop() || 'pdf';
-        var uploadPath = 'org-docs/' + uid + '/registration.' + ext;
-        var uploadResult = await supabase.storage
-          .from('org-documents')
-          .upload(uploadPath, docFile, { contentType: docFile.type, upsert: true });
-        if (!uploadResult.error) {
-          var urlResult = supabase.storage.from('org-documents').getPublicUrl(uploadPath);
-          docUrl = urlResult.data && urlResult.data.publicUrl;
+        try {
+          var ext = docFile.name.split('.').pop() || 'pdf';
+          var uploadPath = 'org-docs/' + uid + '/registration.' + ext;
+          await supabase.storage
+            .from('org-documents')
+            .upload(uploadPath, docFile, { contentType: docFile.type, upsert: true });
+        } catch (uploadErr) {
+          console.warn('Doc upload failed (non-fatal):', uploadErr);
         }
-      }
-
-      // 4. Update users row with all org details
-      var updateResult = await supabase.from('users').update({
-        org_name: orgName.trim(),
-        org_type: orgType,
-        org_website: website.trim() || null,
-        org_address: address.trim(),
-        org_city: city.trim(),
-        org_state: state.trim(),
-        org_zip: zip.trim() || null,
-        org_ein: ein.trim() || null,
-        org_description: description.trim() || null,
-        org_contact_title: contactTitle.trim() || null,
-        org_phone: phone.trim() || null,
-        org_survey_topics: selectedTopics,
-        org_audience_size: audienceSize,
-        org_survey_goal: surveyGoal.trim() || null,
-        org_target_demo: targetDemo.trim() || null,
-        org_doc_url: docUrl,
-      }).eq('id', uid);
-
-      if (updateResult.error) {
-        console.warn('Update warning:', updateResult.error.message);
       }
 
       navigate('/org-signup-success');
