@@ -339,7 +339,7 @@ export default function CitizenLayout() {
           </div>
         </header>
 
-        <div style={{ padding: '28px 20px', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ padding: '28px 32px' }}>
           <PushPrompt userId={user?.id} />
           <Outlet />
         </div>
