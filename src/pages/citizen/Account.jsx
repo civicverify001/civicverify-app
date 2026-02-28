@@ -249,7 +249,7 @@ export default function CitizenAccount() {
   ];
 
   return (
-    <div style={{ fontFamily: body, maxWidth: 640 }}>
+    <div style={{ fontFamily: body }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: heading }}>Account</h1>
         <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: 0 }}>Manage your profile and settings</p>
