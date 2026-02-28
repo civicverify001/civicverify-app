@@ -1,4 +1,4 @@
-// src/pages/citizen/DirectMessages.jsx — Enhanced with emoji picker + image sending
+// src/pages/citizen/DirectMessages.jsx — Enhanced with emoji picker + image sending + delete
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
@@ -8,7 +8,6 @@ var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', green: '#1A7A3C', 
 var font = 'Libre Baskerville, Georgia, serif';
 var sans = 'DM Sans, system-ui, sans-serif';
 
-// Gradient per user name hash
 var GRADIENTS = [
   'linear-gradient(135deg, #667eea, #764ba2)',
   'linear-gradient(135deg, #f093fb, #f5576c)',
@@ -24,7 +23,6 @@ function getGradient(name) {
   return GRADIENTS[hash % GRADIENTS.length];
 }
 
-// ── Emoji data ───────────────────────────────────────────────────────────────
 var EMOJI_CATEGORIES = [
   { label: '😀 Smileys', emojis: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😔','😪','🤤','😴','😷','🤒','🤕','🥳','😎','🥸','🤩'] },
   { label: '👍 Gestures', emojis: ['👍','👎','👏','🙌','🤝','👐','🤲','🙏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐','🖖','💪','🦾','🖕','✍️','💅','🤳','💃','🕺','🫶','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟'] },
@@ -34,29 +32,16 @@ var EMOJI_CATEGORIES = [
   { label: '🌍 Nature', emojis: ['🌍','🌎','🌏','🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘','🌙','🌚','🌛','🌜','☀️','🌝','🌞','🌟','⭐','💫','✨','☁️','⛅','🌤','🌥','🌦','🌧','⛈','🌩','🌨','❄️','☃️','⛄','🌊','💧','🔥','🌈','🌀','🌪','🌫','⚡','🌲','🌳','🌴','🌵','🌾','🍀','🌸','🌺'] },
 ];
 
-// ── Emoji Picker ─────────────────────────────────────────────────────────────
 function EmojiPicker({ onSelect, onClose }) {
   var [tab, setTab] = useState(0);
   var ref = useRef(null);
-
   useEffect(function() {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
-    }
+    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) onClose(); }
     document.addEventListener('mousedown', handleClick);
     return function() { document.removeEventListener('mousedown', handleClick); };
   }, [onClose]);
-
   return (
-    <div ref={ref} style={{
-      position: 'absolute', bottom: 56, left: 0,
-      width: 320, borderRadius: 18,
-      background: '#fff', border: '1px solid rgba(11,37,69,0.1)',
-      boxShadow: '0 8px 32px rgba(11,37,69,0.15)',
-      zIndex: 100, overflow: 'hidden',
-      animation: 'emojiPop 0.18s ease',
-    }}>
-      {/* Category tabs */}
+    <div ref={ref} style={{ position: 'absolute', bottom: 56, left: 0, width: 320, borderRadius: 18, background: '#fff', border: '1px solid rgba(11,37,69,0.1)', boxShadow: '0 8px 32px rgba(11,37,69,0.15)', zIndex: 100, overflow: 'hidden', animation: 'emojiPop 0.18s ease' }}>
       <div style={{ display: 'flex', borderBottom: '1px solid rgba(11,37,69,0.06)', background: '#fafbfc', overflowX: 'auto' }}>
         {EMOJI_CATEGORIES.map(function(cat, i) {
           return (
@@ -67,7 +52,6 @@ function EmojiPicker({ onSelect, onClose }) {
           );
         })}
       </div>
-      {/* Emoji grid */}
       <div style={{ padding: 10, maxHeight: 200, overflowY: 'auto' }}>
         <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.3)', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 1 }}>{EMOJI_CATEGORIES[tab].label.split(' ').slice(1).join(' ')}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -87,41 +71,31 @@ function EmojiPicker({ onSelect, onClose }) {
   );
 }
 
-// ── Quick Reactions ───────────────────────────────────────────────────────────
 var QUICK_REACTIONS = ['❤️','😂','😮','😢','👍','🔥'];
 
 function MessageBubble({ msg, isMe, onReact, onDelete }) {
   var [showReactions, setShowReactions] = useState(false);
   var reactions = msg.reactions || {};
   var hasReactions = Object.keys(reactions).length > 0;
-
   return (
-    <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: hasReactions ? 18 : 2, position: 'relative' }}
+    <div
+      style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: hasReactions ? 18 : 2, position: 'relative' }}
       onMouseEnter={function() { setShowReactions(true); }}
-      onMouseLeave={function() { setShowReactions(false); }}>
-
+      onMouseLeave={function() { setShowReactions(false); }}
+    >
       <div style={{ maxWidth: '72%', position: 'relative' }}>
-        {/* Image message */}
         {msg.image_url && (
           <div style={{ marginBottom: msg.content ? 6 : 0 }}>
-            <img src={msg.image_url} alt="shared" style={{
-              maxWidth: '100%', maxHeight: 240, borderRadius: 14,
-              display: 'block', cursor: 'pointer',
-              boxShadow: '0 2px 12px rgba(11,37,69,0.12)',
-              border: isMe ? 'none' : '1px solid rgba(11,37,69,0.08)',
-            }}
+            <img src={msg.image_url} alt="shared"
+              style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 14, display: 'block', cursor: 'pointer', boxShadow: '0 2px 12px rgba(11,37,69,0.12)', border: isMe ? 'none' : '1px solid rgba(11,37,69,0.08)' }}
               onClick={function() { window.open(msg.image_url, '_blank'); }}
             />
           </div>
         )}
-
-        {/* Text bubble */}
         {msg.content && (
           <div style={{
             padding: '10px 14px',
-            background: isMe
-              ? 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)'
-              : '#fff',
+            background: isMe ? 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)' : '#fff',
             color: isMe ? '#fff' : C.navy,
             borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
             boxShadow: isMe ? '0 2px 12px rgba(11,37,69,0.2)' : '0 1px 6px rgba(11,37,69,0.07)',
@@ -129,20 +103,13 @@ function MessageBubble({ msg, isMe, onReact, onDelete }) {
           }}>
             <p style={{ fontSize: 14, margin: 0, lineHeight: 1.5, wordBreak: 'break-word' }}>{msg.content}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-              <span style={{ fontSize: 9, color: isMe ? 'rgba(255,255,255,0.35)' : 'rgba(11,37,69,0.25)', fontWeight: 500 }}>
-                {timeAgo(msg.created_at)}
-              </span>
+              <span style={{ fontSize: 9, color: isMe ? 'rgba(255,255,255,0.35)' : 'rgba(11,37,69,0.25)', fontWeight: 500 }}>{timeAgo(msg.created_at)}</span>
               {isMe && msg.is_read && <span style={{ fontSize: 9, color: C.gold }}>✓✓</span>}
             </div>
           </div>
         )}
-
-        {/* Existing reactions */}
         {hasReactions && (
-          <div style={{
-            position: 'absolute', bottom: -16, right: isMe ? 0 : 'auto', left: isMe ? 'auto' : 0,
-            display: 'flex', gap: 3,
-          }}>
+          <div style={{ position: 'absolute', bottom: -16, right: isMe ? 0 : 'auto', left: isMe ? 'auto' : 0, display: 'flex', gap: 3 }}>
             {Object.entries(reactions).map(function(entry) {
               return (
                 <span key={entry[0]} onClick={function() { onReact && onReact(msg.id, entry[0]); }}
@@ -153,12 +120,11 @@ function MessageBubble({ msg, isMe, onReact, onDelete }) {
             })}
           </div>
         )}
-
-        {/* Hover reaction bar */}
         {showReactions && (
           <div style={{
-            position: 'absolute', top: -36, right: isMe ? 0 : 'auto', left: isMe ? 'auto' : 0,
-            display: 'flex', gap: 3, background: '#fff', borderRadius: 20, padding: '4px 8px',
+            position: 'absolute', top: -44, right: isMe ? 0 : 'auto', left: isMe ? 'auto' : 0,
+            display: 'flex', alignItems: 'center', gap: 3,
+            background: '#fff', borderRadius: 20, padding: '4px 8px',
             boxShadow: '0 4px 16px rgba(11,37,69,0.12)', border: '1px solid rgba(11,37,69,0.07)',
             animation: 'emojiPop 0.15s ease', zIndex: 10,
           }}>
@@ -172,14 +138,17 @@ function MessageBubble({ msg, isMe, onReact, onDelete }) {
                 </button>
               );
             })}
+            {isMe && <div style={{ width: 1, height: 20, background: 'rgba(11,37,69,0.1)', margin: '0 2px' }} />}
             {isMe && (
-  <button onClick={function() { if (window.confirm('Delete this message?')) onDelete(msg.id); }}
-    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, padding: '2px 4px', borderRadius: 8, color: '#ef4444', transition: 'transform 0.1s' }}
-    onMouseEnter={function(e) { e.currentTarget.style.transform = 'scale(1.3)'; }}
-    onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}>
-    🗑️
-  </button>
-)}
+              <button
+                onClick={function() { if (window.confirm('Delete this message?')) onDelete(msg.id); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, padding: '2px 4px', borderRadius: 8, color: '#ef4444', transition: 'transform 0.1s' }}
+                onMouseEnter={function(e) { e.currentTarget.style.transform = 'scale(1.3)'; }}
+                onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}
+                title="Delete message">
+                🗑️
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -200,21 +169,12 @@ function Avatar({ name, url, size }) {
   var initials = (name || '?').split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
   if (url) return <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', flexShrink: 0 }} />;
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: getGradient(name),
-      border: '2px solid rgba(255,255,255,0.8)',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      fontSize: size * 0.35, fontWeight: 700, color: '#fff', fontFamily: font,
-      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-    }}>
+    <div style={{ width: size, height: size, borderRadius: '50%', background: getGradient(name), border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: size * 0.35, fontWeight: 700, color: '#fff', fontFamily: font, textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
       {initials}
     </div>
   );
 }
 
-// ── Date separator ────────────────────────────────────────────────────────────
 function DateSep({ date }) {
   var d = new Date(date);
   var today = new Date();
@@ -231,7 +191,6 @@ function DateSep({ date }) {
   );
 }
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function DirectMessages() {
   var { userId } = useParams();
   var navigate = useNavigate();
@@ -249,57 +208,47 @@ export default function DirectMessages() {
   var inputRef = useRef(null);
   var imgInputRef = useRef(null);
 
-  useEffect(function() {
-    if (user && userId) loadAll();
-  }, [user, userId]);
+  useEffect(function() { if (user && userId) loadAll(); }, [user, userId]);
 
   useEffect(function() {
     if (!user) return;
     var channel = supabase.channel('dm-' + user.id + '-' + userId)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'direct_messages',
-        filter: 'sender_id=eq.' + userId,
-      }, function(payload) {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: 'sender_id=eq.' + userId }, function(payload) {
         if (payload.new.receiver_id === user.id) {
           setMessages(function(prev) { return prev.concat([payload.new]); });
           supabase.from('direct_messages').update({ is_read: true }).eq('id', payload.new.id);
           setTimeout(function() { bottomRef.current && bottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, 50);
         }
-      })
-      .subscribe();
+      }).subscribe();
     return function() { supabase.removeChannel(channel); };
   }, [user, userId]);
 
   async function loadAll() {
     setLoading(true);
-    var { data: prof } = await supabase.from('users')
-      .select('id, full_name, identity_verified, avatar_url').eq('id', userId).single();
+    var { data: prof } = await supabase.from('users').select('id, full_name, identity_verified, avatar_url').eq('id', userId).single();
     setOtherUser(prof);
-
-    var { data: msgs } = await supabase.from('direct_messages')
-      .select('*')
+    var { data: msgs } = await supabase.from('direct_messages').select('*')
       .or('and(sender_id.eq.' + user.id + ',receiver_id.eq.' + userId + '),and(sender_id.eq.' + userId + ',receiver_id.eq.' + user.id + ')')
       .order('created_at', { ascending: true }).limit(200);
     setMessages(msgs || []);
-
-    await supabase.from('direct_messages').update({ is_read: true })
-      .eq('sender_id', userId).eq('receiver_id', user.id).eq('is_read', false);
-
+    await supabase.from('direct_messages').update({ is_read: true }).eq('sender_id', userId).eq('receiver_id', user.id).eq('is_read', false);
     setLoading(false);
     setTimeout(function() { bottomRef.current && bottomRef.current.scrollIntoView(); }, 100);
   }
 
   function handleImageSelect(e) {
     var file = e.target.files && e.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) return;
+    if (!file || !file.type.startsWith('image/')) return;
     setImageFile(file);
     var reader = new FileReader();
     reader.onload = function(ev) { setImagePreview(ev.target.result); };
     reader.readAsDataURL(file);
   }
 
-  function removeImagePreview() { setImagePreview(null); setImageFile(null); if (imgInputRef.current) imgInputRef.current.value = ''; }
+  function removeImagePreview() {
+    setImagePreview(null); setImageFile(null);
+    if (imgInputRef.current) imgInputRef.current.value = '';
+  }
 
   async function uploadImage(file) {
     var ext = file.name.split('.').pop() || 'jpg';
@@ -315,59 +264,44 @@ export default function DirectMessages() {
     setSending(true);
     var content = text.trim();
     var imageUrl = null;
-
     if (imageFile) {
       setUploadingImg(true);
       try { imageUrl = await uploadImage(imageFile); } catch(e) { setUploadingImg(false); setSending(false); return; }
       setUploadingImg(false);
     }
-
-    setText('');
-    removeImagePreview();
-
-    var { data, error } = await supabase.from('direct_messages').insert({
-      sender_id: user.id,
-      receiver_id: userId,
-      content: content || null,
-      image_url: imageUrl,
-      is_read: false,
-    }).select().single();
-
+    setText(''); removeImagePreview();
+    var { data, error } = await supabase.from('direct_messages').insert({ sender_id: user.id, receiver_id: userId, content: content || null, image_url: imageUrl, is_read: false }).select().single();
     if (!error && data) {
       setMessages(function(prev) { return prev.concat([data]); });
-      await supabase.from('notifications').insert({
-        user_id: userId, type: 'reply',
-        content: imageUrl ? '📷 Sent you a photo' : 'New message',
-        link: '/citizen/messages/' + user.id, is_read: false,
-      });
+      await supabase.from('notifications').insert({ user_id: userId, type: 'reply', content: imageUrl ? '📷 Sent you a photo' : 'New message', link: '/citizen/messages/' + user.id, is_read: false });
     }
     setSending(false);
     setTimeout(function() { bottomRef.current && bottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, 50);
     inputRef.current && inputRef.current.focus();
   }
 
-  function addEmoji(em) {
-    setText(function(prev) { return prev + em; });
-    inputRef.current && inputRef.current.focus();
-  }
+  function addEmoji(em) { setText(function(prev) { return prev + em; }); inputRef.current && inputRef.current.focus(); }
 
   async function handleReact(msgId, emoji) {
-    // Update reactions optimistically
     setMessages(function(prev) {
       return prev.map(function(m) {
         if (m.id !== msgId) return m;
-        var reactions = Object.assign({}, m.reactions || {});
-        reactions[emoji] = (reactions[emoji] || 0) + 1;
-        return Object.assign({}, m, { reactions });
+        var r = Object.assign({}, m.reactions || {});
+        r[emoji] = (r[emoji] || 0) + 1;
+        return Object.assign({}, m, { reactions: r });
       });
     });
-    // Persist to DB (requires reactions jsonb column on direct_messages)
     try {
       var { data: current } = await supabase.from('direct_messages').select('reactions').eq('id', msgId).single();
       var existing = current && current.reactions ? current.reactions : {};
       existing[emoji] = (existing[emoji] || 0) + 1;
       await supabase.from('direct_messages').update({ reactions: existing }).eq('id', msgId);
-    } catch(e) { /* silent fail — reactions are optional */ }
+    } catch(e) { /* silent fail */ }
+  }
+
+  async function deleteMessage(msgId) {
+    setMessages(function(prev) { return prev.filter(function(m) { return m.id !== msgId; }); });
+    await supabase.from('direct_messages').delete().eq('id', msgId).eq('sender_id', user.id);
   }
 
   if (loading) return (
@@ -381,14 +315,10 @@ export default function DirectMessages() {
     <div style={{ textAlign: 'center', padding: 80, fontFamily: sans }}>
       <p style={{ fontSize: 48, margin: '0 0 12px' }}>✉️</p>
       <p style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>User not found</p>
-      <button onClick={function() { navigate(-1); }}
-        style={{ marginTop: 12, padding: '8px 20px', background: C.navy, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-        Go Back
-      </button>
+      <button onClick={function() { navigate(-1); }} style={{ marginTop: 12, padding: '8px 20px', background: C.navy, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Go Back</button>
     </div>
   );
 
-  // Group messages by date for separators
   var grouped = [];
   var lastDate = null;
   messages.forEach(function(msg) {
@@ -408,27 +338,14 @@ export default function DirectMessages() {
         .dm-send-btn:active{transform:scale(0.96)}
       `}</style>
 
-      {/* ── Header ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 18px',
-        background: 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)',
-        borderRadius: '18px 18px 0 0',
-        boxShadow: '0 4px 16px rgba(11,37,69,0.15)',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        {/* Decorative circle */}
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', background: 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)', borderRadius: '18px 18px 0 0', boxShadow: '0 4px 16px rgba(11,37,69,0.15)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(197,150,12,0.1)', pointerEvents: 'none' }} />
-
         <button onClick={function() { navigate(-1); }}
           style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, flexShrink: 0, transition: 'background 0.15s' }}
           onMouseEnter={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; }}
-          onMouseLeave={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}>
-          ←
-        </button>
-
+          onMouseLeave={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}>←</button>
         <Avatar name={otherUser.full_name} url={otherUser.avatar_url} size={42} />
-
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span onClick={function() { navigate('/citizen/profile/' + userId); }}
@@ -441,7 +358,6 @@ export default function DirectMessages() {
           </div>
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Direct Message</span>
         </div>
-
         <button onClick={function() { navigate('/citizen/profile/' + userId); }}
           style={{ padding: '7px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
           onMouseEnter={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; }}
@@ -450,14 +366,8 @@ export default function DirectMessages() {
         </button>
       </div>
 
-      {/* ── Messages Area ── */}
-      <div style={{
-        flex: 1, overflowY: 'auto', padding: '16px 18px',
-        background: 'linear-gradient(180deg, #f0f4f8 0%, #e8eef5 100%)',
-        borderLeft: '1px solid rgba(11,37,69,0.07)',
-        borderRight: '1px solid rgba(11,37,69,0.07)',
-        display: 'flex', flexDirection: 'column',
-      }}>
+      {/* Messages Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', background: 'linear-gradient(180deg, #f0f4f8 0%, #e8eef5 100%)', borderLeft: '1px solid rgba(11,37,69,0.07)', borderRight: '1px solid rgba(11,37,69,0.07)', display: 'flex', flexDirection: 'column' }}>
         {grouped.length === 0 ? (
           <div style={{ textAlign: 'center', margin: 'auto' }}>
             <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto 14px', background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, boxShadow: '0 2px 12px rgba(11,37,69,0.08)' }}>💬</div>
@@ -470,27 +380,19 @@ export default function DirectMessages() {
           var isMe = msg.sender_id === user.id;
           return (
             <div key={msg.id} style={{ animation: 'fadeIn 0.2s ease' }}>
-              <MessageBubble msg={msg} isMe={isMe} onReact={handleReact} />
+              <MessageBubble msg={msg} isMe={isMe} onReact={handleReact} onDelete={deleteMessage} />
             </div>
           );
         })}
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Image Preview ── */}
+      {/* Image Preview */}
       {imagePreview && (
-        <div style={{
-          background: '#fff', borderLeft: '1px solid rgba(11,37,69,0.07)', borderRight: '1px solid rgba(11,37,69,0.07)',
-          padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 10,
-          animation: 'imgPreviewIn 0.2s ease',
-          borderTop: '1px solid rgba(11,37,69,0.06)',
-        }}>
+        <div style={{ background: '#fff', borderLeft: '1px solid rgba(11,37,69,0.07)', borderRight: '1px solid rgba(11,37,69,0.07)', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 10, animation: 'imgPreviewIn 0.2s ease', borderTop: '1px solid rgba(11,37,69,0.06)' }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <img src={imagePreview} alt="preview" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, border: '2px solid ' + C.gold + '33', boxShadow: '0 2px 8px rgba(11,37,69,0.1)' }} />
-            <button onClick={removeImagePreview}
-              style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', border: '2px solid #fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff', fontWeight: 700 }}>
-              ✕
-            </button>
+            <button onClick={removeImagePreview} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', border: '2px solid #fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff', fontWeight: 700 }}>✕</button>
           </div>
           <div>
             <p style={{ fontSize: 12, fontWeight: 600, color: C.navy, margin: '0 0 2px' }}>📷 Image ready to send</p>
@@ -505,66 +407,31 @@ export default function DirectMessages() {
         </div>
       )}
 
-      {/* ── Input Bar ── */}
-      <div style={{
-        padding: '10px 12px',
-        background: '#fff',
-        borderRadius: '0 0 18px 18px',
-        border: '1px solid rgba(11,37,69,0.07)', borderTop: 'none',
-        boxShadow: '0 -2px 12px rgba(11,37,69,0.04)',
-        position: 'relative',
-      }}>
-        {/* Emoji Picker */}
+      {/* Input Bar */}
+      <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '0 0 18px 18px', border: '1px solid rgba(11,37,69,0.07)', borderTop: 'none', boxShadow: '0 -2px 12px rgba(11,37,69,0.04)', position: 'relative' }}>
         {showEmoji && <EmojiPicker onSelect={addEmoji} onClose={function() { setShowEmoji(false); }} />}
-
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-          {/* Emoji button */}
           <button onClick={function() { setShowEmoji(function(v) { return !v; }); }}
             style={{ width: 38, height: 38, borderRadius: 12, background: showEmoji ? C.gold + '18' : 'rgba(11,37,69,0.04)', border: showEmoji ? '1.5px solid ' + C.gold + '44' : '1.5px solid transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, transition: 'all 0.15s', flexShrink: 0 }}>
             😊
           </button>
-
-          {/* Image button */}
-          <button onClick={function() { imgInputRef.current && imgInputRef.current.click(); }}
-            disabled={uploadingImg}
+          <button onClick={function() { imgInputRef.current && imgInputRef.current.click(); }} disabled={uploadingImg}
             style={{ width: 38, height: 38, borderRadius: 12, background: imagePreview ? C.gold + '18' : 'rgba(11,37,69,0.04)', border: imagePreview ? '1.5px solid ' + C.gold + '44' : '1.5px solid transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, transition: 'all 0.15s', flexShrink: 0 }}>
             📷
           </button>
           <input ref={imgInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
-
-          {/* Text input */}
           <input
             ref={inputRef}
             value={text}
             onChange={function(e) { setText(e.target.value); }}
             onKeyDown={function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
             placeholder={imagePreview ? 'Add a caption...' : 'Message ' + otherUser.full_name.split(' ')[0] + '...'}
-            style={{
-              flex: 1, padding: '11px 16px', borderRadius: 20,
-              border: '1.5px solid rgba(11,37,69,0.1)', background: '#f8fafc',
-              fontFamily: sans, fontSize: 14, color: C.navy,
-              outline: 'none', boxSizing: 'border-box', transition: 'all 0.15s',
-            }}
+            style={{ flex: 1, padding: '11px 16px', borderRadius: 20, border: '1.5px solid rgba(11,37,69,0.1)', background: '#f8fafc', fontFamily: sans, fontSize: 14, color: C.navy, outline: 'none', boxSizing: 'border-box', transition: 'all 0.15s' }}
             onFocus={function(e) { e.target.style.borderColor = C.gold; e.target.style.background = '#fff'; }}
             onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.1)'; e.target.style.background = '#f8fafc'; }}
           />
-
-          {/* Send button */}
-          <button
-            className="dm-send-btn"
-            onClick={sendMessage}
-            disabled={(!text.trim() && !imageFile) || sending || uploadingImg}
-            style={{
-              width: 42, height: 42, borderRadius: '50%', border: 'none',
-              background: (text.trim() || imageFile) && !sending
-                ? 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)'
-                : 'rgba(11,37,69,0.06)',
-              cursor: (text.trim() || imageFile) ? 'pointer' : 'default',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: (text.trim() || imageFile) ? C.gold : 'rgba(11,37,69,0.2)',
-              transition: 'all 0.15s', flexShrink: 0,
-              boxShadow: (text.trim() || imageFile) ? '0 4px 14px rgba(11,37,69,0.25)' : 'none',
-            }}>
+          <button className="dm-send-btn" onClick={sendMessage} disabled={(!text.trim() && !imageFile) || sending || uploadingImg}
+            style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', background: (text.trim() || imageFile) && !sending ? 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)' : 'rgba(11,37,69,0.06)', cursor: (text.trim() || imageFile) ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', color: (text.trim() || imageFile) ? C.gold : 'rgba(11,37,69,0.2)', transition: 'all 0.15s', flexShrink: 0, boxShadow: (text.trim() || imageFile) ? '0 4px 14px rgba(11,37,69,0.25)' : 'none' }}>
             {sending ? (
               <div style={{ width: 16, height: 16, border: '2px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             ) : (
