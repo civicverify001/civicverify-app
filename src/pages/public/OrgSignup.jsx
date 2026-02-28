@@ -1,4 +1,4 @@
-// src/pages/public/OrgSignup.jsx — Organization Registration Flow
+// src/pages/public/OrgSignup.jsx
 import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -95,7 +95,6 @@ export default function OrgSignup() {
   var [error, setError] = useState('');
   var docInputRef = useRef(null);
 
-  // Step 0 — Account
   var [email, setEmail] = useState('');
   var [password, setPassword] = useState('');
   var [confirmPassword, setConfirmPassword] = useState('');
@@ -103,7 +102,6 @@ export default function OrgSignup() {
   var [contactTitle, setContactTitle] = useState('');
   var [phone, setPhone] = useState('');
 
-  // Step 1 — Organization
   var [orgName, setOrgName] = useState('');
   var [orgType, setOrgType] = useState('');
   var [website, setWebsite] = useState('');
@@ -114,13 +112,11 @@ export default function OrgSignup() {
   var [ein, setEin] = useState('');
   var [description, setDescription] = useState('');
 
-  // Step 2 — Survey Intent
   var [selectedTopics, setSelectedTopics] = useState([]);
   var [audienceSize, setAudienceSize] = useState('');
   var [surveyGoal, setSurveyGoal] = useState('');
   var [targetDemo, setTargetDemo] = useState('');
 
-  // Step 3 — Documents
   var [docFile, setDocFile] = useState(null);
   var [docName, setDocName] = useState('');
   var [agreed, setAgreed] = useState(false);
@@ -164,109 +160,84 @@ export default function OrgSignup() {
     if (validateStep()) setStep(function(s) { return s + 1; });
   }
 
-  async function handleDocSelect(e) {
+  function handleDocSelect(e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
     setDocFile(file);
     setDocName(file.name);
   }
 
-async function handleSubmit() {
-  if (!validateStep()) return;
-  setLoading(true);
-  setError('');
+  async function handleSubmit() {
+    if (!validateStep()) return;
+    setLoading(true);
+    setError('');
 
-  try {
-    // 1. Create auth user (trigger will insert basic row into users table)
-    var { data: authData, error: authError } = await supabase.auth.signUp({
-      email: email.trim(),
-      password: password,
-      options: {
-        data: {
-          full_name: contactName.trim(),
-          role: 'org',
-          org_status: 'pending',
-        }
-      }
-    });
-
-    if (authError) throw authError;
-
-    var uid = authData.user && authData.user.id;
-    if (!uid) throw new Error('Could not create account. Please try again.');
-
-    // 2. Wait for trigger to create the row
-    await new Promise(function(r) { setTimeout(r, 1000); });
-
-    // 3. Upload document if provided
-    var docUrl = null;
-    if (docFile) {
-      var ext = docFile.name.split('.').pop() || 'pdf';
-      var path = 'org-docs/' + uid + '/registration.' + ext;
-      var { error: uploadError } = await supabase.storage
-        .from('org-documents')
-        .upload(path, docFile, { contentType: docFile.type, upsert: true });
-      if (!uploadError) {
-        var { data: urlData } = supabase.storage.from('org-documents').getPublicUrl(path);
-        docUrl = urlData && urlData.publicUrl;
-      }
-    }
-
-    // 4. Update the user row with all org details
-    var { error: updateError } = await supabase.from('users').update({
-      org_name: orgName.trim(),
-      org_type: orgType,
-      org_website: website.trim() || null,
-      org_address: address.trim(),
-      org_city: city.trim(),
-      org_state: state.trim(),
-      org_zip: zip.trim() || null,
-      org_ein: ein.trim() || null,
-      org_description: description.trim() || null,
-      org_contact_title: contactTitle.trim() || null,
-      org_phone: phone.trim() || null,
-      org_survey_topics: selectedTopics,
-      org_audience_size: audienceSize,
-      org_survey_goal: surveyGoal.trim() || null,
-      org_target_demo: targetDemo.trim() || null,
-      org_doc_url: docUrl,
-    }).eq('id', uid);
-
-    if (updateError) console.warn('Update warning:', updateError.message);
-
-    navigate('/org-signup-success');
-
-  } catch (err) {
-    setError(err.message || 'Something went wrong. Please try again.');
-  }
-  setLoading(false);
-}
-
-      // 2. Upload document if provided, then update the user row with the URL
-      if (docFile) {
-        var ext = docFile.name.split('.').pop() || 'pdf';
-        var path = 'org-docs/' + uid + '/registration.' + ext;
-        var { error: uploadError } = await supabase.storage
-          .from('org-documents')
-          .upload(path, docFile, { contentType: docFile.type, upsert: true });
-
-        if (!uploadError) {
-          var { data: urlData } = supabase.storage.from('org-documents').getPublicUrl(path);
-          var docUrl = urlData && urlData.publicUrl;
-          if (docUrl) {
-            // Small delay to ensure trigger has created the row first
-            await new Promise(function(r) { setTimeout(r, 500); });
-            await supabase.from('users').update({ org_doc_url: docUrl }).eq('id', uid);
+    try {
+      // 1. Create auth user — trigger will create the users row automatically
+      var signUpResult = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            full_name: contactName.trim(),
+            role: 'org',
+            org_status: 'pending',
           }
         }
+      });
+
+      if (signUpResult.error) throw signUpResult.error;
+
+      var uid = signUpResult.data.user && signUpResult.data.user.id;
+      if (!uid) throw new Error('Could not create account. Please try again.');
+
+      // 2. Wait for trigger to create the row
+      await new Promise(function(r) { setTimeout(r, 1000); });
+
+      // 3. Upload document if provided
+      var docUrl = null;
+      if (docFile) {
+        var ext = docFile.name.split('.').pop() || 'pdf';
+        var uploadPath = 'org-docs/' + uid + '/registration.' + ext;
+        var uploadResult = await supabase.storage
+          .from('org-documents')
+          .upload(uploadPath, docFile, { contentType: docFile.type, upsert: true });
+        if (!uploadResult.error) {
+          var urlResult = supabase.storage.from('org-documents').getPublicUrl(uploadPath);
+          docUrl = urlResult.data && urlResult.data.publicUrl;
+        }
       }
 
-      // 3. Go to success page
+      // 4. Update users row with all org details
+      var updateResult = await supabase.from('users').update({
+        org_name: orgName.trim(),
+        org_type: orgType,
+        org_website: website.trim() || null,
+        org_address: address.trim(),
+        org_city: city.trim(),
+        org_state: state.trim(),
+        org_zip: zip.trim() || null,
+        org_ein: ein.trim() || null,
+        org_description: description.trim() || null,
+        org_contact_title: contactTitle.trim() || null,
+        org_phone: phone.trim() || null,
+        org_survey_topics: selectedTopics,
+        org_audience_size: audienceSize,
+        org_survey_goal: surveyGoal.trim() || null,
+        org_target_demo: targetDemo.trim() || null,
+        org_doc_url: docUrl,
+      }).eq('id', uid);
+
+      if (updateResult.error) {
+        console.warn('Update warning:', updateResult.error.message);
+      }
+
       navigate('/org-signup-success');
 
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
     }
+
     setLoading(false);
   }
 
@@ -282,7 +253,6 @@ async function handleSubmit() {
 
       <div style={{ width: '100%', maxWidth: 560 }}>
 
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(11,37,69,0.25)' }}>
@@ -293,10 +263,8 @@ async function handleSubmit() {
           <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: '8px 0 0' }}>Organization Registration</p>
         </div>
 
-        {/* Card */}
         <div style={{ background: '#fff', borderRadius: 24, boxShadow: '0 8px 40px rgba(11,37,69,0.1)', overflow: 'hidden' }}>
 
-          {/* Progress header */}
           <div style={{ background: 'linear-gradient(135deg, ' + C.navy + ', #1a3a6a)', padding: '24px 32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
               {STEPS.map(function(s, i) {
@@ -323,7 +291,6 @@ async function handleSubmit() {
             </div>
           </div>
 
-          {/* Step content */}
           <div style={{ padding: '32px' }}>
 
             {error && (
@@ -333,7 +300,6 @@ async function handleSubmit() {
               </div>
             )}
 
-            {/* ── STEP 0: Account ── */}
             {step === 0 && (
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Account Setup</h2>
@@ -369,7 +335,6 @@ async function handleSubmit() {
               </div>
             )}
 
-            {/* ── STEP 1: Organization ── */}
             {step === 1 && (
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Organization Details</h2>
@@ -422,7 +387,6 @@ async function handleSubmit() {
               </div>
             )}
 
-            {/* ── STEP 2: Survey Intent ── */}
             {step === 2 && (
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Survey Intentions</h2>
@@ -475,17 +439,16 @@ async function handleSubmit() {
                   </div>
                   <div>
                     <Label required>Survey Goals</Label>
-                    <Textarea value={surveyGoal} onChange={function(e) { setSurveyGoal(e.target.value); }} placeholder="Describe what you hope to learn from your surveys. What decisions will the data inform?" rows={3} />
+                    <Textarea value={surveyGoal} onChange={function(e) { setSurveyGoal(e.target.value); }} placeholder="Describe what you hope to learn from your surveys." rows={3} />
                   </div>
                   <div>
                     <Label>Target Demographic (optional)</Label>
-                    <Textarea value={targetDemo} onChange={function(e) { setTargetDemo(e.target.value); }} placeholder="e.g. Registered voters in Indiana, adults 18-65, homeowners in urban areas..." rows={2} />
+                    <Textarea value={targetDemo} onChange={function(e) { setTargetDemo(e.target.value); }} placeholder="e.g. Registered voters in Indiana, adults 18-65..." rows={2} />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── STEP 3: Documents ── */}
             {step === 3 && (
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Verification Documents</h2>
@@ -553,7 +516,6 @@ async function handleSubmit() {
               </div>
             )}
 
-            {/* Navigation buttons */}
             <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
               {step > 0 && (
                 <button onClick={function() { setStep(function(s) { return s - 1; }); setError(''); }}
