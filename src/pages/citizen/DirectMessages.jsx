@@ -172,6 +172,14 @@ function MessageBubble({ msg, isMe, onReact, onDelete }) {
                 </button>
               );
             })}
+            {isMe && (
+  <button onClick={function() { if (window.confirm('Delete this message?')) onDelete(msg.id); }}
+    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, padding: '2px 4px', borderRadius: 8, color: '#ef4444', transition: 'transform 0.1s' }}
+    onMouseEnter={function(e) { e.currentTarget.style.transform = 'scale(1.3)'; }}
+    onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}>
+    🗑️
+  </button>
+)}
           </div>
         )}
       </div>
