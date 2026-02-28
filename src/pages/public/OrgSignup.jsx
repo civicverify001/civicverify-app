@@ -171,46 +171,76 @@ export default function OrgSignup() {
     setDocName(file.name);
   }
 
-  async function handleSubmit() {
-    if (!validateStep()) return;
-    setLoading(true);
-    setError('');
+async function handleSubmit() {
+  if (!validateStep()) return;
+  setLoading(true);
+  setError('');
 
-    try {
-      // 1. Create auth user — pass ALL org data in options.data
-      // The database trigger (handle_new_user) reads this and creates the users row automatically
-      // bypassing RLS since it runs as SECURITY DEFINER
-      var { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: password,
-        options: {
-          data: {
-            full_name: contactName.trim(),
-            role: 'org',
-            org_status: 'pending',
-            org_name: orgName.trim(),
-            org_type: orgType,
-            org_website: website.trim() || null,
-            org_address: address.trim(),
-            org_city: city.trim(),
-            org_state: state.trim(),
-            org_zip: zip.trim() || null,
-            org_ein: ein.trim() || null,
-            org_description: description.trim() || null,
-            org_contact_title: contactTitle.trim() || null,
-            org_phone: phone.trim() || null,
-            org_survey_topics: JSON.stringify(selectedTopics),
-            org_audience_size: audienceSize,
-            org_survey_goal: surveyGoal.trim() || null,
-            org_target_demo: targetDemo.trim() || null,
-          }
+  try {
+    // 1. Create auth user (trigger will insert basic row into users table)
+    var { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password,
+      options: {
+        data: {
+          full_name: contactName.trim(),
+          role: 'org',
+          org_status: 'pending',
         }
-      });
+      }
+    });
 
-      if (authError) throw authError;
+    if (authError) throw authError;
 
-      var uid = authData.user && authData.user.id;
-      if (!uid) throw new Error('Could not create account. Please try again.');
+    var uid = authData.user && authData.user.id;
+    if (!uid) throw new Error('Could not create account. Please try again.');
+
+    // 2. Wait for trigger to create the row
+    await new Promise(function(r) { setTimeout(r, 1000); });
+
+    // 3. Upload document if provided
+    var docUrl = null;
+    if (docFile) {
+      var ext = docFile.name.split('.').pop() || 'pdf';
+      var path = 'org-docs/' + uid + '/registration.' + ext;
+      var { error: uploadError } = await supabase.storage
+        .from('org-documents')
+        .upload(path, docFile, { contentType: docFile.type, upsert: true });
+      if (!uploadError) {
+        var { data: urlData } = supabase.storage.from('org-documents').getPublicUrl(path);
+        docUrl = urlData && urlData.publicUrl;
+      }
+    }
+
+    // 4. Update the user row with all org details
+    var { error: updateError } = await supabase.from('users').update({
+      org_name: orgName.trim(),
+      org_type: orgType,
+      org_website: website.trim() || null,
+      org_address: address.trim(),
+      org_city: city.trim(),
+      org_state: state.trim(),
+      org_zip: zip.trim() || null,
+      org_ein: ein.trim() || null,
+      org_description: description.trim() || null,
+      org_contact_title: contactTitle.trim() || null,
+      org_phone: phone.trim() || null,
+      org_survey_topics: selectedTopics,
+      org_audience_size: audienceSize,
+      org_survey_goal: surveyGoal.trim() || null,
+      org_target_demo: targetDemo.trim() || null,
+      org_doc_url: docUrl,
+    }).eq('id', uid);
+
+    if (updateError) console.warn('Update warning:', updateError.message);
+
+    navigate('/org-signup-success');
+
+  } catch (err) {
+    setError(err.message || 'Something went wrong. Please try again.');
+  }
+  setLoading(false);
+}
 
       // 2. Upload document if provided, then update the user row with the URL
       if (docFile) {
