@@ -90,7 +90,7 @@ function EmojiPicker({ onSelect, onClose }) {
 // ── Quick Reactions ───────────────────────────────────────────────────────────
 var QUICK_REACTIONS = ['❤️','😂','😮','😢','👍','🔥'];
 
-function MessageBubble({ msg, isMe, onReact }) {
+function MessageBubble({ msg, isMe, onReact, onDelete }) {
   var [showReactions, setShowReactions] = useState(false);
   var reactions = msg.reactions || {};
   var hasReactions = Object.keys(reactions).length > 0;
