@@ -407,7 +407,7 @@ export default function CitizenDashboard() {
   var tierColor = trust <= 2 ? 'rgba(11,37,69,0.35)' : trust <= 10 ? C.gold : trust <= 25 ? C.green : C.purple;
 
   return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 980, overflowX: 'hidden' }}>
+    <div style={{ fontFamily: 'DM Sans, sans-serif', overflowX: 'hidden' }}>
       <style>{'@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @media(max-width:768px){.cv-stats-grid{grid-template-columns:repeat(2,1fr)!important} .cv-social-grid{grid-template-columns:1fr!important} .cv-dash-cols{grid-template-columns:1fr!important}}'}</style>
 
       <h1 style={{ fontSize: 27, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Welcome back{name ? ', ' + name : ''}</h1>
