@@ -273,7 +273,7 @@ export default function Debates() {
   );
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
+    <div style={{ width: '100%' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.4}}
