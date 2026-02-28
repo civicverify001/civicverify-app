@@ -79,7 +79,7 @@ export default function CitizenSurveys() {
   );
 
   return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 800 }}>
+    <div style={{ fontFamily: 'DM Sans, sans-serif' }}>
       <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
 
       <div style={{ marginBottom: 28 }}>
