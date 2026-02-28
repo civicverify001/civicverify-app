@@ -271,7 +271,13 @@ export default function DirectMessages() {
     }
     setText(''); removeImagePreview();
     var { data, error } = await supabase.from('direct_messages').insert({ sender_id: user.id, receiver_id: userId, content: content || null, image_url: imageUrl, is_read: false }).select().single();
-    if (!error && data) {
+    if (error) {
+      console.error('Send error:', error);
+      alert('Failed to send: ' + error.message);
+      setSending(false);
+      return;
+    }
+    if (data) {
       setMessages(function(prev) { return prev.concat([data]); });
       await supabase.from('notifications').insert({ user_id: userId, type: 'reply', content: imageUrl ? '📷 Sent you a photo' : 'New message', link: '/citizen/messages/' + user.id, is_read: false });
     }
