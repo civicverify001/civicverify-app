@@ -32,7 +32,7 @@ export default function CitizenImpact() {
   );
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
+    <div className="space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-[#0B2545]" style={{ fontFamily: 'Libre Baskerville, serif' }}>Your Impact</h1>
         <p className="text-sm text-[#0B2545]/35 mt-1">Track your civic engagement journey</p>
