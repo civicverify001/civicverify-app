@@ -1383,7 +1383,7 @@ export default function Community() {
   }
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", fontFamily: T.sans }}>
+    <div style={{ fontFamily: T.sans }}>
       <style>{"@keyframes spin { to { transform: rotate(360deg) } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }"}</style>
 
       {/* Header */}
