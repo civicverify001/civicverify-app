@@ -147,7 +147,7 @@ export default function DirectMessages() {
   );
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', fontFamily: 'DM Sans, sans-serif', height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ fontFamily: 'DM Sans, sans-serif', height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
       <style>{'@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}'}</style>
 
       {/* Header */}
