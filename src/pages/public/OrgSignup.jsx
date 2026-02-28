@@ -177,93 +177,61 @@ export default function OrgSignup() {
     setError('');
 
     try {
-      // 1. Create auth user
+      // 1. Create auth user — pass ALL org data in options.data
+      // The database trigger (handle_new_user) reads this and creates the users row automatically
+      // bypassing RLS since it runs as SECURITY DEFINER
       var { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
+        options: {
+          data: {
+            full_name: contactName.trim(),
+            role: 'org',
+            org_status: 'pending',
+            org_name: orgName.trim(),
+            org_type: orgType,
+            org_website: website.trim() || null,
+            org_address: address.trim(),
+            org_city: city.trim(),
+            org_state: state.trim(),
+            org_zip: zip.trim() || null,
+            org_ein: ein.trim() || null,
+            org_description: description.trim() || null,
+            org_contact_title: contactTitle.trim() || null,
+            org_phone: phone.trim() || null,
+            org_survey_topics: JSON.stringify(selectedTopics),
+            org_audience_size: audienceSize,
+            org_survey_goal: surveyGoal.trim() || null,
+            org_target_demo: targetDemo.trim() || null,
+          }
+        }
       });
+
       if (authError) throw authError;
 
       var uid = authData.user && authData.user.id;
-      if (!uid) throw new Error('Could not create account');
+      if (!uid) throw new Error('Could not create account. Please try again.');
 
-      // 2. Upload document if provided
-      var docUrl = null;
+      // 2. Upload document if provided, then update the user row with the URL
       if (docFile) {
         var ext = docFile.name.split('.').pop() || 'pdf';
         var path = 'org-docs/' + uid + '/registration.' + ext;
         var { error: uploadError } = await supabase.storage
           .from('org-documents')
           .upload(path, docFile, { contentType: docFile.type, upsert: true });
+
         if (!uploadError) {
           var { data: urlData } = supabase.storage.from('org-documents').getPublicUrl(path);
-          docUrl = urlData && urlData.publicUrl;
+          var docUrl = urlData && urlData.publicUrl;
+          if (docUrl) {
+            // Small delay to ensure trigger has created the row first
+            await new Promise(function(r) { setTimeout(r, 500); });
+            await supabase.from('users').update({ org_doc_url: docUrl }).eq('id', uid);
+          }
         }
       }
 
-      // 3. Insert into users table
-      var { error: userError } = await supabase.from('users').insert({
-        id: uid,
-        email: email.trim(),
-        full_name: contactName.trim(),
-        role: 'org',
-        org_status: 'pending',
-        // Org-specific fields (add these columns to your users table if needed)
-        org_name: orgName.trim(),
-        org_type: orgType,
-        org_website: website.trim() || null,
-        org_address: address.trim(),
-        org_city: city.trim(),
-        org_state: state.trim(),
-        org_zip: zip.trim() || null,
-        org_ein: ein.trim() || null,
-        org_description: description.trim() || null,
-        org_contact_title: contactTitle.trim() || null,
-        org_phone: phone.trim() || null,
-        org_survey_topics: selectedTopics,
-        org_audience_size: audienceSize,
-        org_survey_goal: surveyGoal.trim() || null,
-        org_target_demo: targetDemo.trim() || null,
-        org_doc_url: docUrl,
-        created_at: new Date().toISOString(),
-      });
-
-      if (userError) {
-        // Try upsert if insert fails (user may already exist in table)
-        await supabase.from('users').upsert({
-          id: uid,
-          email: email.trim(),
-          full_name: contactName.trim(),
-          role: 'org',
-          org_status: 'pending',
-          org_name: orgName.trim(),
-          org_type: orgType,
-          org_website: website.trim() || null,
-          org_address: address.trim(),
-          org_city: city.trim(),
-          org_state: state.trim(),
-          org_zip: zip.trim() || null,
-          org_ein: ein.trim() || null,
-          org_description: description.trim() || null,
-          org_contact_title: contactTitle.trim() || null,
-          org_phone: phone.trim() || null,
-          org_survey_topics: selectedTopics,
-          org_audience_size: audienceSize,
-          org_survey_goal: surveyGoal.trim() || null,
-          org_target_demo: targetDemo.trim() || null,
-          org_doc_url: docUrl,
-        });
-      }
-
-      // 4. Notify admins
-      await supabase.from('notifications').insert({
-        user_id: uid,
-        type: 'org_application',
-        content: orgName + ' has applied for organization access',
-        link: '/admin/review',
-        is_read: false,
-      }).catch(function() {});
-
+      // 3. Go to success page
       navigate('/org-signup-success');
 
     } catch (err) {
@@ -320,7 +288,6 @@ export default function OrgSignup() {
                 );
               })}
             </div>
-            {/* Progress bar */}
             <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
               <div style={{ height: '100%', background: C.gold, borderRadius: 2, width: ((step / (STEPS.length - 1)) * 100) + '%', transition: 'width 0.4s ease' }} />
             </div>
@@ -341,7 +308,6 @@ export default function OrgSignup() {
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Account Setup</h2>
                 <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Create your organization's login credentials</p>
-
                 <div style={{ display: 'grid', gap: 16 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
@@ -378,7 +344,6 @@ export default function OrgSignup() {
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Organization Details</h2>
                 <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Tell us about your organization</p>
-
                 <div style={{ display: 'grid', gap: 16 }}>
                   <div>
                     <Label required>Organization Name</Label>
@@ -432,7 +397,6 @@ export default function OrgSignup() {
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Survey Intentions</h2>
                 <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Help us understand what kind of surveys you'll run</p>
-
                 <div style={{ display: 'grid', gap: 20 }}>
                   <div>
                     <Label required>Survey Topics (select all that apply)</Label>
@@ -440,16 +404,12 @@ export default function OrgSignup() {
                       {SURVEY_TOPICS.map(function(topic) {
                         var selected = selectedTopics.includes(topic);
                         return (
-                          <button
-                            key={topic}
-                            className="topic-chip"
-                            onClick={function() { toggleTopic(topic); }}
+                          <button key={topic} className="topic-chip" onClick={function() { toggleTopic(topic); }}
                             style={{
                               padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
                               border: '1.5px solid ' + (selected ? C.gold : 'rgba(11,37,69,0.12)'),
                               background: selected ? 'linear-gradient(135deg, ' + C.gold + ', #e8a838)' : '#fafbfc',
-                              color: selected ? '#fff' : C.navy,
-                              cursor: 'pointer', transition: 'all 0.15s',
+                              color: selected ? '#fff' : C.navy, cursor: 'pointer', transition: 'all 0.15s',
                               boxShadow: selected ? '0 2px 8px rgba(197,150,12,0.25)' : 'none',
                             }}>
                             {topic}
@@ -458,7 +418,6 @@ export default function OrgSignup() {
                       })}
                     </div>
                   </div>
-
                   <div>
                     <Label required>Expected Survey Audience Size</Label>
                     <div style={{ display: 'grid', gap: 8 }}>
@@ -484,12 +443,10 @@ export default function OrgSignup() {
                       })}
                     </div>
                   </div>
-
                   <div>
                     <Label required>Survey Goals</Label>
                     <Textarea value={surveyGoal} onChange={function(e) { setSurveyGoal(e.target.value); }} placeholder="Describe what you hope to learn from your surveys. What decisions will the data inform?" rows={3} />
                   </div>
-
                   <div>
                     <Label>Target Demographic (optional)</Label>
                     <Textarea value={targetDemo} onChange={function(e) { setTargetDemo(e.target.value); }} placeholder="e.g. Registered voters in Indiana, adults 18-65, homeowners in urban areas..." rows={2} />
@@ -503,8 +460,6 @@ export default function OrgSignup() {
               <div className="step-content">
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>Verification Documents</h2>
                 <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Upload documentation to verify your organization. Our team will review within 1–3 business days.</p>
-
-                {/* What to upload */}
                 <div style={{ background: 'rgba(197,150,12,0.06)', border: '1px solid rgba(197,150,12,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 20 }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: C.navy, margin: '0 0 8px' }}>📋 Acceptable Documents</p>
                   <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'rgba(11,37,69,0.6)', lineHeight: 1.8 }}>
@@ -515,16 +470,8 @@ export default function OrgSignup() {
                     <li>Business license or state registration</li>
                   </ul>
                 </div>
-
-                {/* Upload area */}
-                <div
-                  onClick={function() { docInputRef.current && docInputRef.current.click(); }}
-                  style={{
-                    border: '2px dashed ' + (docFile ? C.gold : 'rgba(11,37,69,0.15)'),
-                    borderRadius: 14, padding: '32px 20px', textAlign: 'center', cursor: 'pointer',
-                    background: docFile ? 'rgba(197,150,12,0.04)' : '#fafbfc',
-                    transition: 'all 0.2s', marginBottom: 20,
-                  }}>
+                <div onClick={function() { docInputRef.current && docInputRef.current.click(); }}
+                  style={{ border: '2px dashed ' + (docFile ? C.gold : 'rgba(11,37,69,0.15)'), borderRadius: 14, padding: '32px 20px', textAlign: 'center', cursor: 'pointer', background: docFile ? 'rgba(197,150,12,0.04)' : '#fafbfc', transition: 'all 0.2s', marginBottom: 20 }}>
                   <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleDocSelect} style={{ display: 'none' }} />
                   {docFile ? (
                     <div>
@@ -541,8 +488,6 @@ export default function OrgSignup() {
                     </div>
                   )}
                 </div>
-
-                {/* Review summary */}
                 <div style={{ background: '#f8fafc', borderRadius: 12, padding: '16px 18px', marginBottom: 20, border: '1px solid rgba(11,37,69,0.06)' }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: C.navy, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 0.8 }}>Application Summary</p>
                   <div style={{ display: 'grid', gap: 6 }}>
@@ -563,15 +508,9 @@ export default function OrgSignup() {
                     })}
                   </div>
                 </div>
-
-                {/* Agreement */}
                 <div onClick={function() { setAgreed(function(v) { return !v; }); }}
                   style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-                  <div style={{
-                    width: 18, height: 18, borderRadius: 5, border: '2px solid ' + (agreed ? C.gold : 'rgba(11,37,69,0.2)'),
-                    background: agreed ? C.gold : 'none', flexShrink: 0, marginTop: 1,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
-                  }}>
+                  <div style={{ width: 18, height: 18, borderRadius: 5, border: '2px solid ' + (agreed ? C.gold : 'rgba(11,37,69,0.2)'), background: agreed ? C.gold : 'none', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
                     {agreed && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>}
                   </div>
                   <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.6)', margin: 0, lineHeight: 1.6 }}>
