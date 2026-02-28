@@ -432,7 +432,7 @@ export default function UserProfile() {
   var hasInterests = profile.civic_interests && profile.civic_interests.length > 0;
 
   return (
-    <div style={{ maxWidth: 740, margin: '0 auto', fontFamily: sans }}>
+    <div style={{ fontFamily: sans }}>
       <style>{'@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}} @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}'}</style>
 
       <button onClick={function() { navigate(-1); }}
