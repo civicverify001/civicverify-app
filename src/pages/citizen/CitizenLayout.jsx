@@ -58,7 +58,7 @@ function Avatar({ name, url, size, verified }) {
   );
 }
 
-function NotificationBell({ userId }) {
+function NotificationBell({ userId, inSidebar }) {
   var [count, setCount] = useState(0);
   var [open, setOpen] = useState(false);
   var [notifs, setNotifs] = useState([]);
@@ -115,6 +115,11 @@ function NotificationBell({ userId }) {
     return Math.floor(s / 86400) + 'd';
   }
 
+  // Dropdown position: in sidebar → float to the right; in mobile header → drop down
+  var dropdownStyle = inSidebar
+    ? { position: 'fixed', top: 60, left: 250, width: 320, zIndex: 1000 }
+    : { position: 'absolute', top: 46, right: 0, width: 320, zIndex: 100 };
+
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button onClick={openPanel} style={{
@@ -137,11 +142,10 @@ function NotificationBell({ userId }) {
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute', top: 46, right: 0, width: 320,
-          background: '#fff', borderRadius: 14, boxShadow: '0 12px 40px rgba(11,37,69,0.15)',
-          border: '1px solid rgba(11,37,69,0.08)', zIndex: 100, overflow: 'hidden',
-        }}>
+        <div style={Object.assign({}, dropdownStyle, {
+          background: '#fff', borderRadius: 14, boxShadow: '0 12px 40px rgba(11,37,69,0.2)',
+          border: '1px solid rgba(11,37,69,0.08)', overflow: 'hidden',
+        })}>
           <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(11,37,69,0.06)' }}>
             <span style={{ fontFamily: font, fontSize: 14, fontWeight: 700, color: C.navy }}>Notifications</span>
             {count > 0 && (
@@ -238,7 +242,7 @@ export default function CitizenLayout() {
 
         {/* Notification bell in sidebar */}
         <div style={{ padding: '0 16px 12px' }}>
-          <NotificationBell userId={user?.id} />
+          <NotificationBell userId={user?.id} inSidebar={true} />
         </div>
 
         {/* Nav links */}
@@ -330,13 +334,13 @@ export default function CitizenLayout() {
             Civic<span style={{ color: C.gold }}>Verify</span>
           </span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <NotificationBell userId={user?.id} />
+            <NotificationBell userId={user?.id} inSidebar={false} />
             <Avatar name={profile?.full_name} url={profile?.avatar_url} size={32} verified={profile?.identity_verified || profile?.is_verified} />
           </div>
         </header>
 
         <div style={{ padding: '28px 20px', maxWidth: 1200, margin: '0 auto' }}>
-<PushPrompt userId={user?.id} />
+          <PushPrompt userId={user?.id} />
           <Outlet />
         </div>
       </div>
@@ -356,3 +360,4 @@ export default function CitizenLayout() {
     </div>
   );
 }
+
