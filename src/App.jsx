@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 // Public pages
 import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
+import OrgSignup from './pages/public/OrgSignup'
 import Signup from './pages/public/Signup'
 
 // Layouts
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/org-signup" element={<OrgSignup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/survey/:id" element={<PublicSurvey />} />
