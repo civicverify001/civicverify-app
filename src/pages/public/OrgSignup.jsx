@@ -173,8 +173,6 @@ export default function OrgSignup() {
     setError('');
 
     try {
-      // Pass ALL org data in options.data — the trigger reads this and saves everything
-      // in one shot via SECURITY DEFINER, bypassing RLS entirely
       var signUpResult = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -207,14 +205,22 @@ export default function OrgSignup() {
       var uid = signUpResult.data.user && signUpResult.data.user.id;
       if (!uid) throw new Error('Could not create account. Please try again.');
 
-      // Upload document if provided — silent fail so it doesn't block signup
+      // Upload document, get public URL, save to users table
       if (docFile) {
         try {
           var ext = docFile.name.split('.').pop() || 'pdf';
           var uploadPath = 'org-docs/' + uid + '/registration.' + ext;
-          await supabase.storage
+          var uploadResult = await supabase.storage
             .from('org-documents')
             .upload(uploadPath, docFile, { contentType: docFile.type, upsert: true });
+
+          if (!uploadResult.error) {
+            var urlResult = supabase.storage.from('org-documents').getPublicUrl(uploadPath);
+            var docUrl = urlResult.data && urlResult.data.publicUrl;
+            if (docUrl) {
+              await supabase.from('users').update({ org_doc_url: docUrl }).eq('id', uid);
+            }
+          }
         } catch (uploadErr) {
           console.warn('Doc upload failed (non-fatal):', uploadErr);
         }
