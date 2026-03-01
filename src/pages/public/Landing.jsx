@@ -433,10 +433,11 @@ export default function Landing() {
                 { icon: '📋', text: `${stats.surveys} Surveys Published` },
                 { icon: '✅', text: `${stats.votes} Verified Responses` },
                 { icon: '🔒', text: '100% Bot-Free Platform' },
-                { icon: '🏛️', text: 'Real Civic Impact' },
-                { icon: '🌐', text: 'Identity-Verified Network' },
-                { icon: '📊', text: 'Real-Time Results' },
-                { icon: '⚖️', text: 'Editorial Integrity' },
+                { icon: '🚫', text: 'Zero Data Sales. Ever.' },
+                { icon: '🏛️', text: 'Results Only — No Raw Data Access' },
+                { icon: '🌐', text: 'Identity Verified, Never Stored' },
+                { icon: '📊', text: 'Aggregated Results Only' },
+                { icon: '⚖️', text: 'Independently Audited Privacy' },
               ].map((item, i) => (
                 <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 28px' }}>
                   <span style={{ fontSize: 14 }}>{item.icon}</span>
@@ -685,10 +686,10 @@ export default function Landing() {
 
               <div style={{ display: 'grid', gap: 18, marginBottom: 36 }}>
                 {[
-                  { icon: '🎯', title: 'Targeted Surveys',     desc: 'Reach citizens by age, location, and demographics' },
-                  { icon: '📊', title: 'Real-Time Analytics', desc: 'Watch responses come in with live dashboards' },
-                  { icon: '✅', title: 'Verified Respondents', desc: 'Every response from an identity-verified citizen' },
-                  { icon: '📄', title: 'Export & Report',       desc: 'Download data in CSV/PDF for analysis and sharing' },
+                  { icon: '🎯', title: 'Targeted Surveys',      desc: 'Commission surveys targeted by age, location, and demographics — without ever seeing who responded' },
+                  { icon: '📊', title: 'Real-Time Results',      desc: 'View aggregated results as they come in — never individual responses or personal details' },
+                  { icon: '✅', title: 'Verified Respondents',   desc: 'Every result backed by identity-verified citizens — no bots, no duplicates, no fake accounts' },
+                  { icon: '🔒', title: 'Results Only, Always',   desc: 'You receive statistical outcomes only. Raw responses and citizen identities are never accessible to anyone' },
                 ].map((f, i) => (
                   <div key={f.title} className="org-feature" style={{ display: 'flex', gap: 16, ...fade(orgVis, .1 * (i + 1)) }}>
                     <div className="org-icon" style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0,
@@ -701,28 +702,6 @@ export default function Landing() {
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Pricing strip */}
-              <div style={{ background: C.offWhite, borderRadius: 16, padding: '18px 20px', marginBottom: 28, border: `1px solid ${C.border}` }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '.12em', margin: '0 0 12px' }}>Pricing from</p>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  {[
-                    { tier: 'General', price: '$3.50', color: C.green },
-                    { tier: 'Basic',   price: '$4.50', color: C.gold },
-                    { tier: 'Refined', price: '$5.50', color: '#2563eb' },
-                    { tier: 'Precision',price:'$7.00', color: '#7c3aed' },
-                  ].map(t => (
-                    <div key={t.tier} style={{ padding: '7px 14px', borderRadius: 10,
-                      background: '#fff', border: `1px solid ${C.border}`,
-                      display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.color }} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{t.tier}</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: t.color, fontFamily: font }}>{t.price}</span>
-                    </div>
-                  ))}
-                </div>
-                <p style={{ fontSize: 11, color: C.muted, margin: '10px 0 0' }}>Per verified citizen response. +$1.00 for geo micro-targeting.</p>
               </div>
 
               <button className="btn-gold" onClick={() => navigate('/org-signup')}
@@ -781,12 +760,114 @@ export default function Landing() {
                 <div style={{ padding: '12px 16px', borderRadius: 12,
                   background: 'rgba(22,163,74,.08)', border: '1px solid rgba(22,163,74,.2)',
                   display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 18 }}>🛡️</span>
+                  <span style={{ fontSize: 18 }}>🔒</span>
                   <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.7)', margin: 0 }}>
-                    100% bot-free · Identity-verified respondents only
+                    Results only · No identity data ever accessible
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ PRIVACY PLEDGE ═══════════ */}
+      <section style={{ padding: '100px 28px', background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 60%,${C.navyMid} 100%)`, position: 'relative', overflow: 'hidden' }}>
+        {/* background rings */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', opacity: .06 }}>
+          <svg width="800" height="800" viewBox="0 0 800 800">
+            {[80,150,220,290,360].map((r, i) => (
+              <circle key={i} cx="400" cy="400" r={r} fill="none" stroke={C.gold} strokeWidth=".8"
+                style={{ animation: `pulse ${3 + i * .8}s ease-in-out infinite`, animationDelay: i * .25 + 's' }} />
+            ))}
+          </svg>
+        </div>
+
+        <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2 }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20,
+              padding: '8px 20px', borderRadius: 30,
+              background: 'rgba(197,150,12,.1)', border: '1px solid rgba(197,150,12,.25)' }}>
+              <span style={{ fontSize: 16 }}>🛡️</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.goldL, textTransform: 'uppercase', letterSpacing: '.14em' }}>Our Privacy Pledge</span>
+            </div>
+            <h2 style={{ fontFamily: font, fontSize: 42, fontWeight: 700, color: '#fff', lineHeight: 1.2, marginBottom: 18 }}>
+              Your Data Belongs to You.<br />
+              <span style={{ color: C.goldL, fontStyle: 'italic' }}>No Exceptions. No Compromise.</span>
+            </h2>
+            <p style={{ fontSize: 17, color: 'rgba(255,255,255,.52)', maxWidth: 600, margin: '0 auto', lineHeight: 1.75 }}>
+              We built CivicVerify on one non-negotiable principle: citizen data is never for sale, never for access, never shared — with anyone, ever.
+            </p>
+          </div>
+
+          {/* 3 big pledge cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 48 }}>
+            {[
+              {
+                icon: '👁️',
+                title: 'No One Sees Your Data',
+                body: 'Not us. Not organisations. Not governments. Not partners. Your individual responses, identity, and participation are cryptographically isolated. Nobody can access them — not even CivicVerify staff.',
+                color: C.goldL,
+                bg: 'rgba(197,150,12,.08)',
+                border: 'rgba(197,150,12,.2)',
+              },
+              {
+                icon: '📊',
+                title: 'Organisations Get Results Only',
+                body: 'When an organisation commissions a survey, they receive one thing: statistical aggregated outcomes. Zero access to who responded, how individuals answered, or any personal information whatsoever.',
+                color: '#60a5fa',
+                bg: 'rgba(96,165,250,.06)',
+                border: 'rgba(96,165,250,.18)',
+              },
+              {
+                icon: '🔐',
+                title: 'Identity Verified, Never Stored',
+                body: "Your identity verification is used once to confirm you're a real citizen. After that, it's discarded. We don't retain ID documents. We never link your civic responses to your real-world identity.",
+                color: '#34d399',
+                bg: 'rgba(52,211,153,.06)',
+                border: 'rgba(52,211,153,.18)',
+              },
+            ].map((card, i) => (
+              <div key={i} style={{
+                padding: '36px 30px', borderRadius: 22,
+                background: card.bg, border: `1px solid ${card.border}`,
+                backdropFilter: 'blur(12px)',
+              }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16,
+                  background: `rgba(255,255,255,.06)`, border: `1px solid ${card.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 22, fontSize: 24 }}>{card.icon}</div>
+                <h3 style={{ fontFamily: font, fontSize: 19, fontWeight: 700, color: card.color, marginBottom: 14, lineHeight: 1.3 }}>{card.title}</h3>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,.55)', lineHeight: 1.78, margin: 0 }}>{card.body}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Iron-clad statements row */}
+          <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 20, padding: '32px 36px',
+            border: '1px solid rgba(255,255,255,.08)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase',
+              letterSpacing: '.16em', marginBottom: 24, textAlign: 'center' }}>Our Absolute Commitments</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }}>
+              {[
+                '🚫 We will never sell citizen data to any third party, ever',
+                '🚫 Organisations cannot access individual responses — only aggregated results',
+                '🚫 No government or authority receives citizen data without a lawful court order',
+                '🚫 We do not use citizen responses for advertising or profiling',
+                '✅ All data is encrypted in transit and at rest using AES-256',
+                '✅ Identity documents are verified and immediately discarded — not stored',
+                '✅ Citizens can delete their account and all associated data at any time',
+                '✅ Independent audits confirm our zero-access policy is technically enforced',
+              ].map((stmt, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start',
+                  padding: '12px 16px', borderRadius: 12,
+                  background: stmt.startsWith('✅') ? 'rgba(52,211,153,.05)' : 'rgba(239,68,68,.04)',
+                  border: `1px solid ${stmt.startsWith('✅') ? 'rgba(52,211,153,.12)' : 'rgba(239,68,68,.1)'}` }}>
+                  <span style={{ fontSize: 15, flexShrink: 0 }}>{stmt.slice(0, 2)}</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,.62)', lineHeight: 1.55 }}>{stmt.slice(3)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -911,13 +992,19 @@ export default function Landing() {
             {/* Company links */}
             <div>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Company</p>
-              {['About', 'Privacy Policy', 'Terms of Service', 'Contact', 'Press'].map(l => (
-                <a key={l} href="#"
-                  style={{ display: 'block', fontSize: 13.5, color: 'rgba(255,255,255,.32)', textDecoration: 'none', marginBottom: 11, transition: 'color .15s' }}
+              {[
+                { label: 'About',           path: '/about' },
+                { label: 'Privacy Policy',  path: '/privacy' },
+                { label: 'Terms of Service',path: '/terms' },
+                { label: 'Contact',         path: '/contact' },
+              ].map(l => (
+                <span key={l.label}
+                  onClick={() => navigate(l.path)}
+                  style={{ display: 'block', fontSize: 13.5, color: 'rgba(255,255,255,.32)', textDecoration: 'none', marginBottom: 11, transition: 'color .15s', cursor: 'pointer' }}
                   onMouseEnter={e => { e.target.style.color = C.goldL }}
                   onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,.32)' }}>
-                  {l}
-                </a>
+                  {l.label}
+                </span>
               ))}
             </div>
 
@@ -948,12 +1035,17 @@ export default function Landing() {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)' }}>© 2026 CivicVerify. All rights reserved.</span>
             <div style={{ display: 'flex', gap: 20 }}>
-              {['Privacy', 'Terms', 'Cookies'].map(l => (
-                <a key={l} href="#" style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)', textDecoration: 'none', transition: 'color .15s' }}
+              {[
+                { label: 'Privacy', path: '/privacy' },
+                { label: 'Terms',   path: '/terms' },
+              ].map(l => (
+                <span key={l.label}
+                  onClick={() => navigate(l.path)}
+                  style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)', textDecoration: 'none', transition: 'color .15s', cursor: 'pointer' }}
                   onMouseEnter={e => { e.target.style.color = C.goldL }}
                   onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,.18)' }}>
-                  {l}
-                </a>
+                  {l.label}
+                </span>
               ))}
             </div>
             <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.12)' }}>Built with trust in mind.</span>
