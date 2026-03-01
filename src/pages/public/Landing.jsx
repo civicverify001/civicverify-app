@@ -356,18 +356,16 @@ export default function Landing() {
               {/* 4 stat boxes */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
                 {[
-                  { val: stats.citizens, label: 'Citizens',        color: C.goldL },
-                  { val: stats.polls,    label: 'Live Polls',       color: C.green },
-                  { val: stats.votes,    label: 'Total Votes',      color: '#818cf8' },
-                  { val: stats.surveys,  label: 'Surveys Created',  color: '#f472b6' },
+                  { icon: '🔒', label: 'ID Verified',    desc: 'One person, one voice',   color: C.goldL },
+                  { icon: '🚫', label: 'No Data Sales',  desc: 'Ever. Absolute rule.',     color: C.green },
+                  { icon: '👁️', label: 'Results Only',   desc: 'Orgs see aggregates only', color: '#818cf8' },
+                  { icon: '🗑️', label: 'Delete Anytime', desc: 'Full control, always',     color: '#f472b6' },
                 ].map(s => (
                   <div key={s.label} style={{ padding: '14px 16px', borderRadius: 14,
-                    background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)',
-                    transition: 'background .2s' }}>
-                    <p style={{ fontFamily: font, fontSize: 30, fontWeight: 700, color: s.color, margin: '0 0 2px', lineHeight: 1 }}>
-                      <Counter target={s.val} />
-                    </p>
-                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', margin: 0 }}>{s.label}</p>
+                    background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)' }}>
+                    <p style={{ fontSize: 22, margin: '0 0 4px' }}>{s.icon}</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: s.color, margin: '0 0 2px' }}>{s.label}</p>
+                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', margin: 0 }}>{s.desc}</p>
                   </div>
                 ))}
               </div>
@@ -419,9 +417,9 @@ export default function Landing() {
           {[...Array(2)].map((_, rep) => (
             <span key={rep} style={{ display: 'inline-flex', alignItems: 'center' }}>
               {[
-                { icon: '🛡️', text: `${stats.citizens} Verified Citizens` },
-                { icon: '📋', text: `${stats.surveys} Surveys Published` },
-                { icon: '✅', text: `${stats.votes} Verified Responses` },
+                { icon: "🛡️", text: "Identity Verified Citizens" },
+                { icon: "📋", text: "Civic Surveys Powered" },
+                { icon: "✅", text: "100% Verified Responses" },
                 { icon: '🔒', text: '100% Bot-Free Platform' },
                 { icon: '🚫', text: 'Zero Data Sales. Ever.' },
                 { icon: '🏛️', text: 'Results Only — No Raw Data Access' },
