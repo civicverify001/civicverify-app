@@ -138,7 +138,8 @@ export default function OrgDashboard() {
   );
 
   return (
-    <div style={{ fontFamily: sans, color: '#fff', margin: '0 -24px', paddingBottom: 32 }}>
+    /* ── KEY FIX: full-width wrapper, no maxWidth cap ── */
+    <div style={{ fontFamily: sans, color: '#fff', margin: '0 -24px -24px', width: 'calc(100% + 48px)', paddingBottom: 32 }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
@@ -251,8 +252,8 @@ export default function OrgDashboard() {
         </div>
       </div>
 
-      {/* ── BODY ─────────────────────────────────────────────────────── */}
-      <div className="body-pad" style={{ padding:'24px 32px 0', maxWidth:1400, margin:'0 auto' }}>
+      {/* ── BODY — NO maxWidth cap, full width ───────────────────── */}
+      <div className="body-pad" style={{ padding:'24px 32px 0' }}>
 
         {/* ── STATS + ACCOUNT ── */}
         <div className="two-col" style={{
@@ -427,6 +428,7 @@ export default function OrgDashboard() {
           borderRadius:20, padding:'32px',
           boxShadow:`0 0 0 1px rgba(197,150,12,0.08), 0 16px 48px rgba(0,0,0,0.4)`,
           opacity:visible?1:0, animation:visible?'fadeUp 0.5s ease 0.4s forwards':'none',
+          marginBottom:8,
         }}>
           <div className="cta-inner" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:20, flexWrap:'wrap' }}>
             <div style={{ flex:'1 1 300px' }}>
