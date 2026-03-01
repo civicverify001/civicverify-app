@@ -78,9 +78,6 @@ export default function Landing() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-    ])
-  }
-
   async function fetchPosts() {
     const { data } = await supabase.from('community_posts')
       .select('id,content,created_at,likes_count,comments_count,user_id,users:user_id(full_name,identity_verified)')
