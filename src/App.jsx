@@ -76,6 +76,7 @@ export default function App() {
           <Route path="/survey/:id" element={<PublicSurvey />} />
           <Route path="/results" element={<PublicResults />} />
           <Route path="/dashboard" element={<AuthRedirect />} />
+          <Route path="/org-pending" element={<OrgPending />} />
 
           <Route path="/citizen" element={
             <ProtectedRoute requiredRole="citizen"><CitizenLayout /></ProtectedRoute>
