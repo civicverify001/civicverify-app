@@ -1,246 +1,362 @@
-// src/pages/public/Contact.jsx
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
-var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', green: '#22863A', white: '#fff' };
-var heading = "'Playfair Display', Georgia, serif";
-var body = "'DM Sans', -apple-system, sans-serif";
-
-function MailIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <rect x="2" y="4" width="20" height="16" rx="2" stroke={C.gold} strokeWidth="2" />
-      <path d="M22 7l-10 7L2 7" stroke={C.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+const C = {
+  navy: '#0B2545', navyLight: '#12305a', navyDeep: '#081c35', navyMid: '#1a3a6e',
+  gold: '#C5960C', goldL: '#F0B429', goldDim: '#a37d0a',
+  warmWhite: '#FDFCFA', offWhite: '#f0f3f8',
+  muted: '#6b7c93', ink: '#1a2942',
+  green: '#16a34a',
+  border: 'rgba(11,37,69,0.07)',
 }
+const font = "'Libre Baskerville', Georgia, serif"
+const sans = "'DM Sans', system-ui, sans-serif"
 
-function MapPinIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke={C.gold} strokeWidth="2" />
-      <circle cx="12" cy="10" r="3" stroke={C.gold} strokeWidth="2" />
-    </svg>
-  );
-}
+const SUBJECTS = [
+  'General Question',
+  'Identity Verification Help',
+  'Account or Login Issue',
+  'Privacy or Data Concern',
+  'Organisation / Partnership Inquiry',
+  'Report a Bug',
+  'Media or Press Inquiry',
+  'Other',
+]
 
-function ClockIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke={C.gold} strokeWidth="2" />
-      <path d="M12 6v6l4 2" stroke={C.gold} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function MessageIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke={C.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const FAQ = [
+  {
+    q: 'How does identity verification work?',
+    a: 'You submit a government-issued ID once through our secure partner (Didit). Your document is checked, then immediately and permanently deleted. We store only a one-way token confirming you are a unique, real citizen — never the document itself.',
+  },
+  {
+    q: 'Can organisations see who responded to their survey?',
+    a: 'No. Organisations receive aggregated statistical results only — percentages and demographic summaries. Individual responses, identities, and personal details are never accessible to anyone, including CivicVerify staff.',
+  },
+  {
+    q: 'Is my data ever sold?',
+    a: 'Never. We do not sell, share, or license citizen data to any third party for any purpose. This is an absolute rule with no exceptions.',
+  },
+  {
+    q: 'How do I delete my account?',
+    a: 'Go to Account Settings and click Delete Account. Deletion is immediate and permanent — all your data is removed within 30 days.',
+  },
+  {
+    q: 'I am an organisation. How do I get started?',
+    a: 'Register at civicverify.org/org-signup. Your application is reviewed by our team, typically within 2 business days. Once approved you get full access to the survey builder and results dashboard.',
+  },
+  {
+    q: 'How long does it take to get a response?',
+    a: 'We respond to all messages within 1 business day. For urgent issues, use the subject "Account or Login Issue" and we will prioritise your request.',
+  },
+]
 
 export default function Contact() {
-  var navigate = useNavigate();
-  var [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
-  var [sending, setSending] = useState(false);
-  var [sent, setSent] = useState(false);
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ name: '', email: '', subject: SUBJECTS[0], message: '' })
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
+  const [openFaq, setOpenFaq] = useState(null)
+
+  useEffect(() => { window.scrollTo(0, 0) }, [])
 
   function handleChange(field) {
-    return function (e) {
-      setForm(function (prev) {
-        var next = Object.assign({}, prev);
-        next[field] = e.target.value;
-        return next;
-      });
-    };
+    return e => {
+      setForm(prev => ({ ...prev, [field]: e.target.value }))
+      setError('')
+    }
   }
 
   function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
-    setSending(true);
-    // Simulate send — replace with real endpoint later
-    setTimeout(function () {
-      setSending(false);
-      setSent(true);
-      setForm({ name: '', email: '', subject: '', message: '' });
-    }, 1200);
+    e.preventDefault()
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      setError('Please fill in all required fields.')
+      return
+    }
+    setSending(true)
+    // Replace with real endpoint / Supabase insert when ready
+    setTimeout(() => {
+      setSending(false)
+      setSent(true)
+      setForm({ name: '', email: '', subject: SUBJECTS[0], message: '' })
+    }, 1400)
   }
 
-  var contactInfo = [
-    { icon: <MailIcon />, title: 'Email Us', detail: 'support@civicverify.com', sub: 'We typically respond within 24 hours' },
-    { icon: <MapPinIcon />, title: 'Location', detail: 'United States', sub: 'Serving citizens nationwide' },
-    { icon: <ClockIcon />, title: 'Hours', detail: 'Mon \u2013 Fri, 9am \u2013 6pm ET', sub: 'Weekend support via email' },
-  ];
-
-  var faqItems = [
-    { q: 'How do I verify my identity?', a: 'After signing up, you\u2019ll be guided through a simple identity verification process. It takes just a few minutes and ensures one person, one verified voice.' },
-    { q: 'Is my personal information safe?', a: 'Absolutely. All personal data is encrypted and never sold. Only anonymized, aggregated survey results are shared with organizational partners.' },
-    { q: 'How do I participate in polls?', a: 'Once verified, polls targeted to your demographics and location will appear on your dashboard. You can vote, comment, and share directly.' },
-    { q: 'I\u2019m an organization. How do I create surveys?', a: 'Sign up with an organization account. You\u2019ll get access to our survey builder, demographic targeting, and real-time analytics dashboard.' },
-    { q: 'How do I delete my account?', a: 'You can delete your account at any time from your Profile settings. This permanently removes all your personal data from our systems.' },
-  ];
-
-  var inputStyle = {
-    width: '100%', padding: '14px 18px', fontSize: 14, fontFamily: body,
-    border: '1px solid rgba(11,37,69,0.1)', borderRadius: 10, outline: 'none',
-    color: C.navy, background: C.white, transition: 'border-color 0.2s',
-  };
-
-  var labelStyle = {
-    display: 'block', fontSize: 13, fontWeight: 600, color: C.navy,
-    marginBottom: 6,
-  };
+  const inputStyle = {
+    width: '100%', padding: '12px 16px', fontSize: 14.5, fontFamily: sans,
+    border: `1px solid ${C.border}`, borderRadius: 10, outline: 'none',
+    color: C.ink, background: '#fff', boxSizing: 'border-box',
+    transition: 'border-color .2s',
+  }
 
   return (
-    <div style={{ fontFamily: body, color: C.navy, background: C.cream, minHeight: '100vh' }}>
-      {/* Nav */}
+    <div style={{ fontFamily: sans, background: C.warmWhite, minHeight: '100vh' }}>
+
+      {/* ── NAV ── */}
       <nav style={{
-        position: 'sticky', top: 0, zIndex: 50, padding: '16px 32px',
-        background: 'rgba(245,241,236,0.9)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(11,37,69,0.06)',
+        position: 'sticky', top: 0, zIndex: 100,
+        background: 'rgba(11,37,69,0.97)', backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        padding: '0 28px', height: 64,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function () { navigate('/'); }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 12, fontFamily: body }}>CV</span>
-          </div>
-          <span style={{ fontSize: 18, fontWeight: 700, color: C.navy, fontFamily: heading }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={function () { navigate('/login'); }}
-            style={{ padding: '9px 20px', background: 'transparent', border: '1px solid rgba(11,37,69,0.12)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: C.navy, cursor: 'pointer', fontFamily: body }}>
-            Log In
-          </button>
-          <button onClick={function () { navigate('/signup'); }}
-            style={{ padding: '9px 20px', background: C.navy, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: body }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <img src="/civicverifylogo.png" alt="CivicVerify" style={{ height: 32 }} />
+        </Link>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+          <Link to="/about" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>About</Link>
+          <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Privacy</Link>
+          <Link to="/signup" style={{ padding: '8px 20px', borderRadius: 8, background: C.gold, color: C.navy, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
             Get Started
-          </button>
+          </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section style={{ background: 'linear-gradient(135deg, #0B2545 0%, #132d52 50%, #1a3a66 100%)', padding: '72px 24px 64px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-        <div style={{ position: 'relative', maxWidth: 600, margin: '0 auto' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(197,150,12,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <MessageIcon />
+      {/* ── HERO ── */}
+      <section style={{
+        background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 60%,${C.navyMid} 100%)`,
+        padding: '80px 28px 72px', textAlign: 'center',
+      }}>
+        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20,
+            padding: '6px 18px', borderRadius: 30,
+            background: 'rgba(197,150,12,0.12)', border: '1px solid rgba(197,150,12,0.25)',
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.goldL, textTransform: 'uppercase', letterSpacing: '.14em' }}>Contact Us</span>
           </div>
-          <h1 style={{ fontSize: 40, fontWeight: 700, color: '#fff', fontFamily: heading, margin: '0 0 16px', lineHeight: 1.2 }}>Get in Touch</h1>
-          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, margin: 0 }}>Have a question, suggestion, or partnership inquiry? We\u2019d love to hear from you.</p>
+          <h1 style={{ fontFamily: font, fontSize: 46, fontWeight: 700, color: '#fff', lineHeight: 1.2, margin: '0 0 18px' }}>
+            We're Here to Help.<br />
+            <span style={{ color: C.goldL, fontStyle: 'italic' }}>Always.</span>
+          </h1>
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, margin: 0 }}>
+            Whether you're a citizen with a question, an organisation exploring a partnership, or a journalist covering civic tech — reach out and we'll respond within 1 business day.
+          </p>
         </div>
       </section>
 
-      {/* Contact Info Cards */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-          {contactInfo.map(function (item, i) {
-            return (
-              <div key={i} style={{ background: C.white, borderRadius: 14, padding: '28px 24px', border: '1px solid rgba(11,37,69,0.06)', textAlign: 'center' }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: C.gold + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>{item.icon}</div>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'rgba(11,37,69,0.3)', margin: '0 0 8px' }}>{item.title}</p>
-                <p style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: '0 0 4px', fontFamily: heading }}>{item.detail}</p>
-                <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.35)', margin: 0 }}>{item.sub}</p>
+      {/* ── CONTACT CARDS ── */}
+      <section style={{ padding: '56px 28px 0', background: C.warmWhite }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+            {[
+              { icon: '📧', title: 'General Support', email: 'support@civicverify.org', detail: 'Questions about your account, verification, or how the platform works.' },
+              { icon: '🔒', title: 'Privacy & Data', email: 'privacy@civicverify.org', detail: 'Concerns about how your data is handled, deletion requests, or data access.' },
+              { icon: '🏛️', title: 'Organisations & Press', email: 'partners@civicverify.org', detail: 'Partnership inquiries, media requests, and organisational onboarding.' },
+            ].map(card => (
+              <div key={card.title} style={{
+                background: '#fff', borderRadius: 18, padding: '28px 24px',
+                border: `1px solid ${C.border}`, textAlign: 'center',
+              }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14,
+                  background: 'rgba(197,150,12,0.08)', border: '1px solid rgba(197,150,12,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, margin: '0 auto 16px',
+                }}>{card.icon}</div>
+                <p style={{ fontFamily: font, fontSize: 16, fontWeight: 700, color: C.navy, margin: '0 0 8px' }}>{card.title}</p>
+                <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, margin: '0 0 14px' }}>{card.detail}</p>
+                <a href={`mailto:${card.email}`} style={{
+                  fontSize: 13.5, fontWeight: 600, color: C.gold, textDecoration: 'none',
+                  borderBottom: `1px solid rgba(197,150,12,0.3)`, paddingBottom: 1,
+                }}>{card.email}</a>
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Response time bar */}
+          <div style={{
+            marginTop: 20, padding: '16px 24px',
+            background: 'rgba(22,163,74,0.06)', borderRadius: 12,
+            border: '1px solid rgba(22,163,74,0.15)',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <span style={{ fontSize: 18 }}>⏱️</span>
+            <p style={{ fontSize: 14, color: '#1a6b3a', fontWeight: 600, margin: 0 }}>
+              We respond to all messages within <strong>1 business day</strong> — Monday to Friday, 9am–6pm ET. Weekend messages are answered first thing Monday.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Contact Form */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
-          {/* Form */}
-          <div style={{ background: C.white, borderRadius: 16, padding: 32, border: '1px solid rgba(11,37,69,0.06)' }}>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: heading, margin: '0 0 4px' }}>Send a Message</h2>
-            <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 28px', lineHeight: 1.5 }}>Fill out the form and we'll get back to you as soon as possible.</p>
+      {/* ── FORM + FAQ ── */}
+      <section style={{ padding: '52px 28px 80px', background: C.warmWhite }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
+
+          {/* FORM */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '36px 32px', border: `1px solid ${C.border}`, boxShadow: '0 4px 24px rgba(11,37,69,0.06)' }}>
+            <h2 style={{ fontFamily: font, fontSize: 26, fontWeight: 700, color: C.navy, margin: '0 0 6px' }}>Send a Message</h2>
+            <p style={{ fontSize: 14, color: C.muted, margin: '0 0 28px', lineHeight: 1.6 }}>
+              Fill out the form and we'll get back to you as soon as possible.
+            </p>
 
             {sent ? (
               <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: C.green + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 24 }}>{'\u2713'}</div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, margin: '0 0 8px' }}>Message Sent!</h3>
-                <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 20px', lineHeight: 1.5 }}>Thank you for reaching out. We'll respond within 24 hours.</p>
-                <button onClick={function () { setSent(false); }}
-                  style={{ padding: '10px 24px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  Send Another Message
-                </button>
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%',
+                  background: 'rgba(22,163,74,0.1)', border: '2px solid rgba(22,163,74,0.3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 28, margin: '0 auto 20px',
+                }}>✅</div>
+                <h3 style={{ fontFamily: font, fontSize: 22, fontWeight: 700, color: C.navy, margin: '0 0 10px' }}>Message Sent!</h3>
+                <p style={{ fontSize: 14.5, color: C.muted, margin: '0 0 24px', lineHeight: 1.65 }}>
+                  Thank you for reaching out. We'll respond to <strong>{form.email || 'your email'}</strong> within 1 business day.
+                </p>
+                <button onClick={() => setSent(false)} style={{
+                  padding: '11px 28px', background: C.navy, color: '#fff',
+                  border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}>Send Another Message</button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                {/* Name + Email */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                   <div>
-                    <label style={labelStyle}>Name *</label>
-                    <input value={form.name} onChange={handleChange('name')} placeholder="Your name" style={inputStyle} required />
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: C.navy, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                      Name <span style={{ color: C.gold }}>*</span>
+                    </label>
+                    <input
+                      value={form.name}
+                      onChange={handleChange('name')}
+                      placeholder="Your full name"
+                      style={inputStyle}
+                    />
                   </div>
                   <div>
-                    <label style={labelStyle}>Email *</label>
-                    <input value={form.email} onChange={handleChange('email')} type="email" placeholder="you@example.com" style={inputStyle} required />
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: C.navy, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                      Email <span style={{ color: C.gold }}>*</span>
+                    </label>
+                    <input
+                      value={form.email}
+                      onChange={handleChange('email')}
+                      type="email"
+                      placeholder="you@example.com"
+                      style={inputStyle}
+                    />
                   </div>
                 </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={labelStyle}>Subject</label>
-                  <input value={form.subject} onChange={handleChange('subject')} placeholder="What is this about?" style={inputStyle} />
+
+                {/* Subject */}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: C.navy, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                    Subject
+                  </label>
+                  <select
+                    value={form.subject}
+                    onChange={handleChange('subject')}
+                    style={{ ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7c93' strokeWidth='1.5' fill='none' strokeLinecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: 36 }}
+                  >
+                    {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
                 </div>
-                <div style={{ marginBottom: 24 }}>
-                  <label style={labelStyle}>Message *</label>
-                  <textarea value={form.message} onChange={handleChange('message')} placeholder="Tell us how we can help..." rows={5}
-                    style={Object.assign({}, inputStyle, { resize: 'vertical', lineHeight: 1.6 })} required />
+
+                {/* Message */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: C.navy, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                    Message <span style={{ color: C.gold }}>*</span>
+                  </label>
+                  <textarea
+                    value={form.message}
+                    onChange={handleChange('message')}
+                    placeholder="Tell us how we can help..."
+                    rows={6}
+                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
+                  />
                 </div>
-                <button type="submit" disabled={sending}
-                  style={{ width: '100%', padding: '14px 24px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: sending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-                  {sending ? 'Sending...' : 'Send Message'}
+
+                {error && (
+                  <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8 }}>
+                    <p style={{ fontSize: 13.5, color: '#b91c1c', margin: 0 }}>{error}</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={sending}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+                    background: sending ? C.muted : C.navy,
+                    color: sending ? 'rgba(255,255,255,0.6)' : C.goldL,
+                    fontSize: 15, fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer',
+                    fontFamily: sans, transition: 'background .2s',
+                  }}>
+                  {sending ? 'Sending...' : 'Send Message →'}
                 </button>
-              </form>
+
+                <p style={{ fontSize: 12, color: C.muted, textAlign: 'center', margin: '14px 0 0', lineHeight: 1.6 }}>
+                  🔒 Your message is private. We never share contact form submissions with third parties.
+                </p>
+              </div>
             )}
           </div>
 
           {/* FAQ */}
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: heading, margin: '0 0 4px' }}>Frequently Asked</h2>
-            <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px', lineHeight: 1.5 }}>Quick answers to common questions.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {faqItems.map(function (item, i) {
-                return (
-                  <div key={i} style={{ background: C.white, borderRadius: 12, padding: '20px 22px', border: '1px solid rgba(11,37,69,0.06)' }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: C.navy, margin: '0 0 6px' }}>{item.q}</p>
-                    <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.4)', margin: 0, lineHeight: 1.6 }}>{item.a}</p>
-                  </div>
-                );
-              })}
+            <h2 style={{ fontFamily: font, fontSize: 26, fontWeight: 700, color: C.navy, margin: '0 0 6px' }}>Common Questions</h2>
+            <p style={{ fontSize: 14, color: C.muted, margin: '0 0 24px', lineHeight: 1.6 }}>
+              Quick answers before you reach out.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {FAQ.map((item, i) => (
+                <div key={i} style={{
+                  background: '#fff', borderRadius: 14,
+                  border: `1px solid ${openFaq === i ? 'rgba(197,150,12,0.35)' : C.border}`,
+                  overflow: 'hidden', transition: 'border-color .2s',
+                }}>
+                  <button
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    style={{
+                      width: '100%', padding: '16px 20px', background: 'none', border: 'none',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      cursor: 'pointer', gap: 12, textAlign: 'left',
+                    }}>
+                    <span style={{ fontSize: 14.5, fontWeight: 600, color: C.navy, lineHeight: 1.4 }}>{item.q}</span>
+                    <span style={{
+                      fontSize: 18, color: C.gold, flexShrink: 0,
+                      transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0)',
+                      transition: 'transform .2s', display: 'inline-block',
+                    }}>+</span>
+                  </button>
+                  {openFaq === i && (
+                    <div style={{ padding: '0 20px 18px' }}>
+                      <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.75, margin: 0 }}>{item.a}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Privacy reminder */}
+            <div style={{
+              marginTop: 24, padding: '20px 22px', borderRadius: 14,
+              background: `linear-gradient(135deg,${C.navyDeep},${C.navy})`,
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <p style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: C.goldL, margin: '0 0 8px' }}>
+                🛡️ Your Privacy is Protected
+              </p>
+              <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 12px' }}>
+                We will never sell your data, share your identity, or link your civic opinions to your personal information. Read our full commitment.
+              </p>
+              <Link to="/privacy" style={{ fontSize: 13, fontWeight: 700, color: C.goldL, textDecoration: 'none', borderBottom: '1px solid rgba(240,180,41,0.3)', paddingBottom: 1 }}>
+                Read Privacy Policy →
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px 64px' }}>
-        <div style={{ background: 'linear-gradient(135deg, #0B2545, #132d52)', borderRadius: 16, padding: '40px 36px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: '0 0 12px', fontFamily: heading }}>Ready to Join CivicVerify?</h2>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', margin: '0 0 24px', lineHeight: 1.6 }}>Create your free account and start making your verified voice count.</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <button onClick={function () { navigate('/signup'); }}
-              style={{ padding: '12px 28px', background: C.gold, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(197,150,12,0.3)' }}>
-              Get Started Free {'\u2192'}
-            </button>
-            <button onClick={function () { navigate('/'); }}
-              style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              Back to Home
-            </button>
-          </div>
+      {/* ── FOOTER ── */}
+      <footer style={{ background: C.navyDeep, padding: '28px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+          {[['/', 'Home'], ['/about', 'About'], ['/privacy', 'Privacy Policy'], ['/terms', 'Terms'], ['/contact', 'Contact']].map(([to, label]) => (
+            <Link key={to} to={to} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'none' }}>{label}</Link>
+          ))}
         </div>
-      </section>
-
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid rgba(11,37,69,0.06)', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.25)', margin: 0 }}>{'\u00A9'} {new Date().getFullYear()} CivicVerify. All rights reserved.</p>
-        <div style={{ display: 'flex', gap: 20 }}>
-          <button onClick={function () { navigate('/about'); }} style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', background: 'none', border: 'none', cursor: 'pointer' }}>About</button>
-          <button onClick={function () { navigate('/privacy'); }} style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', background: 'none', border: 'none', cursor: 'pointer' }}>Privacy</button>
-          <button onClick={function () { navigate('/terms'); }} style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', background: 'none', border: 'none', cursor: 'pointer' }}>Terms</button>
-        </div>
+        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, margin: '16px 0 0' }}>
+          © 2026 CivicVerify. Indianapolis, IN. All rights reserved.
+        </p>
       </footer>
     </div>
-  );
+  )
 }
