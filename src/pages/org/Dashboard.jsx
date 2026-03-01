@@ -13,10 +13,10 @@ var blueMid = '#1e3a6e';
 var blue = '#1a4a8a';
 
 var VALUES = [
-  { icon: '🛡️', accent: '#F0B429', bg: 'rgba(240,180,41,0.08)', border: 'rgba(240,180,41,0.2)', title: 'Verified Authenticity', body: 'Every respondent is identity-verified through Didit. No bots, no duplicates — only credentialed citizens.' },
-  { icon: '🔒', accent: '#60a5fa', bg: 'rgba(96,165,250,0.08)', border: 'rgba(96,165,250,0.2)', title: 'Privacy by Design', body: 'All responses are anonymized before delivery. You receive powerful insights, never personal data.' },
-  { icon: '⚖️', accent: '#34d399', bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.2)', title: 'Editorial Integrity', body: 'Every survey undergoes review before distribution. We reject push polls and misleading questions.' },
-  { icon: '🌐', accent: '#f472b6', bg: 'rgba(244,114,182,0.08)', border: 'rgba(244,114,182,0.2)', title: 'True Representation', body: 'Our verified network spans demographics, geographies, and affiliations — real America, not a curated sample.' },
+  { icon: '🛡️', accent: '#F0B429', bg: 'linear-gradient(140deg, #1a1500, #0a1628)', border: 'rgba(240,180,41,0.25)', title: 'Verified Authenticity', body: 'Every respondent is identity-verified through Didit. No bots, no duplicates — only credentialed citizens.' },
+  { icon: '🔒', accent: '#60a5fa', bg: 'linear-gradient(140deg, #001533, #0a1628)', border: 'rgba(96,165,250,0.25)', title: 'Privacy by Design', body: 'All responses are anonymized before delivery. You receive powerful insights, never personal data.' },
+  { icon: '⚖️', accent: '#34d399', bg: 'linear-gradient(140deg, #001a10, #0a1628)', border: 'rgba(52,211,153,0.25)', title: 'Editorial Integrity', body: 'Every survey undergoes review before distribution. We reject push polls and misleading questions.' },
+  { icon: '🌐', accent: '#f472b6', bg: 'linear-gradient(140deg, #1a0015, #0a1628)', border: 'rgba(244,114,182,0.25)', title: 'True Representation', body: 'Our verified network spans demographics, geographies, and affiliations — real America, not a curated sample.' },
 ];
 
 var HOW = [
@@ -366,7 +366,7 @@ export default function OrgDashboard() {
                     background: v.bg,
                     border:`1px solid ${v.border}`,
                     borderRadius:16, padding:'20px 18px',
-                    boxShadow:`0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 ${v.border}`,
+                    boxShadow:`0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 ${v.border}`,
                   }}>
                     <div style={{ fontSize:26, marginBottom:10 }}>{v.icon}</div>
                     <div style={{ width:28, height:3, background:v.accent, borderRadius:2, marginBottom:10, boxShadow:`0 0 8px ${v.accent}80` }} />
