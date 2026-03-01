@@ -211,7 +211,8 @@ export default function About() {
           © 2026 CivicVerify. Indianapolis, IN. All rights reserved.
         </p>
       </footer>
-    </div>
+
       <BackToTop />
+    </div>
   )
 }
