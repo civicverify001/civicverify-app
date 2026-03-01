@@ -3,15 +3,41 @@ import { Link } from 'react-router-dom'
 
 const C = {
   navy: '#0B2545', navyLight: '#12305a', navyDeep: '#081c35', navyMid: '#1a3a6e',
-  gold: '#C5960C', goldL: '#F0B429', goldDim: '#a37d0a',
+  gold: '#C5960C', goldL: '#F0B429',
   warmWhite: '#FDFCFA', offWhite: '#f0f3f8',
   muted: '#6b7c93', ink: '#1a2942',
+  green: '#16a34a',
   border: 'rgba(11,37,69,0.07)',
 }
 const font = "'Libre Baskerville', Georgia, serif"
 const sans = "'DM Sans', system-ui, sans-serif"
 
-export default function About() {
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom: 48, paddingBottom: 48,
+      borderBottom: `1px solid ${C.border}` }}>
+      <h2 style={{ fontFamily: font, fontSize: 24, fontWeight: 700, color: C.navy,
+        margin: '0 0 18px', paddingLeft: 16,
+        borderLeft: `4px solid ${C.gold}` }}>{title}</h2>
+      {children}
+    </div>
+  )
+}
+
+function P({ children }) {
+  return <p style={{ fontSize: 15, color: '#3a4a5c', lineHeight: 1.85, margin: '0 0 14px' }}>{children}</p>
+}
+
+function Li({ children, icon = '✅' }) {
+  return (
+    <div style={{ display: 'flex', gap: 12, marginBottom: 10, alignItems: 'flex-start' }}>
+      <span style={{ fontSize: 14, flexShrink: 0, marginTop: 2 }}>{icon}</span>
+      <span style={{ fontSize: 15, color: '#3a4a5c', lineHeight: 1.7 }}>{children}</span>
+    </div>
+  )
+}
+
+export default function Privacy() {
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
   return (
@@ -26,8 +52,8 @@ export default function About() {
           <img src="/civicverifylogo.png" alt="CivicVerify" style={{ height: 32 }} />
         </Link>
         <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-          <Link to="/how-it-works" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>How It Works</Link>
-          <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Privacy</Link>
+          <Link to="/about" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>About</Link>
+          <Link to="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Terms</Link>
           <Link to="/signup" style={{ padding: '8px 20px', borderRadius: 8, background: C.gold,
             color: C.navy, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Get Started</Link>
         </div>
@@ -35,136 +61,163 @@ export default function About() {
 
       {/* ── HERO ── */}
       <section style={{ background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 60%,${C.navyMid} 100%)`,
-        padding: '90px 28px 80px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+        padding: '80px 28px 70px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20,
             padding: '6px 18px', borderRadius: 30,
             background: 'rgba(197,150,12,0.12)', border: '1px solid rgba(197,150,12,0.25)' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.goldL, textTransform: 'uppercase', letterSpacing: '.14em' }}>About CivicVerify</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.goldL, textTransform: 'uppercase', letterSpacing: '.14em' }}>Privacy Policy</span>
           </div>
-          <h1 style={{ fontFamily: font, fontSize: 48, fontWeight: 700, color: '#fff',
-            lineHeight: 1.2, margin: '0 0 20px' }}>
-            Built to Make Every<br />
-            <span style={{ color: C.goldL, fontStyle: 'italic' }}>Voice Count for Real</span>
+          <h1 style={{ fontFamily: font, fontSize: 44, fontWeight: 700, color: '#fff',
+            lineHeight: 1.2, margin: '0 0 18px' }}>
+            Your Data Belongs to You.<br />
+            <span style={{ color: C.goldL, fontStyle: 'italic' }}>No Exceptions.</span>
           </h1>
-          <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.55)', lineHeight: 1.75, margin: 0 }}>
-            We started CivicVerify because online civic engagement was broken. Bots, fake accounts, and coordinated manipulation were drowning out real citizens. We decided to fix it.
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 20px' }}>
+            Last updated: March 1, 2026
+          </p>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, margin: 0 }}>
+            This policy explains exactly what data we collect, how we use it, and the absolute limits on what we will ever do with it. We have written it in plain English on purpose.
           </p>
         </div>
       </section>
 
-      {/* ── MISSION ── */}
-      <section style={{ padding: '80px 28px', background: C.warmWhite }}>
-        <div style={{ maxWidth: 860, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56, alignItems: 'center' }}>
-            <div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase',
-                letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Our Mission</span>
-              <h2 style={{ fontFamily: font, fontSize: 36, fontWeight: 700, color: C.navy,
-                lineHeight: 1.25, margin: '0 0 20px' }}>
-                One verified citizen.<br />One real voice.
-              </h2>
-              <p style={{ fontSize: 15.5, color: C.muted, lineHeight: 1.8, margin: '0 0 16px' }}>
-                CivicVerify exists to ensure that when public opinion reaches decision-makers, it reflects reality — not manipulation. We verify that every participant is a real, unique U.S. citizen before their voice is counted.
-              </p>
-              <p style={{ fontSize: 15.5, color: C.muted, lineHeight: 1.8, margin: 0 }}>
-                We are not a polling company. We are not a data broker. We are infrastructure for authentic civic participation — built in Indianapolis, built for everyone.
-              </p>
-            </div>
-            <div style={{ display: 'grid', gap: 16 }}>
+      {/* ── PLEDGE BANNER ── */}
+      <div style={{ background: C.navyDeep, padding: '32px 28px' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto',
+          background: 'rgba(197,150,12,0.1)', border: '1px solid rgba(197,150,12,0.25)',
+          borderRadius: 16, padding: '28px 32px', textAlign: 'center' }}>
+          <p style={{ fontFamily: font, fontSize: 20, color: C.goldL, fontWeight: 700, margin: '0 0 8px' }}>
+            The CivicVerify Data Pledge
+          </p>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', lineHeight: 1.75, margin: '0 0 8px' }}>
+            No one — including CivicVerify staff — has access to individual citizen responses.
+          </p>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', lineHeight: 1.75, margin: 0 }}>
+            Organisations receive aggregated statistical results only. Nothing else. Ever.
+          </p>
+        </div>
+      </div>
+
+      {/* ── CONTENT ── */}
+      <section style={{ padding: '64px 28px' }}>
+        <div style={{ maxWidth: 780, margin: '0 auto' }}>
+
+          <Section title="1. What Data We Collect">
+            <P>We collect only what is strictly necessary to operate CivicVerify. We never collect data speculatively or for future monetisation.</P>
+            <Li>
+              <strong>Account information:</strong> Your name, email address, and password (stored as a secure hash — we never see your actual password).
+            </Li>
+            <Li>
+              <strong>Identity verification:</strong> Your government-issued ID document, processed once through our verification partner (Didit). The document is immediately and permanently deleted after verification is confirmed. We retain only a one-way cryptographic token that confirms you are a unique, real citizen — we cannot reverse this token to recover your identity.
+            </Li>
+            <Li>
+              <strong>Demographic profile (optional):</strong> Age range, location, and other profile fields you choose to fill in. These are used solely to match you to relevant surveys. You control what you share.
+            </Li>
+            <Li>
+              <strong>Survey responses:</strong> Your answers to civic surveys. These are stored in encrypted form and are never linked to your identity in any queryable way.
+            </Li>
+            <Li>
+              <strong>Usage data:</strong> Standard server logs (IP address, browser type, pages visited) used for security monitoring and performance. Retained for 30 days maximum.
+            </Li>
+          </Section>
+
+          <Section title="2. What We Will Never Do With Your Data">
+            <P>These are absolute commitments. They are not subject to business conditions, partner agreements, or future changes in policy.</P>
+            <Li icon="🚫"><strong>We will never sell your data</strong> — to advertisers, data brokers, political organisations, research firms, or any other third party, for any price, under any circumstances.</Li>
+            <Li icon="🚫"><strong>We will never share your individual responses</strong> with organisations that commission surveys. They receive aggregated statistical results only.</Li>
+            <Li icon="🚫"><strong>We will never link your identity to your political opinions</strong> — technically or otherwise. The systems are architecturally separated.</Li>
+            <Li icon="🚫"><strong>We will never use your data for advertising</strong> — on our platform or anyone else's. CivicVerify is ad-free by design.</Li>
+            <Li icon="🚫"><strong>We will never retain your ID document</strong> beyond the moment of verification. It is deleted immediately.</Li>
+            <Li icon="🚫"><strong>We will never allow CivicVerify employees to query individual response records.</strong> Database access controls make this technically impossible, not just policy-prohibited.</Li>
+          </Section>
+
+          <Section title="3. How Identity Verification Works">
+            <P>Understanding exactly what happens to your ID is important. Here is the complete process:</P>
+            <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
               {[
-                { icon: '🗳️', title: 'Authentic Participation', desc: 'Every response backed by a real, verified U.S. citizen. No exceptions.' },
-                { icon: '🔒', title: 'Privacy by Design', desc: 'Identity verification and civic participation are permanently separated. Nobody sees who said what.' },
-                { icon: '⚖️', title: 'Nonpartisan Always', desc: 'We have no political agenda. We make the data trustworthy — what happens with it is up to citizens and policymakers.' },
-                { icon: '🌍', title: 'Built for Everyone', desc: 'Free to join for all citizens. Simple enough for anyone. Powerful enough to influence real policy.' },
-              ].map(v => (
-                <div key={v.title} style={{ display: 'flex', gap: 14, padding: '16px',
-                  background: C.offWhite, borderRadius: 14, border: `1px solid ${C.border}` }}>
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{v.icon}</span>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 3px' }}>{v.title}</p>
-                    <p style={{ fontSize: 13, color: C.muted, margin: 0, lineHeight: 1.55 }}>{v.desc}</p>
-                  </div>
+                ['Step 1', 'You submit your government-issued ID via our secure verification partner, Didit. The upload is encrypted in transit using TLS 1.3.'],
+                ['Step 2', 'Didit confirms your ID is valid and that you are a unique individual who has not previously registered. This takes approximately 30 seconds.'],
+                ['Step 3', 'Your ID document is permanently deleted from Didit\'s and CivicVerify\'s systems immediately upon confirmation.'],
+                ['Step 4', 'A one-way cryptographic token is stored against your account — this confirms your uniqueness but cannot be reversed to identify you.'],
+                ['Step 5', 'Your identity verification status (verified / not verified) is stored. Your actual identity is not.'],
+              ].map(([step, desc]) => (
+                <div key={step} style={{ display: 'flex', gap: 16, padding: '16px 18px',
+                  background: C.offWhite, borderRadius: 12, border: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, flexShrink: 0,
+                    textTransform: 'uppercase', letterSpacing: '.08em', marginTop: 3 }}>{step}</span>
+                  <span style={{ fontSize: 14.5, color: '#3a4a5c', lineHeight: 1.65 }}>{desc}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
+          </Section>
 
-      {/* ── STORY ── */}
-      <section style={{ padding: '80px 28px', background: C.offWhite }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase',
-            letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Our Story</span>
-          <h2 style={{ fontFamily: font, fontSize: 34, fontWeight: 700, color: C.navy, margin: '0 0 32px' }}>
-            Started in Indianapolis. Built for the Country.
-          </h2>
-          <div style={{ textAlign: 'left', display: 'grid', gap: 18 }}>
-            {[
-              'The problem was obvious to anyone paying attention. Government agencies were running online consultations that any organised group could flood with fake submissions. Local councils were making decisions based on petitions that nobody could verify. Social media polls were being manipulated in real time. The public voice was being drowned out by the loudest, most coordinated actors — not the most representative ones.',
-              'We built CivicVerify to change that. The idea is simple: before your opinion is counted, we verify you are a real, unique U.S. citizen. Once verified, you participate freely — and your participation cannot be duplicated, faked, or manipulated by someone else.',
-              'We are an early-stage platform, and we are transparent about that. We are building carefully, incrementally, and with trust as our primary design principle. Every feature we add, every policy we write, every decision we make is filtered through one question: does this make CivicVerify more trustworthy for the citizens who use it?',
-            ].map((p, i) => (
-              <p key={i} style={{ fontSize: 15.5, color: '#3a4a5c', lineHeight: 1.85, margin: 0,
-                padding: '20px 24px', background: '#fff', borderRadius: 12,
-                border: `1px solid ${C.border}`, borderLeft: `4px solid ${i === 0 ? C.gold : C.border}` }}>
-                {p}
-              </p>
-            ))}
-          </div>
-        </div>
-      </section>
+          <Section title="4. How Survey Responses Are Protected">
+            <P>Your civic participation is protected by both technical controls and strict policy:</P>
+            <Li>Survey responses are encrypted at rest using AES-256 encryption.</Li>
+            <Li>Responses are stored in a separate database partition from identity records — they cannot be joined by design.</Li>
+            <Li>When an organisation receives results from a commissioned survey, they receive only: percentage breakdowns, demographic summaries (e.g. "42% of respondents aged 25–34 supported this policy"), and total response counts.</Li>
+            <Li>Minimum response thresholds apply — no results are released for surveys with fewer than a defined number of responses, preventing reverse-identification of small groups.</Li>
+            <Li>No individual response record, timestamp, or participant identifier is ever included in results delivered to organisations.</Li>
+          </Section>
 
-      {/* ── VALUES ── */}
-      <section style={{ padding: '80px 28px', background: C.warmWhite }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 52 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase',
-              letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>What We Stand For</span>
-            <h2 style={{ fontFamily: font, fontSize: 34, fontWeight: 700, color: C.navy, margin: 0 }}>
-              Our Non-Negotiable Principles
-            </h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
-            {[
-              { icon: '🚫', title: 'No Data Sales. Ever.', desc: 'We will never sell, rent, or license citizen data to any third party for any purpose — commercial, political, or otherwise. This is absolute.' },
-              { icon: '👁️', title: 'Results Only for Orgs', desc: 'Organisations that commission surveys receive aggregated statistics only. They never see who responded, how individuals answered, or any personal details.' },
-              { icon: '🔐', title: 'ID Verified, Not Stored', desc: 'Your identity document is verified once and immediately discarded. We retain a one-way cryptographic token only — never the document itself.' },
-              { icon: '⚖️', title: 'Nonpartisan Infrastructure', desc: 'CivicVerify has no political affiliation and advances no political agenda. We provide the verification layer — citizens decide the content.' },
-              { icon: '🗑️', title: 'Right to Delete', desc: 'You can delete your account and all associated data at any time, permanently and immediately. No retention period. No questions asked.' },
-              { icon: '🏛️', title: 'Transparent Operations', desc: 'We publish transparency reports, are working toward independent audits, and will always be honest about what we do and do not yet have.' },
-            ].map(v => (
-              <div key={v.title} style={{ padding: '28px 24px', borderRadius: 18,
-                background: C.offWhite, border: `1px solid ${C.border}` }}>
-                <div style={{ fontSize: 28, marginBottom: 14 }}>{v.icon}</div>
-                <p style={{ fontFamily: font, fontSize: 16, fontWeight: 700, color: C.navy, margin: '0 0 10px' }}>{v.title}</p>
-                <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.65, margin: 0 }}>{v.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+          <Section title="5. Data Retention">
+            <P>We keep data for as long as it is needed and no longer.</P>
+            <Li><strong>ID documents:</strong> Deleted immediately after verification (within seconds of confirmation).</Li>
+            <Li><strong>Server logs:</strong> Deleted after 30 days.</Li>
+            <Li><strong>Account data:</strong> Retained while your account is active. Deleted permanently within 30 days of account deletion request.</Li>
+            <Li><strong>Survey responses:</strong> Retained in anonymised, aggregated form for platform analytics. Individual response records deleted within 30 days of account deletion.</Li>
+            <Li><strong>Cryptographic verification token:</strong> Retained to prevent re-registration. If you delete your account, the token is also deleted — meaning you would need to re-verify if you create a new account.</Li>
+          </Section>
 
-      {/* ── LOCATION ── */}
-      <section style={{ padding: '60px 28px',
-        background: `linear-gradient(135deg,${C.navyDeep},${C.navy})`, textAlign: 'center' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto' }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.35)',
-            textTransform: 'uppercase', letterSpacing: '.14em', marginBottom: 16 }}>Based In</p>
-          <p style={{ fontFamily: font, fontSize: 28, color: '#fff', fontWeight: 700, margin: '0 0 12px' }}>
-            Indianapolis, Indiana
-          </p>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 32px' }}>
-            Proudly built in the heart of the Midwest, with a mission that reaches every corner of the country.
-          </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/signup" style={{ padding: '13px 28px', borderRadius: 10,
-              background: C.gold, color: C.navy, fontSize: 14, fontWeight: 700,
-              textDecoration: 'none' }}>Join as a Citizen →</Link>
-            <Link to="/contact" style={{ padding: '13px 28px', borderRadius: 10,
-              background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 14, fontWeight: 600,
-              textDecoration: 'none', border: '1px solid rgba(255,255,255,0.15)' }}>Contact Us</Link>
+          <Section title="6. Your Rights">
+            <P>You have the following rights over your data at all times:</P>
+            <Li><strong>Right to access:</strong> You can request a full export of all data we hold about you.</Li>
+            <Li><strong>Right to deletion:</strong> You can delete your account and all associated data at any time from your Account Settings page. Deletion is immediate and permanent.</Li>
+            <Li><strong>Right to correction:</strong> You can update your profile information at any time.</Li>
+            <Li><strong>Right to withdraw consent:</strong> You can stop participating in surveys at any time. Past responses that have already been included in aggregated results cannot be retroactively removed (as they no longer exist as individual records), but no future responses will be collected.</Li>
+            <Li><strong>Right to complain:</strong> If you believe we have handled your data incorrectly, contact us at privacy@civicverify.org. We take all complaints seriously and will respond within 5 business days.</Li>
+          </Section>
+
+          <Section title="7. Government and Legal Requests">
+            <P>We take a firm position on government access to citizen data:</P>
+            <Li icon="🛡️">We do not voluntarily provide any citizen data to government agencies, law enforcement, or any authority without a lawful court order.</Li>
+            <Li icon="🛡️">If we receive a court order, we will comply with only the minimum data legally required — and because we do not link identities to responses, individual civic opinions are not accessible even under court order.</Li>
+            <Li icon="🛡️">We will notify affected users of legal requests whenever we are legally permitted to do so.</Li>
+            <Li icon="🛡️">We will always publish aggregate statistics on legal requests received in our annual Transparency Report.</Li>
+          </Section>
+
+          <Section title="8. Third-Party Services">
+            <P>We use a small number of trusted third-party services to operate CivicVerify:</P>
+            <Li><strong>Didit</strong> — identity verification. Processes your ID once and returns a verification result. Subject to their own privacy policy and our data processing agreement requiring immediate deletion.</Li>
+            <Li><strong>Supabase</strong> — database and authentication infrastructure. All data is encrypted at rest and in transit. Hosted on secure cloud infrastructure.</Li>
+            <Li><strong>Vercel</strong> — website hosting and deployment. Does not have access to user data.</Li>
+            <P>We do not use advertising networks, analytics platforms that track individuals across the web, or any service that monetises user behaviour.</P>
+          </Section>
+
+          <Section title="9. Security">
+            <P>We implement the following security measures:</P>
+            <Li>All data encrypted in transit using TLS 1.3.</Li>
+            <Li>All data encrypted at rest using AES-256.</Li>
+            <Li>Database access controlled by role-based permissions — staff cannot access individual response records.</Li>
+            <Li>Regular security reviews of our infrastructure.</Li>
+            <Li>If a security breach occurs that affects your data, we will notify you within 72 hours of becoming aware of it.</Li>
+          </Section>
+
+          <Section title="10. Contact Us">
+            <P>If you have any questions about this Privacy Policy or how we handle your data, please contact us:</P>
+            <div style={{ background: C.offWhite, borderRadius: 14, padding: '24px', border: `1px solid ${C.border}` }}>
+              <p style={{ fontSize: 15, color: C.navy, fontWeight: 600, margin: '0 0 6px' }}>CivicVerify — Privacy Team</p>
+              <p style={{ fontSize: 14, color: C.muted, margin: '0 0 4px' }}>📧 privacy@civicverify.org</p>
+              <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>📍 Indianapolis, Indiana, USA</p>
+            </div>
+          </Section>
+
+          <div style={{ background: C.offWhite, borderRadius: 14, padding: '24px',
+            border: `1px solid ${C.border}`, textAlign: 'center' }}>
+            <p style={{ fontSize: 13, color: C.muted, margin: 0, lineHeight: 1.7 }}>
+              This Privacy Policy was last updated on March 1, 2026. We will notify registered users by email of any material changes before they take effect.
+            </p>
           </div>
         </div>
       </section>
