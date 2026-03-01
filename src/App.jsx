@@ -6,6 +6,7 @@ import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
 import OrgSignup from './pages/public/OrgSignup'
 import Signup from './pages/public/Signup'
+import OrgPending from './pages/public/OrgPending'
 
 // Layouts
 import CitizenLayout from './pages/citizen/CitizenLayout'
