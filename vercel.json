@@ -6,20 +6,3 @@
     }
   ]
 }
-```
-
-3. Click **"Commit changes"** → **"Commit directly to main"** → **"Commit changes"**
-
----
-
-## Step 2 — Wait ~60 seconds for Vercel to redeploy
-
-Watch it at `vercel.com/dashboard` — you'll see a new deployment trigger.
-
----
-
-## Step 3 — Test
-
-Open a new tab and go to:
-```
-https://www.civicverify.org/robots.txt
