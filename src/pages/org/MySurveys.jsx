@@ -104,7 +104,7 @@ export default function MySurveys() {
         .ms-btn { transition: all 0.2s ease; cursor:pointer; }
         .ms-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .ms-tab { transition: all 0.15s ease; cursor: pointer; }
-        .ms-tab:not(.active):hover { background: rgba(255,255,255,0.12) !important; color: #fff !important; }
+        .ms-tab:not(.active):hover { background: rgba(11,37,69,0.08) !important; color: #0B2545 !important; }
         .ms-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .ms-card:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(0,0,0,0.4) !important; }
         @media(max-width:768px) {
@@ -185,13 +185,13 @@ export default function MySurveys() {
             <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', fontSize:14, opacity:0.6 }}>🔍</span>
             <input value={search} onChange={function(e){ setSearch(e.target.value); }} placeholder="Search surveys..."
               style={{ width:'100%', padding:'11px 14px 11px 38px', fontSize:13, boxSizing:'border-box',
-                background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.20)',
-                borderRadius:12, outline:'none', fontFamily:sans, color:'#fff' }} />
+                background:'#fff', border:'1px solid rgba(11,37,69,0.18)',
+                borderRadius:12, outline:'none', fontFamily:sans, color:'#0B2545' }} />
           </div>
 
-          {/* Tabs — FIX: inactive tabs now visible with rgba(255,255,255,0.75) text + subtle bg */}
-          <div className="ms-tabs" style={{ display:'flex', background:'rgba(255,255,255,0.08)',
-            border:'1px solid rgba(255,255,255,0.15)', borderRadius:12, padding:4, gap:2 }}>
+          {/* Tabs — using navy colors since content area bg is white */}
+          <div className="ms-tabs" style={{ display:'flex', background:'rgba(11,37,69,0.06)',
+            border:'1px solid rgba(11,37,69,0.15)', borderRadius:12, padding:4, gap:2 }}>
             {TABS.map(function(t) {
               var isA = tab === t.k;
               var cnt = t.k==='all' ? surveys.length : (counts[t.k]||0);
@@ -200,8 +200,8 @@ export default function MySurveys() {
                   onClick={function(){ setTab(t.k); }}
                   style={{ padding:'8px 14px', borderRadius:8, fontSize:12, fontWeight:600, whiteSpace:'nowrap',
                     border: 'none',
-                    background: isA ? `linear-gradient(135deg,${gold},${goldLight})` : 'rgba(255,255,255,0.05)',
-                    color: isA ? '#fff' : 'rgba(255,255,255,0.75)',
+                    background: isA ? `linear-gradient(135deg,${gold},${goldLight})` : 'transparent',
+                    color: isA ? '#fff' : 'rgba(11,37,69,0.65)',
                     boxShadow: isA ? `0 2px 8px rgba(197,150,12,0.3)` : 'none' }}>
                   {t.l} <span style={{ opacity: isA ? 0.75 : 0.55, marginLeft:3 }}>{cnt}</span>
                 </button>
