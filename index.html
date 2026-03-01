@@ -2,33 +2,179 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="CivicVerify — Verified civic polling that ensures authentic public opinion reaches policymakers." />
-    <title>CivicVerify — Your Voice, Verified</title>
+
+    <!-- ═══ PRIMARY SEO ═══════════════════════════════════════════════════════ -->
+    <title>CivicVerify — Identity-Verified Civic Polling | Your Voice, Verified</title>
+    <meta name="description" content="CivicVerify is the civic polling platform where every response is identity-verified. Real citizens, real opinions, zero bots. Make your voice count on the issues that matter." />
+    <meta name="keywords" content="verified civic polls, identity verified surveys, authentic citizen feedback, bot-free polling, civic engagement platform, verified citizen opinions, public opinion platform, civic input, policymaker feedback, verified polling" />
+    <meta name="author" content="CivicVerify" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0B2545" />
+
+    <!-- ═══ CANONICAL URL ══════════════════════════════════════════════════════ -->
+    <link rel="canonical" href="https://www.civicverify.org/" />
+
+    <!-- ═══ OPEN GRAPH (Facebook, LinkedIn, WhatsApp previews) ════════════════ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CivicVerify" />
+    <meta property="og:title" content="CivicVerify — Your Voice, Verified" />
+    <meta property="og:description" content="The civic polling platform where every response is identity-verified. Real citizens, real opinions, real impact on policy. Zero bots. Zero fake accounts." />
+    <meta property="og:url" content="https://www.civicverify.org/" />
+    <meta property="og:image" content="https://www.civicverify.org/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CivicVerify — Identity-Verified Civic Polling Platform" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ═══ TWITTER / X CARD ══════════════════════════════════════════════════ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@civicverify" />
+    <meta name="twitter:title" content="CivicVerify — Your Voice, Verified" />
+    <meta name="twitter:description" content="The civic polling platform where every response is identity-verified. Real citizens, real opinions, zero bots." />
+    <meta name="twitter:image" content="https://www.civicverify.org/og-image.png" />
+    <meta name="twitter:image:alt" content="CivicVerify — Identity-Verified Civic Polling" />
+
+    <!-- ═══ FAVICON & ICONS ════════════════════════════════════════════════════ -->
+    <link rel="icon" type="image/png" href="/civicverifyicon.png" />
+    <link rel="apple-touch-icon" href="/civicverifyicon.png" />
+
+    <!-- ═══ JSON-LD SCHEMA MARKUP ══════════════════════════════════════════════
+         This makes Google show rich results — organization info, sitelinks, FAQ  -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://www.civicverify.org/#organization",
+          "name": "CivicVerify",
+          "url": "https://www.civicverify.org",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.civicverify.org/civicverifylogo.png",
+            "width": 400,
+            "height": 100
+          },
+          "description": "CivicVerify is an identity-verified civic polling platform that ensures authentic public opinion reaches policymakers by verifying every citizen response.",
+          "foundingLocation": {
+            "@type": "Place",
+            "name": "Indianapolis, Indiana, USA"
+          },
+          "sameAs": [],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "url": "https://www.civicverify.org/contact"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.civicverify.org/#website",
+          "url": "https://www.civicverify.org",
+          "name": "CivicVerify",
+          "description": "Identity-verified civic polling platform — Your Voice, Verified",
+          "publisher": {
+            "@id": "https://www.civicverify.org/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://www.civicverify.org/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://www.civicverify.org/#webpage",
+          "url": "https://www.civicverify.org",
+          "name": "CivicVerify — Identity-Verified Civic Polling | Your Voice, Verified",
+          "description": "CivicVerify is the civic polling platform where every response is identity-verified. Real citizens, real opinions, zero bots.",
+          "isPartOf": {
+            "@id": "https://www.civicverify.org/#website"
+          },
+          "about": {
+            "@id": "https://www.civicverify.org/#organization"
+          },
+          "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://www.civicverify.org/"
+              }
+            ]
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is CivicVerify?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "CivicVerify is a civic engagement platform that ensures every poll response comes from a real, identity-verified U.S. citizen. It eliminates bots, fake accounts, and duplicate voting from public opinion data."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does CivicVerify verify citizens?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Citizens verify their identity once using a secure ID scan powered by Didit. The document is immediately discarded after verification — we never store your ID. Only a one-way cryptographic token is retained to confirm you are a unique, real citizen."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does CivicVerify sell citizen data?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. CivicVerify never sells, shares, or licenses citizen data to any third party for any purpose. Organisations that commission surveys receive aggregated statistical results only — never individual responses, identities, or personal information."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can organisations see who responded to their survey?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Organisations receive aggregated results only — percentage breakdowns and demographic summaries. Individual responses, respondent identities, and personal details are never accessible to anyone, including CivicVerify staff."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is CivicVerify free to join?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. CivicVerify is completely free for citizens. Sign up, verify your identity, and start participating in live civic polls immediately."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I delete my account and data?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Any citizen can delete their account and all associated data at any time, immediately and permanently."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <!-- ═══ PERFORMANCE: PRECONNECT ═══════════════════════════════════════════ -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#0B2545" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="CivicVerify" />
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="preconnect" href="https://fzwqxjwbtcnkueiofivz.supabase.co" />
+
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js').then(function(reg) {
-          console.log('SW registered:', reg.scope);
-        }).catch(function(err) {
-          console.log('SW registration failed:', err);
-        });
-      });
-    }
-    </script>
   </body>
 </html>
