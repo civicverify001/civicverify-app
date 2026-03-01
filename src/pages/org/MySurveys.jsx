@@ -103,7 +103,8 @@ export default function MySurveys() {
         @keyframes livepulse { 0%,100%{opacity:1}50%{opacity:0.4} }
         .ms-btn { transition: all 0.2s ease; cursor:pointer; }
         .ms-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .ms-tab { transition: all 0.15s ease; cursor: pointer; border: none; }
+        .ms-tab { transition: all 0.15s ease; cursor: pointer; }
+        .ms-tab:not(.active):hover { background: rgba(255,255,255,0.12) !important; color: #fff !important; }
         .ms-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .ms-card:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(0,0,0,0.4) !important; }
         @media(max-width:768px) {
@@ -148,7 +149,7 @@ export default function MySurveys() {
             </button>
           </div>
 
-          {/* Stat pills — only shown when surveys exist */}
+          {/* Stat pills */}
           {surveys.length > 0 && (
             <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
               {[
@@ -181,27 +182,28 @@ export default function MySurveys() {
         <div className="ms-controls" style={{ display:'flex', gap:12, marginBottom:20, alignItems:'center', flexWrap:'wrap' }}>
           {/* Search */}
           <div style={{ position:'relative', flex:'1', minWidth:200 }}>
-            <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', fontSize:14, opacity:0.4 }}>🔍</span>
+            <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', fontSize:14, opacity:0.6 }}>🔍</span>
             <input value={search} onChange={function(e){ setSearch(e.target.value); }} placeholder="Search surveys..."
               style={{ width:'100%', padding:'11px 14px 11px 38px', fontSize:13, boxSizing:'border-box',
-                background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)',
+                background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.20)',
                 borderRadius:12, outline:'none', fontFamily:sans, color:'#fff' }} />
           </div>
 
-          {/* Tabs */}
-          <div className="ms-tabs" style={{ display:'flex', background:'rgba(255,255,255,0.05)',
-            border:'1px solid rgba(255,255,255,0.08)', borderRadius:12, padding:4, gap:2 }}>
+          {/* Tabs — FIX: inactive tabs now visible with rgba(255,255,255,0.75) text + subtle bg */}
+          <div className="ms-tabs" style={{ display:'flex', background:'rgba(255,255,255,0.08)',
+            border:'1px solid rgba(255,255,255,0.15)', borderRadius:12, padding:4, gap:2 }}>
             {TABS.map(function(t) {
               var isA = tab === t.k;
               var cnt = t.k==='all' ? surveys.length : (counts[t.k]||0);
               return (
-                <button key={t.k} className="ms-tab"
+                <button key={t.k} className={'ms-tab' + (isA ? ' active' : '')}
                   onClick={function(){ setTab(t.k); }}
                   style={{ padding:'8px 14px', borderRadius:8, fontSize:12, fontWeight:600, whiteSpace:'nowrap',
-                    background: isA ? `linear-gradient(135deg,${gold},${goldLight})` : 'transparent',
-                    color: isA ? '#fff' : 'rgba(255,255,255,0.4)',
+                    border: 'none',
+                    background: isA ? `linear-gradient(135deg,${gold},${goldLight})` : 'rgba(255,255,255,0.05)',
+                    color: isA ? '#fff' : 'rgba(255,255,255,0.75)',
                     boxShadow: isA ? `0 2px 8px rgba(197,150,12,0.3)` : 'none' }}>
-                  {t.l} <span style={{ opacity:0.6, marginLeft:3 }}>{cnt}</span>
+                  {t.l} <span style={{ opacity: isA ? 0.75 : 0.55, marginLeft:3 }}>{cnt}</span>
                 </button>
               );
             })}
@@ -222,7 +224,7 @@ export default function MySurveys() {
             </h3>
             <p style={{ fontSize:14, color:'rgba(255,255,255,0.35)', margin:'0 0 28px', lineHeight:1.65 }}>
               {tab==='all' && !search
-                ? 'Commission your first survey to start collecting\nverified civic data from real citizens.'
+                ? 'Commission your first survey to start collecting verified civic data from real citizens.'
                 : 'Try a different filter or search term.'}
             </p>
             {tab==='all' && !search && (
@@ -327,16 +329,16 @@ export default function MySurveys() {
                   <div style={{ padding:'12px 26px', borderTop:'1px solid rgba(255,255,255,0.05)',
                     display:'flex', justifyContent:'space-between', alignItems:'center',
                     background:'rgba(0,0,0,0.15)' }}>
-                    <span style={{ fontSize:11, color:'rgba(255,255,255,0.15)', fontFamily:'monospace' }}>
+                    <span style={{ fontSize:11, color:'rgba(255,255,255,0.2)', fontFamily:'monospace' }}>
                       ID: {s.id.slice(0,8)}…
                     </span>
-                    <div style={{ display:'flex', gap:8 }}>
+                    <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                       {qCount > 0 && (
                         <button className="ms-btn" onClick={function(){ setExpanded(isOpen?null:s.id); }}
                           style={{ padding:'7px 14px', borderRadius:8,
-                            border:'1px solid rgba(255,255,255,0.1)',
-                            background: isOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
-                            color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:600 }}>
+                            border:'1px solid rgba(255,255,255,0.15)',
+                            background: isOpen ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
+                            color:'rgba(255,255,255,0.85)', fontSize:12, fontWeight:600 }}>
                           {isOpen ? '▲ Hide' : '▼ Questions'}
                         </button>
                       )}
@@ -351,14 +353,14 @@ export default function MySurveys() {
                       )}
                       {s.status==='rejected' && (
                         <button className="ms-btn" onClick={function(){ navigate('/org/request'); }}
-                          style={{ padding:'7px 18px', borderRadius:8, border:'none',
-                            background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)',
+                          style={{ padding:'7px 18px', borderRadius:8,
+                            background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)',
                             color:'#fff', fontSize:12, fontWeight:700 }}>
                           Submit New Request →
                         </button>
                       )}
                       {s.status==='pending_review' && (
-                        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'rgba(167,139,250,0.7)' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'rgba(167,139,250,0.85)' }}>
                           <div style={{ width:6, height:6, borderRadius:'50%', background:'#a78bfa', animation:'livepulse 2s infinite' }} />
                           Review in progress
                         </div>
