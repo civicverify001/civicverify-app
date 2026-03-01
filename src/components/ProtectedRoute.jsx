@@ -1,3 +1,4 @@
+// src/components/ProtectedRoute.jsx
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
@@ -21,9 +22,13 @@ export default function ProtectedRoute({ children, requiredRole }) {
   }
 
   if (requiredRole && profile.role !== requiredRole) {
-    // Redirect to correct dashboard based on role
     const roleRoutes = { admin: '/admin', citizen: '/citizen', org: '/org' }
     return <Navigate to={roleRoutes[profile.role] || '/'} replace />
+  }
+
+  // Block org users who haven't been approved yet
+  if (requiredRole === 'org' && profile.org_status !== 'approved') {
+    return <Navigate to="/org-pending" replace />
   }
 
   return children
