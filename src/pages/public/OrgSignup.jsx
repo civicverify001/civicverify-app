@@ -205,17 +205,15 @@ export default function OrgSignup() {
       var uid = signUpResult.data.user && signUpResult.data.user.id;
       if (!uid) throw new Error('Could not create account. Please try again.');
 
-      // Ensure session is active before authenticated operations
-      var session = signUpResult.data.session;
-      if (session) {
-        await supabase.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
-      }
+      // Sign in immediately to get a guaranteed active session before doing DB operations
+      var signInResult = await supabase.auth.signInWithPassword({ email: email.trim(), password: password });
+      if (signInResult.error) console.warn('Auto sign-in failed:', signInResult.error.message);
 
       // Upload document, get public URL, save to users table
       if (docFile) {
         try {
           var ext = docFile.name.split('.').pop() || 'pdf';
-          var uploadPath = 'org-docs/' + uid + '/registration.' + ext;
+          var uploadPath = uid + '/registration.' + ext;
           var uploadResult = await supabase.storage
             .from('org-documents')
             .upload(uploadPath, docFile, { contentType: docFile.type, upsert: true });
@@ -226,6 +224,7 @@ export default function OrgSignup() {
             if (docUrl) {
               var updateResult = await supabase.from('users').update({ org_doc_url: docUrl }).eq('id', uid);
               if (updateResult.error) console.warn('Doc URL save failed:', updateResult.error.message);
+              else console.log('Doc URL saved:', docUrl);
             }
           } else {
             console.warn('Storage upload error:', uploadResult.error.message);
