@@ -1,6 +1,6 @@
 // src/pages/org/OrgLayout.jsx — Mobile-responsive with approval gate
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -26,9 +26,9 @@ export default function OrgLayout() {
   var activeStyle = { background: 'rgba(197,150,12,0.12)', color: '#C5960C', fontWeight: 700 };
   var normalStyle = { color: 'rgba(255,255,255,0.5)' };
 
-  // If not approved, only show onboarding
+  // If not approved, redirect to pending page
   if (status !== 'approved') {
-    return <div style={{ minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}><Outlet /></div>;
+    return <Navigate to="/org-pending" replace />;
   }
 
   return (
