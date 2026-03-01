@@ -599,9 +599,7 @@ export default function MySurveys() {
                     </div>
                   );
                 })}
-                <p style={{ marginTop:8, textAlign:'center', fontSize:12, color:'rgba(11,37,69,0.3)' }}>
-                  Showing {filtered.length} of {surveys.length} survey{surveys.length!==1?'s':''}
-                </p>
+
               </div>
             )}
           </div>
@@ -616,6 +614,101 @@ export default function MySurveys() {
 
         </div>
       </div>
+
+      {/* ── FOOTER ──────────────────────────────────────── */}
+      <div style={{ marginTop:48, borderTop:'1px solid rgba(11,37,69,0.08)', background:'#fff' }}>
+        <div style={{ maxWidth:1300, margin:'0 auto', padding:'32px 32px 24px' }}>
+
+          {/* Top row: 3 columns */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:32, marginBottom:28 }}>
+
+            {/* About */}
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+                <div style={{ width:28, height:28, borderRadius:8,
+                  background:'linear-gradient(135deg,'+navy+','+blueMid+')',
+                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🗳️</div>
+                <span style={{ fontSize:14, fontWeight:700, color:navy, fontFamily:font }}>CivicVerify</span>
+              </div>
+              <p style={{ fontSize:12, color:'rgba(11,37,69,0.45)', margin:0, lineHeight:1.7 }}>
+                Authentic civic data from identity-verified citizens. No bots, no duplicates — just real public opinion reaching the people who need it.
+              </p>
+            </div>
+
+            {/* Quick links */}
+            <div>
+              <p style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1.5,
+                color:'rgba(11,37,69,0.35)', margin:'0 0 12px' }}>Quick Links</p>
+              <div style={{ display:'grid', gap:6 }}>
+                {[
+                  { label:'Request a Survey', path:'/org/request', icon:'📋' },
+                  { label:'Billing & Credits', path:'/org/billing', icon:'💳' },
+                  { label:'Organisation Profile', path:'/org/profile', icon:'⚙️' },
+                  { label:'Dashboard', path:'/org', icon:'📊' },
+                ].map(function(l, i) {
+                  return (
+                    <button key={i} onClick={function(){ navigate(l.path); }}
+                      style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none',
+                        cursor:'pointer', padding:0, textAlign:'left' }}>
+                      <span style={{ fontSize:12 }}>{l.icon}</span>
+                      <span style={{ fontSize:12, color:'rgba(11,37,69,0.55)', fontFamily:sans,
+                        textDecoration:'none' }}
+                        onMouseEnter={function(e){ e.target.style.color=gold; }}
+                        onMouseLeave={function(e){ e.target.style.color='rgba(11,37,69,0.55)'; }}>
+                        {l.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Platform stats */}
+            <div>
+              <p style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1.5,
+                color:'rgba(11,37,69,0.35)', margin:'0 0 12px' }}>Platform Highlights</p>
+              <div style={{ display:'grid', gap:8 }}>
+                {[
+                  { icon:'✅', label:'100% Identity Verified', desc:'Every respondent verified via Didit' },
+                  { icon:'🔒', label:'Privacy First', desc:'Data retained only as long as needed' },
+                  { icon:'⚡', label:'Real-Time Results', desc:'Live response tracking as data comes in' },
+                ].map(function(f, i) {
+                  return (
+                    <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                      <span style={{ fontSize:13, flexShrink:0 }}>{f.icon}</span>
+                      <div>
+                        <p style={{ fontSize:12, fontWeight:700, color:navy, margin:0 }}>{f.label}</p>
+                        <p style={{ fontSize:11, color:'rgba(11,37,69,0.4)', margin:0 }}>{f.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div style={{ borderTop:'1px solid rgba(11,37,69,0.07)', paddingTop:16,
+            display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
+            <p style={{ fontSize:11, color:'rgba(11,37,69,0.3)', margin:0 }}>
+              © {new Date().getFullYear()} CivicVerify. Bridging citizens and policymakers through verified data.
+            </p>
+            <div style={{ display:'flex', gap:16 }}>
+              {['Privacy Policy','Terms of Service','Contact Support'].map(function(l, i) {
+                return (
+                  <span key={i} style={{ fontSize:11, color:'rgba(11,37,69,0.35)', cursor:'pointer' }}
+                    onMouseEnter={function(e){ e.target.style.color=gold; }}
+                    onMouseLeave={function(e){ e.target.style.color='rgba(11,37,69,0.35)'; }}>
+                    {l}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   );
 }
