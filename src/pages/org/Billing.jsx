@@ -87,7 +87,7 @@ export default function Billing() {
   );
 
   return (
-    <div style={{ fontFamily:sans, background:bg, margin:'0 -24px', paddingBottom:48, minHeight:'100vh' }}>
+    <div style={{ fontFamily:sans, background:bg, margin:'0 -24px -24px', paddingBottom:48, minHeight:'100vh', width:'calc(100% + 48px)' }}>
       <style>{`
         @keyframes spin     { to{transform:rotate(360deg)} }
         @keyframes fadeUp   { from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none} }
@@ -160,7 +160,7 @@ export default function Billing() {
       </div>
 
       {/* ── LIGHT BODY ───────────────────────────────── */}
-      <div className="bl-body" style={{ padding:'28px 40px 0', maxWidth:1100, margin:'0 auto' }}>
+      <div className="bl-body" style={{ padding:'28px 40px 0' }}>
 
         {/* Info banner — white card with gold left border */}
         <div style={{ background:card, border:'1px solid '+bdr, borderLeft:'4px solid '+gold,
