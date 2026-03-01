@@ -205,6 +205,12 @@ export default function OrgSignup() {
       var uid = signUpResult.data.user && signUpResult.data.user.id;
       if (!uid) throw new Error('Could not create account. Please try again.');
 
+      // Ensure session is active before authenticated operations
+      var session = signUpResult.data.session;
+      if (session) {
+        await supabase.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+      }
+
       // Upload document, get public URL, save to users table
       if (docFile) {
         try {
@@ -218,8 +224,11 @@ export default function OrgSignup() {
             var urlResult = supabase.storage.from('org-documents').getPublicUrl(uploadPath);
             var docUrl = urlResult.data && urlResult.data.publicUrl;
             if (docUrl) {
-              await supabase.from('users').update({ org_doc_url: docUrl }).eq('id', uid);
+              var updateResult = await supabase.from('users').update({ org_doc_url: docUrl }).eq('id', uid);
+              if (updateResult.error) console.warn('Doc URL save failed:', updateResult.error.message);
             }
+          } else {
+            console.warn('Storage upload error:', uploadResult.error.message);
           }
         } catch (uploadErr) {
           console.warn('Doc upload failed (non-fatal):', uploadErr);
