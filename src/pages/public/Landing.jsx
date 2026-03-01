@@ -67,25 +67,18 @@ const initials = n => (n || '?').split(' ').map(w => w[0]).join('').toUpperCase(
 export default function Landing() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [stats, setStats]   = useState({ citizens: 0, polls: 0, votes: 0, surveys: 0 })
+
   const [posts, setPosts]   = useState([])
   const [navSolid, setNav]  = useState(false)
 
   useEffect(() => {
-    fetchStats(); fetchPosts()
+    fetchPosts()
     const fn = () => setNav(window.scrollY > 50)
     window.addEventListener('scroll', fn)
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  async function fetchStats() {
-    const [u, p, v, s] = await Promise.all([
-      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'citizen'),
-      supabase.from('surveys').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-      supabase.from('responses').select('id', { count: 'exact', head: true }),
-      supabase.from('surveys').select('id', { count: 'exact', head: true }),
     ])
-    setStats({ citizens: u.count || 0, polls: p.count || 0, votes: v.count || 0, surveys: s.count || 0 })
   }
 
   async function fetchPosts() {
@@ -290,7 +283,7 @@ export default function Landing() {
             }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, animation: 'pulse 2s infinite' }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: C.goldL, letterSpacing: '.04em' }}>
-                {stats.polls} live polls · {stats.citizens} verified citizens
+                🔒 Identity-verified · Zero bots · Your data never sold
               </span>
             </div>
 
