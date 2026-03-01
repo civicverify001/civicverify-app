@@ -7,6 +7,9 @@ import Login from './pages/public/Login'
 import OrgSignup from './pages/public/OrgSignup'
 import Signup from './pages/public/Signup'
 import OrgPending from './pages/public/OrgPending'
+import About from './pages/public/About'
+import Privacy from './pages/public/Privacy'
+import Terms from './pages/public/Terms'
 
 // Layouts
 import CitizenLayout from './pages/citizen/CitizenLayout'
@@ -67,6 +70,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Public */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -78,6 +82,12 @@ export default function App() {
           <Route path="/dashboard" element={<AuthRedirect />} />
           <Route path="/org-pending" element={<OrgPending />} />
 
+          {/* Trust & legal pages */}
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+
+          {/* Citizen portal */}
           <Route path="/citizen" element={
             <ProtectedRoute requiredRole="citizen"><CitizenLayout /></ProtectedRoute>
           }>
@@ -95,6 +105,7 @@ export default function App() {
             <Route path="messages/:userId" element={<DirectMessages />} />
           </Route>
 
+          {/* Admin portal */}
           <Route path="/admin" element={
             <ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>
           }>
@@ -112,6 +123,7 @@ export default function App() {
             <Route path="moderation" element={<AdminModeration />} />
           </Route>
 
+          {/* Org portal */}
           <Route path="/org" element={
             <ProtectedRoute requiredRole="org"><OrgLayout /></ProtectedRoute>
           }>
