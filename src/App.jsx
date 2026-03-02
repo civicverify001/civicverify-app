@@ -1,9 +1,9 @@
-import CookieConsent from './components/CookieConsent'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePageTracking } from './hooks/useAnalytics'
 import AdminCommunity from './pages/admin/Community'
 import AdminDebates from './pages/admin/Debates'
+import CookieConsent from './components/CookieConsent'
 
 // Public pages
 import Landing from './pages/public/Landing'
@@ -164,13 +164,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
         <CookieConsent />
-      </AuthProvider>
-    </BrowserRouter>
-  )
-}
       </AuthProvider>
     </BrowserRouter>
   )
