@@ -188,7 +188,7 @@ export default function Landing() {
             </span>
           </Link>
 
-          {/* ── Centre links — FAQ added ── */}
+          {/* ── Centre links — Blog added ── */}
           <div className="mobile-hide" style={{ display: 'none', alignItems: 'center', gap: 32 }}>
             {[
               ['How It Works', '/how-it-works'],
@@ -196,6 +196,7 @@ export default function Landing() {
               ['Live Polls', '#live-polls'],
               ['Community', '#community'],
               ['For Organizations', '#for-organizations'],
+              ['Blog', '/blog'],
             ].map(([label, href]) => (
               href.startsWith('/') ? (
                 <Link key={label} to={href} className="nav-a"
@@ -1003,13 +1004,14 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* ── Company links — How It Works + FAQ added ── */}
+            {/* ── Company links — Blog added ── */}
             <div>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Company</p>
               {[
                 { label: 'About',            path: '/about' },
                 { label: 'How It Works',     path: '/how-it-works' },
                 { label: 'FAQ',              path: '/faq' },
+                { label: 'Blog',             path: '/blog' },
                 { label: 'Privacy Policy',   path: '/privacy' },
                 { label: 'Terms of Service', path: '/terms' },
                 { label: 'Contact',          path: '/contact' },
@@ -1046,7 +1048,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* ── Bottom bar — FAQ added ── */}
+          {/* ── Bottom bar — Blog added ── */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: 24,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)' }}>© 2026 CivicVerify. All rights reserved.</span>
@@ -1055,6 +1057,7 @@ export default function Landing() {
                 { label: 'Privacy', path: '/privacy' },
                 { label: 'Terms',   path: '/terms' },
                 { label: 'FAQ',     path: '/faq' },
+                { label: 'Blog',    path: '/blog' },
               ].map(l => (
                 <span key={l.label}
                   onClick={() => navigate(l.path)}
