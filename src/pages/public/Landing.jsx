@@ -94,6 +94,7 @@ export default function Landing() {
   /* Section refs */
   const whyRef = useRef(null);   const whyVis  = useOnScreen(whyRef)
   const howRef = useRef(null);   const howVis  = useOnScreen(howRef)
+  const trustRef = useRef(null); const trustVis = useOnScreen(trustRef)
   const orgRef = useRef(null);   const orgVis  = useOnScreen(orgRef)
   const comRef = useRef(null);   const comVis  = useOnScreen(comRef)
   const ctaRef = useRef(null);   const ctaVis  = useOnScreen(ctaRef)
@@ -132,6 +133,8 @@ export default function Landing() {
         .ticker-inner:hover { animation-play-state: paused; }
         .org-feature:hover .org-icon { background: ${C.gold}22 !important; }
         .step-card:hover .step-num { color: ${C.gold} !important; }
+        .trust-badge-card { transition: transform .22s ease, box-shadow .22s ease; }
+        .trust-badge-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(11,37,69,.08) !important; }
 
         @media(max-width:900px) {
           .hero-layout      { grid-template-columns: 1fr !important; }
@@ -141,6 +144,8 @@ export default function Landing() {
           .steps-grid       { grid-template-columns: 1fr !important; }
           .pledge-cards     { grid-template-columns: 1fr !important; }
           .commitments-grid { grid-template-columns: 1fr !important; }
+          .trust-badges     { grid-template-columns: 1fr 1fr !important; }
+          .trust-promises   { grid-template-columns: 1fr !important; }
           .hero-h1          { font-size: 38px !important; }
           .section-title    { font-size: 30px !important; }
         }
@@ -150,6 +155,8 @@ export default function Landing() {
           .hero-btns-row button { width: 100%; }
           .footer-cols   { grid-template-columns: 1fr !important; }
           .trust-row     { flex-wrap: wrap; gap: 16px !important; }
+          .trust-badges  { grid-template-columns: 1fr !important; }
+          .trust-promises { grid-template-columns: 1fr !important; }
           .section-title { font-size: 26px !important; }
           .stats-ticker  { font-size: 12px !important; }
           .pledge-cards     { grid-template-columns: 1fr !important; }
@@ -176,7 +183,6 @@ export default function Landing() {
         transition: 'all .3s ease',
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Logo */}
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <div style={{ width: 36, height: 36, borderRadius: 10,
               background: `linear-gradient(135deg, ${C.gold}, ${C.goldDim})`,
@@ -188,7 +194,6 @@ export default function Landing() {
             </span>
           </Link>
 
-          {/* ── Centre links — Blog added ── */}
           <div className="mobile-hide" style={{ display: 'none', alignItems: 'center', gap: 32 }}>
             {[
               ['How It Works', '/how-it-works'],
@@ -212,7 +217,6 @@ export default function Landing() {
             ))}
           </div>
 
-          {/* CTA buttons */}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             {user ? (
               <button className="btn-gold" onClick={() => navigate('/citizen')}
@@ -253,12 +257,10 @@ export default function Landing() {
         background: `linear-gradient(155deg, ${C.navyDeep} 0%, ${C.navy} 45%, ${C.navyMid} 100%)`,
         display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 80,
       }}>
-        {/* Dot grid */}
         <div style={{ position: 'absolute', inset: 0, opacity: .025,
           backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,.6) 1px, transparent 0)',
           backgroundSize: '36px 36px', pointerEvents: 'none' }} />
 
-        {/* Glow blobs */}
         <div style={{ position: 'absolute', top: '8%', right: '8%', width: 480, height: 480, borderRadius: '50%',
           background: `radial-gradient(circle, rgba(197,150,12,.1) 0%, transparent 70%)`,
           filter: 'blur(60px)', animation: 'float 9s ease-in-out infinite', pointerEvents: 'none' }} />
@@ -266,7 +268,6 @@ export default function Landing() {
           background: `radial-gradient(circle, rgba(96,165,250,.07) 0%, transparent 70%)`,
           filter: 'blur(50px)', animation: 'floatB 12s ease-in-out infinite', pointerEvents: 'none' }} />
 
-        {/* Decorative rings top-right */}
         <div style={{ position: 'absolute', top: -80, right: -80, pointerEvents: 'none', opacity: .12 }}>
           <svg width="480" height="480" viewBox="0 0 480 480">
             {[60,100,140,180,220,260].map((r, i) => (
@@ -277,7 +278,6 @@ export default function Landing() {
           </svg>
         </div>
 
-        {/* Floating particles */}
         {[
           { x: '8%',  y: '20%', c: C.goldL,   s: 4 },
           { x: '18%', y: '75%', c: '#60a5fa',  s: 3 },
@@ -292,13 +292,11 @@ export default function Landing() {
             pointerEvents: 'none' }} />
         ))}
 
-        {/* Main hero content */}
         <div className="hero-layout" style={{
           maxWidth: 1280, margin: '0 auto', padding: '60px 28px 80px',
           position: 'relative', zIndex: 2,
           display: 'grid', gridTemplateColumns: '1fr 440px', gap: 64, alignItems: 'center',
         }}>
-          {/* LEFT */}
           <div>
             <div className="hero-badge" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28,
@@ -349,7 +347,6 @@ export default function Landing() {
               </button>
             </div>
 
-            {/* Trust badges */}
             <div className="trust-row" style={{ display: 'flex', gap: 28 }}>
               {[
                 { icon: '🛡️', text: 'Identity Verified' },
@@ -364,13 +361,11 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* RIGHT — Live Activity Card */}
           <div className="hero-card" style={{
             background: 'rgba(255,255,255,.05)', borderRadius: 22,
             border: '1px solid rgba(255,255,255,.1)', backdropFilter: 'blur(24px)',
             overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,.25)',
           }}>
-            {/* Card header */}
             <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(255,255,255,.07)',
               background: 'rgba(255,255,255,.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -380,7 +375,6 @@ export default function Landing() {
             </div>
 
             <div style={{ padding: '22px 22px 0' }}>
-              {/* 4 stat boxes */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
                 {[
                   { icon: '🔒', label: 'ID Verified',    desc: 'One person, one voice',   color: C.goldL },
@@ -397,7 +391,6 @@ export default function Landing() {
                 ))}
               </div>
 
-              {/* Recent activity */}
               <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 16, paddingBottom: 8 }}>
                 <p style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 12 }}>Recent Activity</p>
                 {posts.length > 0 ? posts.slice(0, 2).map(p => (
@@ -420,7 +413,6 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Card CTA */}
             <div style={{ padding: '0 22px 22px' }}>
               <button className="btn-gold" onClick={() => navigate('/signup')}
                 style={{ width: '100%', padding: '13px', borderRadius: 12,
@@ -432,7 +424,6 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Wave divider */}
         <svg viewBox="0 0 1440 72" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%' }} preserveAspectRatio="none">
           <path d="M0,36 C240,72 480,0 720,36 C960,72 1200,12 1440,28 L1440,72 L0,72 Z" fill={C.warmWhite} />
         </svg>
@@ -477,7 +468,6 @@ export default function Landing() {
           </div>
 
           <div className="why-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, ...fade(whyVis, .2) }}>
-            {/* Problem card */}
             <div style={{ padding: '40px 36px', borderRadius: 22, background: '#fff',
               border: '1px solid rgba(220,38,38,.12)',
               boxShadow: '0 4px 20px rgba(11,37,69,.04)' }}>
@@ -499,7 +489,6 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* Solution card */}
             <div className="card-lift" style={{ padding: '40px 36px', borderRadius: 22, background: '#fff',
               border: `1.5px solid rgba(197,150,12,.22)`,
               boxShadow: `0 4px 28px rgba(197,150,12,.07)` }}>
@@ -547,66 +536,76 @@ export default function Landing() {
           </button>
         </div>
       </section>
-      {/* ═══════════ TRUSTED TECHNOLOGY ═══════════ */}
-      <section style={{ padding: '72px 28px', background: C.warmWhite, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+
+      {/* ═══════════ BUILT WITH TRUST — SOCIAL PROOF ═══════════ */}
+      <section ref={trustRef} style={{ padding: '80px 28px', background: C.warmWhite, borderBottom: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Built With Trust</span>
-          <h2 style={{ fontFamily: font, fontSize: 26, fontWeight: 700, color: C.navy, marginBottom: 10 }}>Transparent Technology. Verified Security.</h2>
-          <p style={{ fontSize: 14.5, color: C.muted, maxWidth: 520, margin: '0 auto 40px', lineHeight: 1.7 }}>
-            Every layer of CivicVerify is built on proven, auditable infrastructure — no black boxes.
-          </p>
+          <div style={fade(trustVis)}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Built With Trust</span>
+            <h2 className="section-title" style={{ fontFamily: font, fontSize: 36, fontWeight: 700, color: C.navy, marginBottom: 10, lineHeight: 1.2 }}>Transparent Technology. Verified Security.</h2>
+            <p style={{ fontSize: 15, color: C.muted, maxWidth: 540, margin: '0 auto 44px', lineHeight: 1.7 }}>
+              Every layer of CivicVerify is built on proven, auditable infrastructure — no black boxes.
+            </p>
+          </div>
 
           {/* Technology badges */}
-          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 40 }}>
+          <div className="trust-badges" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 36, ...fade(trustVis, .15) }}>
             {[
               { icon: '🛡️', name: 'Didit', desc: 'Identity Verification', bg: 'rgba(197,150,12,.08)', border: 'rgba(197,150,12,.2)', color: C.gold },
               { icon: '🔒', name: 'Supabase', desc: 'Encrypted Database', bg: 'rgba(52,211,153,.06)', border: 'rgba(52,211,153,.18)', color: '#16a34a' },
               { icon: '⚡', name: 'Vercel', desc: 'Enterprise Hosting', bg: 'rgba(96,165,250,.06)', border: 'rgba(96,165,250,.18)', color: '#2563eb' },
               { icon: '📂', name: 'Open Source', desc: 'Code on GitHub', bg: 'rgba(11,37,69,.04)', border: 'rgba(11,37,69,.1)', color: C.navy },
             ].map(t => (
-              <div key={t.name} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '14px 22px', borderRadius: 14,
+              <div key={t.name} className="trust-badge-card" style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '18px 20px', borderRadius: 16,
                 background: t.bg, border: `1px solid ${t.border}`,
-                minWidth: 200,
+                cursor: 'default',
               }}>
-                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>{t.icon}</div>
                 <div style={{ textAlign: 'left' }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: t.color, margin: '0 0 1px' }}>{t.name}</p>
-                  <p style={{ fontSize: 11.5, color: C.muted, margin: 0 }}>{t.desc}</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: t.color, margin: '0 0 2px' }}>{t.name}</p>
+                  <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>{t.desc}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Security promises */}
-          <div style={{
-            display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 32,
-            padding: '24px 32px', borderRadius: 16,
-            background: `linear-gradient(135deg, rgba(11,37,69,.03), rgba(197,150,12,.04))`,
-            border: `1px solid ${C.border}`,
+          <div className="trust-promises" style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 32,
+            ...fade(trustVis, .25),
           }}>
             {[
-              { icon: '🗑️', text: 'Your ID scanned & discarded — never stored' },
+              { icon: '🗑️', text: 'Your ID is scanned & discarded — never stored' },
               { icon: '🚫', text: 'Zero data sold to anyone, ever' },
-              { icon: '📊', text: 'Orgs see results only — never individual data' },
-              { icon: '🗑️', text: 'Delete your account & data anytime' },
+              { icon: '📊', text: 'Organizations see results only — never individual data' },
+              { icon: '🔓', text: 'Delete your account & all data anytime' },
             ].map(s => (
-              <div key={s.text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 15 }}>{s.icon}</span>
-                <span style={{ fontSize: 12.5, fontWeight: 600, color: C.navy, letterSpacing: '.01em' }}>{s.text}</span>
+              <div key={s.text} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '16px 20px', borderRadius: 14,
+                background: '#fff', border: `1px solid ${C.border}`,
+                boxShadow: '0 1px 6px rgba(11,37,69,.03)',
+              }}>
+                <span style={{ fontSize: 18, flexShrink: 0 }}>{s.icon}</span>
+                <span style={{ fontSize: 13.5, fontWeight: 600, color: C.navy, textAlign: 'left', lineHeight: 1.45 }}>{s.text}</span>
               </div>
             ))}
           </div>
 
           {/* Listed on badge */}
-          <div style={{ marginTop: 32, display: 'inline-flex', alignItems: 'center', gap: 10,
-            padding: '10px 22px', borderRadius: 30,
-            background: 'rgba(197,150,12,.06)', border: '1px solid rgba(197,150,12,.15)' }}>
-            <span style={{ fontSize: 14 }}>🏛️</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
-              Listed on <span style={{ color: C.gold, fontWeight: 700 }}>Civic Tech Field Guide</span>
-            </span>
+          <div style={{ ...fade(trustVis, .35) }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12,
+              padding: '12px 26px', borderRadius: 30,
+              background: 'rgba(197,150,12,.06)', border: '1px solid rgba(197,150,12,.15)' }}>
+              <span style={{ fontSize: 16 }}>🏛️</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.muted }}>
+                Listed on <span style={{ color: C.gold, fontWeight: 700 }}>Civic Tech Field Guide</span>
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -637,7 +636,6 @@ export default function Landing() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, fontSize: 26 }}>
                   {step.icon}
                 </div>
-                {/* Coloured accent bar */}
                 <div style={{ width: 36, height: 3, borderRadius: 2, background: step.color, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: font, fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 10 }}>{step.title}</h3>
                 <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.72 }}>{step.desc}</p>
@@ -680,7 +678,6 @@ export default function Landing() {
             <p style={{ fontSize: 15.5, color: C.muted, lineHeight: 1.7 }}>Share perspectives with fellow verified citizens. Best posts rise to the top.</p>
           </div>
 
-          {/* Compose box */}
           <div style={{ background: '#fff', borderRadius: 18, border: `1px solid ${C.border}`,
             padding: '22px 26px', marginBottom: 18, boxShadow: '0 2px 12px rgba(11,37,69,.03)',
             ...fade(comVis, .2) }}>
@@ -704,7 +701,6 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Posts */}
           <div style={{ display: 'grid', gap: 14, ...fade(comVis, .3) }}>
             {posts.length > 0 ? posts.map(p => (
               <div key={p.id} className="card-lift" onClick={() => navigate(user ? '/citizen/community' : '/signup')}
@@ -751,8 +747,6 @@ export default function Landing() {
       <section id="for-organizations" ref={orgRef} style={{ padding: '100px 28px', background: C.warmWhite }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
           <div className="org-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
-
-            {/* Left: copy */}
             <div style={fade(orgVis)}>
               <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>For Organizations</span>
               <h2 className="section-title" style={{ fontFamily: font, fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 18, lineHeight: 1.25 }}>
@@ -791,7 +785,6 @@ export default function Landing() {
               </button>
             </div>
 
-            {/* Right: dashboard mockup */}
             <div style={fade(orgVis, .3)}>
               <div style={{ background: `linear-gradient(145deg,${C.navyDeep},${C.navyMid})`,
                 borderRadius: 22, padding: 28, boxShadow: '0 24px 64px rgba(11,37,69,.22)',
@@ -803,7 +796,6 @@ export default function Landing() {
                     background: 'rgba(22,163,74,.12)', padding: '3px 10px', borderRadius: 10 }}>● Live</span>
                 </div>
 
-                {/* Bar chart */}
                 <div style={{ marginBottom: 22 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.5)' }}>Survey Responses</span>
@@ -818,7 +810,6 @@ export default function Landing() {
                   </div>
                 </div>
 
-                {/* Metric boxes */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                   {[
                     { label: 'Verified Rate',        val: '100%', color: C.goldL },
@@ -834,7 +825,6 @@ export default function Landing() {
                   ))}
                 </div>
 
-                {/* Trust badge */}
                 <div style={{ padding: '12px 16px', borderRadius: 12,
                   background: 'rgba(22,163,74,.08)', border: '1px solid rgba(22,163,74,.2)',
                   display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -851,7 +841,6 @@ export default function Landing() {
 
       {/* ═══════════ PRIVACY PLEDGE ═══════════ */}
       <section style={{ padding: '100px 28px', background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 60%,${C.navyMid} 100%)`, position: 'relative', overflow: 'hidden' }}>
-        {/* background rings */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', opacity: .06 }}>
           <svg width="800" height="800" viewBox="0 0 800 800">
             {[80,150,220,290,360].map((r, i) => (
@@ -862,7 +851,6 @@ export default function Landing() {
         </div>
 
         <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2 }}>
-          {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20,
               padding: '8px 20px', borderRadius: 30,
@@ -879,7 +867,6 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* 3 big pledge cards */}
           <div className="pledge-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 48 }}>
             {[
               {
@@ -922,7 +909,6 @@ export default function Landing() {
             ))}
           </div>
 
-          {/* Iron-clad statements row */}
           <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 20, padding: '32px 36px',
             border: '1px solid rgba(255,255,255,.08)' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase',
@@ -957,12 +943,10 @@ export default function Landing() {
         background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 50%,${C.navyMid} 100%)`,
         textAlign: 'center', position: 'relative', overflow: 'hidden',
       }}>
-        {/* Glow */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
           width: 600, height: 600, borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(197,150,12,.07) 0%, transparent 70%)',
           filter: 'blur(48px)', pointerEvents: 'none' }} />
-        {/* Rings */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: .08 }}>
           <svg width="700" height="700" viewBox="0 0 700 700">
             {[80,140,200,260].map((r, i) => (
@@ -1006,7 +990,6 @@ export default function Landing() {
             </button>
           </div>
 
-          {/* Mini trust row */}
           <div style={{ display: 'flex', gap: 28, justifyContent: 'center', flexWrap: 'wrap' }}>
             {['🔒 Free to join', '✅ Identity verified', '🛡️ Privacy first'].map(t => (
               <span key={t} style={{ fontSize: 13, color: 'rgba(255,255,255,.28)', fontWeight: 500 }}>{t}</span>
@@ -1017,13 +1000,10 @@ export default function Landing() {
 
       {/* ═══════════ FOOTER ═══════════ */}
       <footer style={{ background: C.navyDeep, borderTop: '3px solid rgba(197,150,12,.2)' }}>
-        {/* Gold top strip */}
         <div style={{ height: 3, background: `linear-gradient(90deg,${C.gold},${C.goldL},${C.gold})` }} />
 
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 28px 40px' }}>
           <div className="footer-cols" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40, marginBottom: 48 }}>
-
-            {/* Brand column */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10,
@@ -1038,7 +1018,6 @@ export default function Landing() {
               <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,.32)', lineHeight: 1.75, maxWidth: 280, marginBottom: 24 }}>
                 The trusted platform for verified civic engagement. Every voice matters when it's real.
               </p>
-              {/* Trust badges */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {['🛡️ Identity Verified Network', '🔒 Privacy by Design', '⚖️ Editorial Integrity'].map(t => (
                   <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1048,7 +1027,6 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Platform links */}
             <div>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Platform</p>
               {[
@@ -1067,7 +1045,6 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* ── Company links — Blog added ── */}
             <div>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Company</p>
               {[
@@ -1089,7 +1066,6 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* CTA column */}
             <div>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Get Involved</p>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,.28)', lineHeight: 1.7, marginBottom: 18 }}>
@@ -1111,7 +1087,6 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* ── Bottom bar — Blog added ── */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: 24,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)' }}>© 2026 CivicVerify. All rights reserved.</span>
