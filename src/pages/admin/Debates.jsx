@@ -26,7 +26,7 @@ export default function AdminDebates() {
     setError(null);
     var { data, error: err } = await supabase
       .from('debates')
-      .select('*, creator:created_by(full_name)')
+      .select('*')
       .order('created_at', { ascending: false });
     if (err) {
       setError(err.message);
