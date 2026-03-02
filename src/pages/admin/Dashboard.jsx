@@ -64,7 +64,7 @@ export default function AdminDashboard() {
         { data: recentSurveys },
       ] = await Promise.all([
         supabase.from('users').select('*', { count: 'exact', head: true }),
-        supabase.from('users').select('*', { count: 'exact', head: true }).eq('is_verified', true),
+        supabase.from('users').select('*', { count: 'exact', head: true }).eq('identity_verified', true),
         supabase.from('surveys').select('*', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('responses').select('*', { count: 'exact', head: true }),
         supabase.from('surveys').select('*', { count: 'exact', head: true }).eq('status', 'pending_review'),
