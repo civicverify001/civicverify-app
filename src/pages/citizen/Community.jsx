@@ -455,6 +455,11 @@ const PollComposer = ({ user, onCreate }) => {
     const opts = options.map((o) => o.trim()).filter(Boolean);
     if (!q) { setError("Question is required"); return; }
     if (opts.length < 2) { setError("Add at least 2 options"); return; }
+    // Content filter
+    var blocked = ["fuck","shit","ass","bitch","damn","dick","porn","sex","nazi","kill","hate","nigger","faggot","slut","whore","cunt","retard"];
+    var allText = (q + " " + opts.join(" ")).toLowerCase();
+    var found = blocked.find(function(w) { return allText.includes(w); });
+    if (found) { setError("Your poll contains inappropriate language. Please revise."); return; }
     setBusy(true);
     await onCreate(q, opts);
     setQuestion(""); setOptions(["", ""]); setError(""); setOpen(false);
