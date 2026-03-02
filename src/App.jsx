@@ -15,11 +15,9 @@ import Contact from './pages/public/Contact'
 import HowItWorks from './pages/public/HowItWorks'
 import FAQ from './pages/public/FAQ'
 
-// Blog pages
+// Blog pages (database-driven)
 import Blog from './pages/public/Blog'
-import BlogPost1 from './pages/public/BlogPost1'
-import BlogPost2 from './pages/public/BlogPost2'
-import BlogPost3 from './pages/public/BlogPost3'
+import BlogPost from './pages/public/BlogPost'
 
 // Layouts
 import CitizenLayout from './pages/citizen/CitizenLayout'
@@ -50,6 +48,7 @@ import AdminAnalytics from './pages/admin/Analytics'
 import AdminExport from './pages/admin/Export'
 import OrgReview from './pages/admin/OrgReview'
 import AdminModeration from './pages/admin/Moderation'
+import AdminBlog from './pages/admin/Blog'
 
 // Org pages
 import OrgDashboard from './pages/org/Dashboard'
@@ -100,11 +99,9 @@ export default function App() {
           <Route path="/dashboard" element={<AuthRedirect />} />
           <Route path="/org-pending" element={<OrgPending />} />
 
-          {/* Blog */}
+          {/* Blog (database-driven) */}
           <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/why-online-polls-are-broken" element={<BlogPost1 />} />
-          <Route path="/blog/what-happens-to-your-id" element={<BlogPost2 />} />
-          <Route path="/blog/civic-engagement-indianapolis" element={<BlogPost3 />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
 
           {/* Trust & legal pages */}
           <Route path="/about" element={<About />} />
@@ -145,6 +142,7 @@ export default function App() {
             <Route path="export" element={<AdminExport />} />
             <Route path="org-review" element={<OrgReview />} />
             <Route path="moderation" element={<AdminModeration />} />
+            <Route path="blog" element={<AdminBlog />} />
           </Route>
 
           {/* Org portal */}
