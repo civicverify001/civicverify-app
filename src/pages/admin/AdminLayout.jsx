@@ -17,6 +17,7 @@ var links = [
   { to: '/admin/analytics', icon: '📈', label: 'Analytics' },
   { to: '/admin/export', icon: '📥', label: 'Export' },
   { to: '/admin/org-review', icon: '🏢', label: 'Org Review' },
+  { to: '/admin/blog', icon: '✏️', label: 'Blog' },
 ];
 
 export default function AdminLayout() {
