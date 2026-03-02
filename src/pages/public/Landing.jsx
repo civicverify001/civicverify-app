@@ -1,3 +1,4 @@
+import BackToTop from '../../components/BackToTop'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
@@ -1041,7 +1042,7 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-
+<BackToTop />
     </div>
   )
 }
