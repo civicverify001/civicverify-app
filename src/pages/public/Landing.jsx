@@ -1,3 +1,7 @@
+import CanonicalUrl from '../../components/CanonicalUrl'
+
+// Inside return(), first line:
+<CanonicalUrl />
 import BackToTop from '../../components/BackToTop'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
