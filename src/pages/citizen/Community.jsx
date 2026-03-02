@@ -1050,9 +1050,9 @@ export default function Community() {
         const myVote = pvotes.find((v) => v.user_id === user.id);
         return {
           ...p,
-          userMap[p.user_id]?.full_name,
-          userMap[p.user_id]?.identity_verified,
-          userMap[p.user_id]?.avatar_url,
+          author_name: userMap[p.user_id]?.full_name,
+            author_verified: userMap[p.user_id]?.identity_verified,
+            author_avatar: userMap[p.user_id]?.avatar_url,
           vote_counts,
           my_vote_index: myVote ? myVote.option_index : null,
         };
@@ -1070,7 +1070,7 @@ export default function Community() {
       .single();
     if (error) { console.error("createPoll error:", error); return; }
     if (data) {
-      const newPoll = { ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_avatar: data.users?.avatar_url, vote_counts: (data.options || []).map(() => 0), my_vote_index: null };
+      const newPoll = { ...data, author_name: currentUser?.full_name, author_verified: .currentUser?.identity_verified, author_avatar: currentUser?.avatar_url, vote_counts: (data.options || []).map(() => 0), my_vote_index: null };
       setPolls((prev) => [newPoll, ...prev]);
     }
   };
