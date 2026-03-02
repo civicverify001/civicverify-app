@@ -547,6 +547,69 @@ export default function Landing() {
           </button>
         </div>
       </section>
+      {/* ═══════════ TRUSTED TECHNOLOGY ═══════════ */}
+      <section style={{ padding: '72px 28px', background: C.warmWhite, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Built With Trust</span>
+          <h2 style={{ fontFamily: font, fontSize: 26, fontWeight: 700, color: C.navy, marginBottom: 10 }}>Transparent Technology. Verified Security.</h2>
+          <p style={{ fontSize: 14.5, color: C.muted, maxWidth: 520, margin: '0 auto 40px', lineHeight: 1.7 }}>
+            Every layer of CivicVerify is built on proven, auditable infrastructure — no black boxes.
+          </p>
+
+          {/* Technology badges */}
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 40 }}>
+            {[
+              { icon: '🛡️', name: 'Didit', desc: 'Identity Verification', bg: 'rgba(197,150,12,.08)', border: 'rgba(197,150,12,.2)', color: C.gold },
+              { icon: '🔒', name: 'Supabase', desc: 'Encrypted Database', bg: 'rgba(52,211,153,.06)', border: 'rgba(52,211,153,.18)', color: '#16a34a' },
+              { icon: '⚡', name: 'Vercel', desc: 'Enterprise Hosting', bg: 'rgba(96,165,250,.06)', border: 'rgba(96,165,250,.18)', color: '#2563eb' },
+              { icon: '📂', name: 'Open Source', desc: 'Code on GitHub', bg: 'rgba(11,37,69,.04)', border: 'rgba(11,37,69,.1)', color: C.navy },
+            ].map(t => (
+              <div key={t.name} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '14px 22px', borderRadius: 14,
+                background: t.bg, border: `1px solid ${t.border}`,
+                minWidth: 200,
+              }}>
+                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: t.color, margin: '0 0 1px' }}>{t.name}</p>
+                  <p style={{ fontSize: 11.5, color: C.muted, margin: 0 }}>{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Security promises */}
+          <div style={{
+            display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 32,
+            padding: '24px 32px', borderRadius: 16,
+            background: `linear-gradient(135deg, rgba(11,37,69,.03), rgba(197,150,12,.04))`,
+            border: `1px solid ${C.border}`,
+          }}>
+            {[
+              { icon: '🗑️', text: 'Your ID scanned & discarded — never stored' },
+              { icon: '🚫', text: 'Zero data sold to anyone, ever' },
+              { icon: '📊', text: 'Orgs see results only — never individual data' },
+              { icon: '🗑️', text: 'Delete your account & data anytime' },
+            ].map(s => (
+              <div key={s.text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 15 }}>{s.icon}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: C.navy, letterSpacing: '.01em' }}>{s.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Listed on badge */}
+          <div style={{ marginTop: 32, display: 'inline-flex', alignItems: 'center', gap: 10,
+            padding: '10px 22px', borderRadius: 30,
+            background: 'rgba(197,150,12,.06)', border: '1px solid rgba(197,150,12,.15)' }}>
+            <span style={{ fontSize: 14 }}>🏛️</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>
+              Listed on <span style={{ color: C.gold, fontWeight: 700 }}>Civic Tech Field Guide</span>
+            </span>
+          </div>
+        </div>
+      </section>
 
       {/* ═══════════ HOW IT WORKS ═══════════ */}
       <section ref={howRef} style={{ padding: '100px 28px', background: C.offWhite }}>
