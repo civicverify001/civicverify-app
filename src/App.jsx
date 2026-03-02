@@ -15,6 +15,12 @@ import Contact from './pages/public/Contact'
 import HowItWorks from './pages/public/HowItWorks'
 import FAQ from './pages/public/FAQ'
 
+// Blog pages
+import Blog from './pages/public/Blog'
+import BlogPost1 from './pages/public/BlogPost1'
+import BlogPost2 from './pages/public/BlogPost2'
+import BlogPost3 from './pages/public/BlogPost3'
+
 // Layouts
 import CitizenLayout from './pages/citizen/CitizenLayout'
 import AdminLayout from './pages/admin/AdminLayout'
@@ -93,6 +99,12 @@ export default function App() {
           <Route path="/results" element={<PublicResults />} />
           <Route path="/dashboard" element={<AuthRedirect />} />
           <Route path="/org-pending" element={<OrgPending />} />
+
+          {/* Blog */}
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/why-online-polls-are-broken" element={<BlogPost1 />} />
+          <Route path="/blog/what-happens-to-your-id" element={<BlogPost2 />} />
+          <Route path="/blog/civic-engagement-indianapolis" element={<BlogPost3 />} />
 
           {/* Trust & legal pages */}
           <Route path="/about" element={<About />} />
