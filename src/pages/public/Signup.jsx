@@ -1,3 +1,7 @@
+import CanonicalUrl from '../../components/CanonicalUrl'
+
+// Inside return(), first line:
+<CanonicalUrl />
 // src/pages/public/Signup.jsx — Full demographics + hCaptcha + 3-step signup
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
