@@ -1,3 +1,7 @@
+import CanonicalUrl from '../../components/CanonicalUrl'
+
+// Inside return(), first line:
+<CanonicalUrl />
 // src/pages/public/FAQ.jsx
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
