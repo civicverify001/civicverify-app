@@ -351,7 +351,7 @@ export default function TakeSurvey() {
       <div style={{ display: 'flex', gap: 12 }}>
         <button onClick={goPrev} style={{ padding: '14px 24px', background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.4)', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>&#8592; Back</button>
         <button onClick={goNext} disabled={submitting} style={{ flex: 1, padding: 14, background: canNext ? C.gold : 'rgba(11,37,69,0.06)', color: canNext ? '#fff' : 'rgba(11,37,69,0.2)', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: canNext ? 'pointer' : 'not-allowed', transition: 'all 0.2s', boxShadow: canNext ? '0 4px 16px rgba(197,150,12,0.2)' : 'none' }}>
-          {submitting ? 'Submitting...' : step === total ? 'Submit Survey &#10003;' : 'Next &#8594;'}
+          {submitting ? 'Submitting...' : step === total ? 'Submit Survey ✓' : 'Next →'}
         </button>
       </div>
 
