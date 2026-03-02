@@ -1,7 +1,3 @@
-import CanonicalUrl from '../../components/CanonicalUrl'
-
-// Inside return(), first line:
-<CanonicalUrl />
 // src/pages/org/Profile.jsx
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
