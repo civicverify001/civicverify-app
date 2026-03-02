@@ -177,13 +177,26 @@ export default function Landing() {
             </span>
           </Link>
 
-          {/* Centre links */}
+          {/* ── Centre links — FAQ added ── */}
           <div className="mobile-hide" style={{ display: 'none', alignItems: 'center', gap: 32 }}>
-            {[['How It Works', '/how-it-works'], ['Live Polls', '#live-polls'], ['Community', '#community'], ['For Organizations', '#for-organizations']].map(([label, href]) => (
-              <a key={label} href={href} className="nav-a"
-                style={{ fontFamily: sans, fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,.72)', textDecoration: 'none', transition: 'color .2s', letterSpacing: '.01em' }}>
-                {label}
-              </a>
+            {[
+              ['How It Works', '/how-it-works'],
+              ['FAQ', '/faq'],
+              ['Live Polls', '#live-polls'],
+              ['Community', '#community'],
+              ['For Organizations', '#for-organizations'],
+            ].map(([label, href]) => (
+              href.startsWith('/') ? (
+                <Link key={label} to={href} className="nav-a"
+                  style={{ fontFamily: sans, fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,.72)', textDecoration: 'none', transition: 'color .2s', letterSpacing: '.01em' }}>
+                  {label}
+                </Link>
+              ) : (
+                <a key={label} href={href} className="nav-a"
+                  style={{ fontFamily: sans, fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,.72)', textDecoration: 'none', transition: 'color .2s', letterSpacing: '.01em' }}>
+                  {label}
+                </a>
+              )
             ))}
           </div>
 
@@ -979,14 +992,16 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* Company links */}
+            {/* ── Company links — How It Works + FAQ added ── */}
             <div>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Company</p>
               {[
-                { label: 'About',           path: '/about' },
-                { label: 'Privacy Policy',  path: '/privacy' },
-                { label: 'Terms of Service',path: '/terms' },
-                { label: 'Contact',         path: '/contact' },
+                { label: 'About',            path: '/about' },
+                { label: 'How It Works',     path: '/how-it-works' },
+                { label: 'FAQ',              path: '/faq' },
+                { label: 'Privacy Policy',   path: '/privacy' },
+                { label: 'Terms of Service', path: '/terms' },
+                { label: 'Contact',          path: '/contact' },
               ].map(l => (
                 <span key={l.label}
                   onClick={() => navigate(l.path)}
@@ -1020,7 +1035,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Bottom bar */}
+          {/* ── Bottom bar — FAQ added ── */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: 24,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)' }}>© 2026 CivicVerify. All rights reserved.</span>
@@ -1028,6 +1043,7 @@ export default function Landing() {
               {[
                 { label: 'Privacy', path: '/privacy' },
                 { label: 'Terms',   path: '/terms' },
+                { label: 'FAQ',     path: '/faq' },
               ].map(l => (
                 <span key={l.label}
                   onClick={() => navigate(l.path)}
@@ -1042,7 +1058,7 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-<BackToTop />
+      <BackToTop />
     </div>
   )
 }
