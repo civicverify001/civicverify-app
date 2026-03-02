@@ -1,3 +1,7 @@
+import CanonicalUrl from '../../components/CanonicalUrl'
+
+// Inside return(), first line:
+<CanonicalUrl />
 // src/pages/public/OrgPending.jsx
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
