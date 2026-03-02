@@ -6,52 +6,6 @@ import CanonicalUrl from '../../components/CanonicalUrl';
 const C = { navy: '#0B2545', gold: '#C5960C', goldL: '#F0B429', warm: '#FAF8F5' };
 const T = { serif: "'Libre Baskerville', Georgia, serif", sans: "'DM Sans', system-ui, sans-serif" };
 
-/* Simple markdown-like renderer for blog content */
-function renderContent(text) {
-  if (!text) return null;
-  const blocks = text.split('\n\n');
-  return blocks.map((block, i) => {
-    const trimmed = block.trim();
-    if (!trimmed) return null;
-
-    // ## Heading
-    if (trimmed.startsWith('## ')) {
-      return (
-        <h2 key={i} style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 700, color: C.navy, margin: '40px 0 16px', lineHeight: 1.35 }}>
-          {trimmed.slice(3)}
-        </h2>
-      );
-    }
-
-    // > Blockquote
-    if (trimmed.startsWith('> ')) {
-      return (
-        <div key={i} style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: C.navy, borderLeft: `3px solid ${C.goldL}`, paddingLeft: 20, margin: '32px 0', lineHeight: 1.55, fontStyle: 'italic' }}>
-          {trimmed.slice(2).replace(/^"/, '').replace(/"$/, '')}
-        </div>
-      );
-    }
-
-    // Regular paragraph — handle **bold** inline
-    return (
-      <p key={i} style={{ fontSize: 15.5, color: 'rgba(11,37,69,0.72)', lineHeight: 1.8, margin: '0 0 20px' }}>
-        {renderInline(trimmed)}
-      </p>
-    );
-  });
-}
-
-function renderInline(text) {
-  // Split on **bold** patterns
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} style={{ color: C.navy, fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
-    }
-    return part;
-  });
-}
-
 export default function BlogPost() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -108,6 +62,63 @@ export default function BlogPost() {
     <div style={{ fontFamily: T.sans, background: C.warm, minHeight: '100vh' }}>
       <CanonicalUrl path={`/blog/${post.slug}`} />
 
+      {/* Blog article styles */}
+      <style>{`
+        .blog-content h2 {
+          font-family: ${T.serif};
+          font-size: 22px;
+          font-weight: 700;
+          color: ${C.navy};
+          margin: 40px 0 16px;
+          line-height: 1.35;
+        }
+        .blog-content p {
+          font-size: 15.5px;
+          color: rgba(11,37,69,0.72);
+          line-height: 1.8;
+          margin: 0 0 20px;
+        }
+        .blog-content strong {
+          color: ${C.navy};
+          font-weight: 700;
+        }
+        .blog-content blockquote {
+          font-family: ${T.serif};
+          font-size: 18px;
+          font-weight: 600;
+          color: ${C.navy};
+          border-left: 3px solid ${C.goldL};
+          padding-left: 20px;
+          margin: 32px 0;
+          line-height: 1.55;
+          font-style: italic;
+        }
+        .blog-content blockquote p {
+          font-size: 18px;
+          color: ${C.navy};
+          margin: 0;
+        }
+        .blog-content ul, .blog-content ol {
+          font-size: 15.5px;
+          color: rgba(11,37,69,0.72);
+          line-height: 1.8;
+          margin: 0 0 20px;
+          padding-left: 24px;
+        }
+        .blog-content li {
+          margin-bottom: 8px;
+        }
+        .blog-content a {
+          color: ${C.gold};
+          text-decoration: underline;
+        }
+        .blog-content hr {
+          border: none;
+          border-top: 1px solid rgba(11,37,69,0.08);
+          margin: 36px 0;
+        }
+      `}</style>
+
       {/* Nav */}
       <nav style={{ background: C.navy, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span onClick={() => navigate('/')} style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
@@ -134,20 +145,22 @@ export default function BlogPost() {
         </p>
       </div>
 
-      {/* Article body */}
-      <article style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 64px' }}>
-        {renderContent(post.content)}
+      {/* Article body — renders HTML */}
+      <article className="blog-content" style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 64px' }}
+        dangerouslySetInnerHTML={{ __html: post.content }}
+      />
 
-        {/* Key takeaway box from excerpt */}
-        {post.excerpt && (
-          <div style={{ background: 'rgba(197,150,12,0.06)', border: '1px solid rgba(197,150,12,0.15)', borderRadius: 12, padding: 24, marginTop: 40 }}>
+      {/* Key takeaway */}
+      {post.excerpt && (
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 24px 64px' }}>
+          <div style={{ background: 'rgba(197,150,12,0.06)', border: '1px solid rgba(197,150,12,0.15)', borderRadius: 12, padding: 24 }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 8px' }}>Key Takeaway</p>
             <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.6)', margin: 0, lineHeight: 1.65 }}>{post.excerpt}</p>
           </div>
-        )}
-      </article>
+        </div>
+      )}
 
-      {/* Back to blog + CTA */}
+      {/* Back + CTA */}
       <div style={{ background: C.navy, padding: '48px 24px', textAlign: 'center' }}>
         <button onClick={() => navigate('/blog')}
           style={{ fontSize: 14, fontWeight: 600, color: C.goldL, background: 'none', border: `1px solid ${C.goldL}`, borderRadius: 10, padding: '10px 28px', cursor: 'pointer', marginBottom: 20, display: 'inline-block' }}>
