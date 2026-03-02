@@ -1,208 +1,175 @@
-import CanonicalUrl from '../../components/CanonicalUrl'
+// src/pages/public/Terms.jsx — Terms of Service
+import { useNavigate } from 'react-router-dom';
+import CanonicalUrl from '../../components/CanonicalUrl';
 
-// Inside return(), first line:
-<CanonicalUrl />
-import BackToTop from '../../components/BackToTop'
-import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E' };
+var font = 'Libre Baskerville, Georgia, serif';
 
-const C = {
-  navy: '#0B2545', navyLight: '#12305a', navyDeep: '#081c35', navyMid: '#1a3a6e',
-  gold: '#C5960C', goldL: '#F0B429', goldDim: '#a37d0a',
-  warmWhite: '#FDFCFA', offWhite: '#f0f3f8',
-  muted: '#6b7c93', ink: '#1a2942',
-  border: 'rgba(11,37,69,0.07)',
-}
-const font = "'Libre Baskerville', Georgia, serif"
-const sans = "'DM Sans', system-ui, sans-serif"
-
-function Section({ title, children }) {
-  return (
-    <div style={{ marginBottom: 48, paddingBottom: 48, borderBottom: `1px solid ${C.border}` }}>
-      <h2 style={{ fontFamily: font, fontSize: 24, fontWeight: 700, color: C.navy,
-        margin: '0 0 18px', paddingLeft: 16, borderLeft: `4px solid ${C.gold}` }}>{title}</h2>
-      {children}
-    </div>
-  )
-}
-
-function P({ children }) {
-  return <p style={{ fontSize: 15, color: '#3a4a5c', lineHeight: 1.85, margin: '0 0 14px' }}>{children}</p>
-}
-
-function Li({ children }) {
-  return (
-    <div style={{ display: 'flex', gap: 12, marginBottom: 10, alignItems: 'flex-start' }}>
-      <span style={{ color: C.gold, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>→</span>
-      <span style={{ fontSize: 15, color: '#3a4a5c', lineHeight: 1.7 }}>{children}</span>
-    </div>
-  )
-}
-
+var sectionStyle = { marginBottom: 32 };
+var h2Style = { fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: font, margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid rgba(11,37,69,0.08)' };
+var pStyle = { fontSize: 14, lineHeight: 1.75, color: 'rgba(11,37,69,0.6)', margin: '0 0 12px' };
+var liStyle = { fontSize: 14, lineHeight: 1.75, color: 'rgba(11,37,69,0.6)', marginBottom: 6 };
 
 export default function Terms() {
-  useEffect(() => { window.scrollTo(0, 0) }, [])
+  var navigate = useNavigate();
+  var updated = 'March 2, 2026';
 
   return (
-    <div style={{ fontFamily: sans, background: C.warmWhite, minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,' + C.cream + ' 0%,#fff 100%)', fontFamily: 'DM Sans,-apple-system,sans-serif' }}>
+      <CanonicalUrl />
 
-      {/* ── NAV ── */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(11,37,69,0.97)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        padding: '0 28px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: `linear-gradient(135deg, ${C.gold}, ${C.goldDim})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, color: '#fff', boxShadow: '0 2px 10px rgba(197,150,12,.35)', flexShrink: 0 }}>CV</div><span style={{ fontFamily: font, fontWeight: 700, fontSize: 17, color: '#fff' }}>Civic<span style={{ color: C.goldL }}>Verify</span></span>
-        </Link>
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-          <Link to="/about" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>About</Link>
-          <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Privacy</Link>
-          <Link to="/signup" style={{ padding: '8px 20px', borderRadius: 8, background: C.gold,
-            color: C.navy, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>Get Started</Link>
-        </div>
-      </nav>
-
-      {/* ── HERO ── */}
-      <section style={{ background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 60%,${C.navyMid} 100%)`,
-        padding: '80px 28px 70px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20,
-            padding: '6px 18px', borderRadius: 30,
-            background: 'rgba(197,150,12,0.12)', border: '1px solid rgba(197,150,12,0.25)' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.goldL, textTransform: 'uppercase', letterSpacing: '.14em' }}>Terms of Service</span>
+      {/* Header */}
+      <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(11,37,69,0.06)', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){navigate('/')}}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>CV</span></div>
+            <span style={{ fontSize: 18, fontWeight: 700, color: C.navy, fontFamily: font }}>CivicVerify</span>
           </div>
-          <h1 style={{ fontFamily: font, fontSize: 44, fontWeight: 700, color: '#fff',
-            lineHeight: 1.2, margin: '0 0 18px' }}>
-            Clear Rules.<br />
-            <span style={{ color: C.goldL, fontStyle: 'italic' }}>No Hidden Surprises.</span>
-          </h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', margin: '0 0 12px' }}>Last updated: March 1, 2026</p>
-          <p style={{ fontSize: 15.5, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, margin: 0 }}>
-            By using CivicVerify, you agree to these terms. We have written them in plain English so you actually understand what you are agreeing to.
-          </p>
+          <span onClick={function(){navigate(-1)}} style={{ fontSize: 13, color: C.gold, fontWeight: 600, cursor: 'pointer' }}>{'\u2190'} Back</span>
         </div>
-      </section>
+      </div>
 
-      {/* ── CONTENT ── */}
-      <section style={{ padding: '64px 28px' }}>
-        <div style={{ maxWidth: 780, margin: '0 auto' }}>
+      {/* Content */}
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <h1 style={{ fontSize: 32, fontWeight: 700, color: C.navy, fontFamily: font, margin: '0 0 8px' }}>Terms of Service</h1>
+        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: '0 0 8px' }}>Last updated: {updated}</p>
+        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.35)', margin: '0 0 32px' }}>Effective date: {updated}</p>
 
-          <Section title="1. Who These Terms Apply To">
-            <P>These Terms of Service apply to all users of CivicVerify, including:</P>
-            <Li><strong>Citizens</strong> who register, verify their identity, and participate in polls, surveys, and community discussions.</Li>
-            <Li><strong>Organisations</strong> that register to commission verified civic surveys and access aggregated results.</Li>
-            <Li><strong>Visitors</strong> who browse civicverify.org without registering.</Li>
-            <P>By accessing or using CivicVerify, you confirm that you have read, understood, and agree to be bound by these Terms and our Privacy Policy.</P>
-          </Section>
+        {/* Acceptance */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>1. Acceptance of Terms</h2>
+          <p style={pStyle}>By creating an account on CivicVerify ("Platform"), operated at civicverify.org, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not create an account or use the Platform. These Terms constitute a legally binding agreement between you and CivicVerify ("we," "our," or "us").</p>
+        </div>
 
-          <Section title="2. Eligibility">
-            <Li>You must be at least 18 years of age to create a citizen account.</Li>
-            <Li>You must be a U.S. citizen or permanent resident to participate in verified civic polls.</Li>
-            <Li>You may only create one citizen account. Creating duplicate accounts to inflate response counts is strictly prohibited and will result in permanent suspension.</Li>
-            <Li>You must provide accurate information during registration. False information, including fraudulent identity verification, is a violation of these Terms and may constitute a criminal offence.</Li>
-          </Section>
+        {/* Eligibility */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>2. Eligibility & Age Requirement</h2>
+          <div style={{ background: C.red + '06', border: '1px solid ' + C.red + '15', borderRadius: 10, padding: '14px 16px', marginBottom: 12 }}>
+            <p style={{ fontSize: 14, color: C.navy, margin: 0, lineHeight: 1.6, fontWeight: 600 }}>You must be at least 18 years of age to use CivicVerify.</p>
+          </div>
+          <p style={pStyle}>By creating an account, you represent and warrant that you are at least 18 years old. Our identity verification process requires a government-issued photo ID, which serves as an additional age safeguard. If we discover that a user is under 18, we will immediately terminate their account and delete all associated data.</p>
+          <p style={pStyle}>You must be a resident of the United States to use the Platform. By creating an account, you represent that you are a U.S. resident.</p>
+        </div>
 
-          <Section title="3. Identity Verification">
-            <P>Participating in verified civic polls requires identity verification. By submitting to verification, you agree that:</P>
-            <Li>Your identity document will be processed by our verification partner (Didit) for the sole purpose of confirming you are a real, unique U.S. citizen.</Li>
-            <Li>Your document will be deleted immediately after verification is confirmed. We do not retain it.</Li>
-            <Li>You are submitting a genuine, unaltered government-issued document. Submitting fraudulent documents is a violation of these Terms and applicable law.</Li>
-            <Li>Verification is a one-time process. Once verified, your status is stored as a cryptographic token only — your identity document is not retained.</Li>
-          </Section>
+        {/* Account */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>3. Your Account</h2>
+          <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+            <li style={liStyle}><strong>One account per person:</strong> You may create only one account on CivicVerify. The Platform is designed around the principle of "one person, one verified voice." Creating multiple accounts will result in termination of all accounts.</li>
+            <li style={liStyle}><strong>Account security:</strong> You are responsible for maintaining the confidentiality of your password and for all activities that occur under your account. Notify us immediately of any unauthorized use.</li>
+            <li style={liStyle}><strong>Accurate information:</strong> You agree to provide truthful, accurate, and complete information when creating your account and completing your profile. Providing false demographic information undermines the integrity of the Platform and may result in account termination.</li>
+          </ul>
+        </div>
 
-          <Section title="4. Acceptable Use — Citizens">
-            <P>As a citizen user, you agree to:</P>
-            <Li>Participate honestly and in good faith in surveys and community discussions.</Li>
-            <Li>Not attempt to manipulate, game, or distort survey results through any means.</Li>
-            <Li>Not harass, threaten, or abuse other users in community discussions.</Li>
-            <Li>Not post content that is illegal, defamatory, obscene, or incites violence or discrimination.</Li>
-            <Li>Not attempt to reverse-engineer, scrape, or extract data from the platform.</Li>
-            <Li>Not share your account credentials with any other person.</Li>
-          </Section>
+        {/* Data Accuracy */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>4. Data Accuracy & Integrity</h2>
+          <p style={pStyle}>CivicVerify's value depends on authentic, accurate data from real, verified citizens. By using the Platform, you agree to:</p>
+          <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+            <li style={liStyle}>Provide truthful demographic information (race, sex, income, political affiliation, etc.) to the best of your knowledge.</li>
+            <li style={liStyle}>Answer surveys honestly and thoughtfully.</li>
+            <li style={liStyle}>Not impersonate any other person or misrepresent your identity.</li>
+            <li style={liStyle}>Not use bots, scripts, or automated tools to interact with the Platform.</li>
+          </ul>
+          <p style={pStyle}>We reserve the right to terminate accounts that we reasonably believe are providing intentionally false or misleading information.</p>
+        </div>
 
-          <Section title="5. Acceptable Use — Organisations">
-            <P>As an organisation user, you agree to:</P>
-            <Li>Use CivicVerify surveys for legitimate civic, research, governmental, or nonprofit purposes only.</Li>
-            <Li>Not use survey results to target, identify, or take action against individual respondents.</Li>
-            <Li>Not misrepresent aggregated results — you must accurately represent what the data shows and acknowledge its limitations.</Li>
-            <Li>Not use the platform for political advertising, fundraising, or voter suppression activities.</Li>
-            <Li>Not attempt to use survey design to manipulate or lead respondents toward a predetermined conclusion in a deceptive way.</Li>
-            <Li>Acknowledge that all results are aggregated and anonymised — you will never receive individual respondent data, and you will not attempt to obtain it.</Li>
-          </Section>
+        {/* Identity Verification */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>5. Identity Verification</h2>
+          <p style={pStyle}>CivicVerify offers optional identity verification through our partner, Didit (didit.me). By choosing to verify your identity, you:</p>
+          <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+            <li style={liStyle}>Consent to Didit processing your government-issued ID and facial biometrics solely for identity verification purposes.</li>
+            <li style={liStyle}>Understand that your ID and biometric data are processed by Didit and deleted within 30 days of verification.</li>
+            <li style={liStyle}>Understand that CivicVerify does NOT store your government ID or biometric data on our servers.</li>
+            <li style={liStyle}>Acknowledge that verified status may grant access to additional Platform features, such as participation in verified-only surveys.</li>
+          </ul>
+        </div>
 
-          <Section title="6. Data and Privacy">
-            <P>Your privacy is governed by our <Link to="/privacy" style={{ color: C.gold }}>Privacy Policy</Link>, which is incorporated into these Terms by reference. Key commitments include:</P>
-            <Li>We will never sell your data to any third party for any purpose.</Li>
-            <Li>Organisations receive aggregated results only — never individual responses or identities.</Li>
-            <Li>Your identity verification and your survey responses are technically separated and cannot be linked.</Li>
-            <Li>You can delete your account and all associated data at any time.</Li>
-          </Section>
+        {/* How Orgs See Data */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>6. How Organizations Use Survey Data</h2>
+          <p style={pStyle}>Organizations that create surveys on CivicVerify receive only anonymous, aggregated results. This means:</p>
+          <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+            <li style={liStyle}>Organizations can see <strong>how many</strong> people of a certain demographic answered a certain way, but can <strong>never</strong> identify individual respondents.</li>
+            <li style={liStyle}>Your name, email, phone number, and other identifying information are <strong>never</strong> shared with organizations.</li>
+            <li style={liStyle}>Organizations may <strong>not</strong> use CivicVerify data to discriminate against, target, harass, or otherwise harm any individual or group.</li>
+          </ul>
+        </div>
 
-          <Section title="7. Account Termination">
-            <P><strong>By you:</strong> You can delete your account at any time from Account Settings. Deletion is immediate and permanent.</P>
-            <P><strong>By us:</strong> We reserve the right to suspend or terminate accounts that:</P>
-            <Li>Violate these Terms of Service.</Li>
-            <Li>Attempt to manipulate or compromise the integrity of the platform.</Li>
-            <Li>Submit fraudulent identity verification.</Li>
-            <Li>Create duplicate accounts.</Li>
-            <Li>Engage in harassment, abuse, or illegal activity.</Li>
-            <P>Where possible, we will give advance warning before termination. For serious violations (fraud, manipulation, illegal activity), termination may be immediate without notice.</P>
-          </Section>
+        {/* Prohibited Use */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>7. Prohibited Uses</h2>
+          <p style={pStyle}>You agree NOT to:</p>
+          <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+            <li style={liStyle}>Create multiple accounts or help others create fake accounts.</li>
+            <li style={liStyle}>Use the Platform for any illegal purpose.</li>
+            <li style={liStyle}>Harass, threaten, or abuse other users in community features.</li>
+            <li style={liStyle}>Post content that is defamatory, obscene, hateful, or promotes violence.</li>
+            <li style={liStyle}>Attempt to access other users' accounts or personal data.</li>
+            <li style={liStyle}>Scrape, crawl, or use automated tools to extract data from the Platform.</li>
+            <li style={liStyle}>Reverse engineer, decompile, or otherwise attempt to extract the source code of the Platform.</li>
+            <li style={liStyle}>Use CivicVerify data to discriminate against individuals or groups.</li>
+          </ul>
+        </div>
 
-          <Section title="8. Platform Availability and Changes">
-            <Li>CivicVerify is provided "as is." We aim for maximum uptime but cannot guarantee uninterrupted service.</Li>
-            <Li>We may update, modify, or discontinue features of the platform at any time. We will give reasonable notice of significant changes.</Li>
-            <Li>We may update these Terms from time to time. We will notify registered users by email of material changes at least 14 days before they take effect. Continued use of the platform after that date constitutes acceptance of the updated Terms.</Li>
-          </Section>
+        {/* Community Guidelines */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>8. Community Content</h2>
+          <p style={pStyle}>The Platform includes community discussion features including posts, comments, debates, and polls. You retain ownership of content you post, but grant CivicVerify a non-exclusive, royalty-free license to display and distribute your content within the Platform. We reserve the right to remove content that violates these Terms or our community guidelines, and to suspend or terminate accounts of repeat violators.</p>
+        </div>
 
-          <Section title="9. Intellectual Property">
-            <Li>The CivicVerify platform, branding, and all original content are owned by CivicVerify and protected by applicable intellectual property law.</Li>
-            <Li>Content you submit (survey responses, community posts) remains yours. By submitting it, you grant CivicVerify a licence to use it for the purpose of operating the platform — specifically, to aggregate it into results and display community posts publicly.</Li>
-            <Li>You may not reproduce, distribute, or commercially exploit CivicVerify's platform, design, or data without written permission.</Li>
-          </Section>
+        {/* Account Deletion */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>9. Account Deletion & Data Removal</h2>
+          <p style={pStyle}>You may request deletion of your account and personal data at any time. To request account deletion:</p>
+          <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+            <li style={liStyle}>Email privacy@civicverify.org with the subject "Account Deletion Request"</li>
+            <li style={liStyle}>Include the email address associated with your account</li>
+          </ul>
+          <p style={pStyle}>Upon receiving your request, we will:</p>
+          <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+            <li style={liStyle}>Delete your account and all associated personal data within <strong>45 days</strong>.</li>
+            <li style={liStyle}>Remove your community posts and comments.</li>
+            <li style={liStyle}>Retain anonymized, aggregated survey response data that cannot be linked back to you.</li>
+            <li style={liStyle}>Retain consent records as required by law.</li>
+          </ul>
+          <p style={pStyle}>We may also terminate your account if you violate these Terms, with notice where practicable.</p>
+        </div>
 
-          <Section title="10. Limitation of Liability">
-            <P>To the maximum extent permitted by law:</P>
-            <Li>CivicVerify is not liable for any indirect, incidental, or consequential damages arising from your use of the platform.</Li>
-            <Li>Our total liability to you for any claim arising from use of CivicVerify will not exceed the amount you have paid us in the 12 months preceding the claim (which for free citizen accounts is zero).</Li>
-            <Li>We are not responsible for how organisations use aggregated survey results, provided we have complied with our obligations to deliver anonymised data only.</Li>
-          </Section>
+        {/* Disclaimers */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>10. Disclaimers & Limitation of Liability</h2>
+          <p style={pStyle}>THE PLATFORM IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. WE DO NOT WARRANT THAT THE PLATFORM WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE.</p>
+          <p style={pStyle}>TO THE MAXIMUM EXTENT PERMITTED BY LAW, CIVICVERIFY SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE PLATFORM.</p>
+          <p style={pStyle}>CivicVerify does not guarantee the accuracy of user-provided demographic data or survey responses. Organizations using survey data should consider it as one input among many in their decision-making.</p>
+        </div>
 
-          <Section title="11. Governing Law">
-            <P>These Terms are governed by the laws of the State of Indiana, USA. Any disputes arising from these Terms or your use of CivicVerify will be subject to the exclusive jurisdiction of the courts of Marion County, Indiana.</P>
-          </Section>
+        {/* Governing Law */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>11. Governing Law & Dispute Resolution</h2>
+          <p style={pStyle}>These Terms are governed by the laws of the State of Indiana, without regard to conflict of law principles. Any disputes arising from these Terms or your use of the Platform shall be resolved in the state or federal courts located in Marion County, Indiana. Before filing any claim, you agree to attempt to resolve the dispute informally by contacting us at privacy@civicverify.org.</p>
+        </div>
 
-          <Section title="12. Contact">
-            <P>If you have questions about these Terms, please contact us:</P>
-            <div style={{ background: C.offWhite, borderRadius: 14, padding: '24px', border: `1px solid ${C.border}` }}>
-              <p style={{ fontSize: 15, color: C.navy, fontWeight: 600, margin: '0 0 6px' }}>CivicVerify — Legal</p>
-              <p style={{ fontSize: 14, color: C.muted, margin: '0 0 4px' }}>📧 legal@civicverify.org</p>
-              <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>📍 Indianapolis, Indiana, USA</p>
-            </div>
-          </Section>
+        {/* Changes */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>12. Changes to These Terms</h2>
+          <p style={pStyle}>We may update these Terms from time to time. If we make material changes, we will notify you by posting a prominent notice on the Platform or by email at least 30 days before the changes take effect. Your continued use of the Platform after changes are posted constitutes acceptance of the updated Terms.</p>
+        </div>
 
-          <div style={{ background: C.offWhite, borderRadius: 14, padding: '24px',
-            border: `1px solid ${C.border}`, textAlign: 'center' }}>
-            <p style={{ fontSize: 13, color: C.muted, margin: 0, lineHeight: 1.7 }}>
-              These Terms of Service were last updated on March 1, 2026. We recommend reviewing them periodically.
-            </p>
+        {/* Contact */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>13. Contact Us</h2>
+          <p style={pStyle}>If you have questions about these Terms, please contact us:</p>
+          <div style={{ background: 'rgba(11,37,69,0.02)', borderRadius: 10, padding: '16px 18px', marginTop: 8 }}>
+            <p style={{ ...pStyle, margin: '0 0 4px' }}><strong>CivicVerify</strong></p>
+            <p style={{ ...pStyle, margin: '0 0 4px' }}>Email: privacy@civicverify.org</p>
+            <p style={{ ...pStyle, margin: 0 }}>Website: civicverify.org</p>
           </div>
         </div>
-      </section>
 
-      {/* ── FOOTER ── */}
-      <footer style={{ background: C.navyDeep, padding: '28px', textAlign: 'center',
-        borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {[['/', 'Home'], ['/about', 'About'], ['/privacy', 'Privacy Policy'], ['/terms', 'Terms'], ['/contact', 'Contact']].map(([to, label]) => (
-            <Link key={to} to={to} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'none' }}>{label}</Link>
-          ))}
-        </div>
-        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, margin: '16px 0 0' }}>
-          © 2026 CivicVerify. Indianapolis, IN. All rights reserved.
-        </p>
-      </footer>
-<BackToTop />
+        <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(11,37,69,0.2)', marginTop: 40 }}>{'\u00A9'} {new Date().getFullYear()} CivicVerify. One person, one verified voice.</p>
+      </div>
     </div>
-  )
+  );
 }
