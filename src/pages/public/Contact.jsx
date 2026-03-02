@@ -1,3 +1,4 @@
+import BackToTop from '../../components/BackToTop'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -358,7 +359,7 @@ export default function Contact() {
           © 2026 CivicVerify. Indianapolis, IN. All rights reserved.
         </p>
       </footer>
-
+<BackToTop />
     </div>
   )
 }
