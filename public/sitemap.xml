@@ -87,5 +87,8 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-
+<url><loc>https://www.civicverify.org/blog</loc><priority>0.8</priority></url>
+<url><loc>https://www.civicverify.org/blog/why-online-polls-are-broken</loc><priority>0.7</priority></url>
+<url><loc>https://www.civicverify.org/blog/what-happens-to-your-id</loc><priority>0.7</priority></url>
+<url><loc>https://www.civicverify.org/blog/civic-engagement-indianapolis</loc><priority>0.7</priority></url>
 </urlset>
