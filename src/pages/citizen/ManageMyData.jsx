@@ -1,7 +1,7 @@
 // src/pages/citizen/ManageMyData.jsx — ICDPA Data Rights Page
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import supabase from '../../supabaseClient';
+import { supabase } from '../../supabaseClient';
 
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#2D9B5A' };
 var font = 'Libre Baskerville, Georgia, serif';
