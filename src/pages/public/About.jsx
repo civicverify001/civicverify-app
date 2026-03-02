@@ -1,3 +1,4 @@
+import PublicFooter from '../../components/PublicFooter'
 import BackToTop from '../../components/BackToTop'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
@@ -184,6 +185,7 @@ export default function About() {
         </p>
       </footer>
 <BackToTop />
+    <PublicFooter />
     </div>
   )
 }
