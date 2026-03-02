@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import { usePageTracking } from './hooks/useAnalytics'
 
 // Public pages
 import Landing from './pages/public/Landing'
@@ -68,10 +69,16 @@ function AuthRedirect() {
   return <Navigate to={routes[profile.role] || '/citizen'} />
 }
 
+function AnalyticsTracker() {
+  usePageTracking()
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <AnalyticsTracker />
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
