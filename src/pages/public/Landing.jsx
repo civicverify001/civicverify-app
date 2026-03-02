@@ -1,4 +1,3 @@
-import BackToTop from '../../components/BackToTop'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
@@ -179,7 +178,7 @@ export default function Landing() {
 
           {/* Centre links */}
           <div className="mobile-hide" style={{ display: 'none', alignItems: 'center', gap: 32 }}>
-            {[['How It Works', '#how-it-works'], ['Live Polls', '#live-polls'], ['Community', '#community'], ['For Organizations', '#for-organizations']].map(([label, href]) => (
+            {[['How It Works', '/how-it-works'], ['Live Polls', '#live-polls'], ['Community', '#community'], ['For Organizations', '#for-organizations']].map(([label, href]) => (
               <a key={label} href={href} className="nav-a"
                 style={{ fontFamily: sans, fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,.72)', textDecoration: 'none', transition: 'color .2s', letterSpacing: '.01em' }}>
                 {label}
@@ -1042,7 +1041,7 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-<BackToTop />
+
     </div>
   )
 }
