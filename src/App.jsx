@@ -145,6 +145,8 @@ export default function App() {
             <Route path="org-review" element={<OrgReview />} />
             <Route path="moderation" element={<AdminModeration />} />
             <Route path="blog" element={<AdminBlog />} />
+            <Route path="community" element={<AdminCommunity />} />
+            <Route path="debates" element={<AdminDebates />} />
           </Route>
 
           {/* Org portal */}
