@@ -11,6 +11,7 @@ import About from './pages/public/About'
 import Privacy from './pages/public/Privacy'
 import Terms from './pages/public/Terms'
 import Contact from './pages/public/Contact'
+import HowItWorks from './pages/public/HowItWorks'
 
 // Layouts
 import CitizenLayout from './pages/citizen/CitizenLayout'
@@ -78,6 +79,7 @@ export default function App() {
           <Route path="/org-signup" element={<OrgSignup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/survey/:id" element={<PublicSurvey />} />
           <Route path="/results" element={<PublicResults />} />
           <Route path="/dashboard" element={<AuthRedirect />} />
