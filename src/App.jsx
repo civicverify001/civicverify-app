@@ -35,6 +35,7 @@ import CitizenVerify from './pages/citizen/Verify'
 import CitizenImpact from './pages/citizen/Impact'
 import CitizenAccount from './pages/citizen/Account'
 import CitizenCommunity from './pages/citizen/Community'
+import ManageMyData from './pages/citizen/ManageMyData'
 import CitizenDebates from './pages/citizen/Debates'
 import CitizenDebateSpace from './pages/citizen/DebateSpace'
 import UserProfile from './pages/citizen/UserProfile'
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="profile/:userId" element={<UserProfile />} />
             <Route path="messages" element={<MessagesInbox />} />
             <Route path="messages/:userId" element={<DirectMessages />} />
+            <Route path="my-data" element={<ManageMyData />} />
           </Route>
 
           {/* Admin portal */}
