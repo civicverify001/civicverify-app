@@ -1070,7 +1070,7 @@ export default function Community() {
       .single();
     if (error) { console.error("createPoll error:", error); return; }
     if (data) {
-      const newPoll = { ...data, author_name: currentUser?.full_name, author_verified: .currentUser?.identity_verified, author_avatar: currentUser?.avatar_url, vote_counts: (data.options || []).map(() => 0), my_vote_index: null };
+      const newPoll = { ...data, author_name: currentUser?.full_name, author_verified: currentUser?.identity_verified, author_avatar: currentUser?.avatar_url, vote_counts: (data.options || []).map(() => 0), my_vote_index: null };
       setPolls((prev) => [newPoll, ...prev]);
     }
   };
