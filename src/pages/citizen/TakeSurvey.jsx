@@ -130,6 +130,9 @@ export default function TakeSurvey() {
   var [error, setError] = useState('');
   var [alreadyDone, setAlreadyDone] = useState(false);
   var [loading, setLoading] = useState(true);
+  var [shareThought, setShareThought] = useState('');
+  var [shared, setShared] = useState(false);
+  var [sharing, setSharing] = useState(false);
   var startTime = useRef(Date.now());
 
   useEffect(function() {
@@ -169,11 +172,6 @@ export default function TakeSurvey() {
     </div>
   );
 
-  // Completion screen
-  var [shareThought, setShareThought] = useState('');
-  var [shared, setShared] = useState(false);
-  var [sharing, setSharing] = useState(false);
-
   async function shareComment() {
     if (!shareThought.trim() || !user) return;
     setSharing(true);
@@ -207,7 +205,7 @@ export default function TakeSurvey() {
               <p style={{ fontSize: 13, color: C.green, fontWeight: 600, margin: 0 }}>&#10003; Your comment was posted!</p>
             </div>
           : <div>
-              <textarea value={shareThought} onChange={function(e) { setShareThought(e.target.value); }} placeholder="e.g. I think this matters because... or Here is my take..." rows={3}
+              <textarea value={shareThought} onChange={function(e) { setShareThought(e.target.value); }} placeholder={'e.g. "I think this matters because..." or "Here's my take..."'} rows={3}
                 style={{ width: '100%', padding: '12px 14px', fontSize: 13, border: '1px solid rgba(11,37,69,0.08)', borderRadius: 10, outline: 'none', resize: 'none', fontFamily: 'inherit', lineHeight: 1.5, boxSizing: 'border-box' }}
                 onFocus={function(e) { e.target.style.borderColor = C.gold; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; }} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
