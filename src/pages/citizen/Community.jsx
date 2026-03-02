@@ -1022,12 +1022,19 @@ export default function Community() {
       // Fetch polls with author info
       const { data: pollData, error } = await supabase
         .from("community_polls")
-        .select("id, question, options, created_at, user_id, users:user_id(full_name, identity_verified, avatar_url)")
+        .select("id, question, options, created_at, user_id")
         .order("created_at", { ascending: false })
         .limit(30);
       if (error) { console.warn("fetchPolls error:", error.message); setPolls([]); setPollsLoading(false); return; }
 
       if (!pollData?.length) { setPolls([]); setPollsLoading(false); return; }
+      // Fetch authors separately (avoids PostgREST schema cache issue)
+      const userIds = [...new Set(pollData.map((p) => p.user_id).filter(Boolean))];
+      let userMap = {};
+      if (userIds.length) {
+        const { data: userData } = await supabase.from("users").select("id, full_name, identity_verified, avatar_url").in("id", userIds);
+        (userData || []).forEach((u) => { userMap[u.id] = u; });
+      }
 
       const pollIds = pollData.map((p) => p.id);
 
@@ -1043,9 +1050,9 @@ export default function Community() {
         const myVote = pvotes.find((v) => v.user_id === user.id);
         return {
           ...p,
-          author_name: p.users?.full_name,
-          author_verified: p.users?.identity_verified,
-          author_avatar: p.users?.avatar_url,
+          userMap[p.user_id]?.full_name,
+          userMap[p.user_id]?.identity_verified,
+          userMap[p.user_id]?.avatar_url,
           vote_counts,
           my_vote_index: myVote ? myVote.option_index : null,
         };
@@ -1059,7 +1066,7 @@ export default function Community() {
     const { data, error } = await supabase
       .from("community_polls")
       .insert({ user_id: user.id, question, options })
-      .select("id, question, options, created_at, user_id, users:user_id(full_name, identity_verified, avatar_url)")
+      .select("id, question, options, created_at, user_id")
       .single();
     if (error) { console.error("createPoll error:", error); return; }
     if (data) {
