@@ -1,3 +1,4 @@
+import CookieConsent from './components/CookieConsent'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePageTracking } from './hooks/useAnalytics'
@@ -163,6 +164,13 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+        <CookieConsent />
+      </AuthProvider>
+    </BrowserRouter>
+  )
+}
       </AuthProvider>
     </BrowserRouter>
   )
