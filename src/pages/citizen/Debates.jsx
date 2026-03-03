@@ -167,13 +167,14 @@ export default function Debates() {
   async function searchOpponent(query) {
     if (query.length < 2) { setSearchResults([]); return; }
     setSearching(true);
+    var clean = query.replace(/^@/, '');
     var { data } = await supabase
       .from('users')
-      .select('id, full_name, identity_verified')
+      .select('id, full_name, username, identity_verified')
       .eq('role', 'citizen')
       .eq('identity_verified', true)
       .neq('id', currentUser.id)
-      .ilike('full_name', '%' + query + '%')
+      .ilike('username', '%' + clean + '%')
       .limit(5);
     setSearchResults(data || []);
     setSearching(false);
@@ -492,7 +493,7 @@ export default function Debates() {
                       <input
                         className="cv-form-input"
                         style={inputStyle}
-                        placeholder="Search verified citizens..."
+                        placeholder="Search by @username..."..."
                         value={searchUser}
                         onChange={function(e) { setSearchUser(e.target.value); searchOpponent(e.target.value); }}
                       />
@@ -508,7 +509,7 @@ export default function Debates() {
                             return (
                               <div key={u.id} className="cv-search-item"
                                 onClick={function() {
-                                  setForm(Object.assign({}, form, { directOpponentId: u.id, directOpponentName: u.full_name }));
+                                  setForm(Object.assign({}, form, { directOpponentId: u.id, directOpponentName: u.full_name + ' (@' + u.username + ')' }));
                                   setSearchResults([]); setSearchUser('');
                                 }}
                                 style={{ padding: '10px 14px', borderBottom: '1px solid rgba(11,37,69,0.04)', display: 'flex', alignItems: 'center', gap: 10 }}
@@ -522,7 +523,7 @@ export default function Debates() {
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 13, fontWeight: 600, color: C.navy, margin: 0 }}>{u.full_name}</p>
-                                  <p style={{ fontSize: 11, color: '#16a34a', margin: 0, fontWeight: 600 }}>✓ Verified</p>
+                                  <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.45)', margin: 0, fontWeight: 500 }}>@{u.username} · <span style={{ color: '#16a34a', fontWeight: 600 }}>✓ Verified</span></p>
                                 </div>
                               </div>
                             );
