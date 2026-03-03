@@ -301,6 +301,7 @@ export default function CitizenLayout() {
               <p style={{ fontSize: 12, fontWeight: 600, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {profile ? profile.full_name : '...'}
               </p>
+              {profile && profile.username && <p style={{ fontSize: 10, color: '#C5960C', margin: '1px 0 0', fontWeight: 600 }}>@{profile.username}</p>}
               <span style={{ fontSize: 10, fontWeight: 700, color: (profile && (profile.is_verified || profile.identity_verified)) ? '#34d399' : '#f59e0b', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 {(profile && (profile.is_verified || profile.identity_verified)) ? '● VERIFIED' : '○ UNVERIFIED'}
               </span>
