@@ -47,7 +47,6 @@ function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAu
       boxShadow: isActive ? '0 4px 20px rgba(197,150,12,0.12)' : '0 2px 8px rgba(11,37,69,0.03)',
       transition: 'all 0.4s ease',
     }}>
-      {/* Side label on top */}
       <span style={{
         fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5,
         color: sideColor, background: sideBg, padding: '3px 10px', borderRadius: 8,
@@ -55,7 +54,6 @@ function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAu
       }}>
         {side}
       </span>
-      {/* Avatar */}
       <div style={{ position: 'relative' }}>
         <div style={{
           width: 56, height: 56, borderRadius: '50%',
@@ -82,7 +80,6 @@ function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAu
           }} />
         )}
       </div>
-      {/* Name */}
       <div style={{ textAlign: 'center', width: '100%', padding: '0 2px' }}>
         <p style={{
           fontSize: 13, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font,
@@ -94,7 +91,6 @@ function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAu
           </span>
         )}
       </div>
-      {/* Timer */}
       <div style={{
         padding: '6px 14px', borderRadius: 10, width: '100%', textAlign: 'center',
         background: isActive ? C.navy : 'rgba(11,37,69,0.04)',
@@ -116,7 +112,6 @@ function ModMessage({ message, eventType, time }) {
   var borderColors = { fact_check: '#ef4444', topic_drift: '#f59e0b', warning: '#ef4444', scorecard: C.gold, auto_poll: '#3b82f6', question_suggestion: '#8b5cf6' };
   var bgColors = { fact_check: 'rgba(239,68,68,0.04)', topic_drift: 'rgba(245,158,11,0.04)', warning: 'rgba(239,68,68,0.04)', scorecard: 'rgba(197,150,12,0.06)', question_suggestion: 'rgba(139,92,246,0.04)' };
 
-  // Scorecard gets special rendering
   if (eventType === 'scorecard') {
     try {
       var sc = JSON.parse(message);
@@ -243,7 +238,6 @@ function PollCard({ poll, onVote }) {
   );
 }
 
-// ─── Create Poll Form ───
 function CreatePollForm({ debateId, currentUser, pollType, onCreated }) {
   var [showForm, setShowForm] = useState(false);
   var [question, setQuestion] = useState('');
@@ -332,7 +326,6 @@ function CreatePollForm({ debateId, currentUser, pollType, onCreated }) {
   );
 }
 
-// ─── Live Audience Vote Bar ───
 function LiveVoteBar({ debate, debaterA, debaterB, votesA, votesB, userVote, onVote, currentUser }) {
   var total = votesA + votesB;
   var pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
@@ -347,8 +340,6 @@ function LiveVoteBar({ debate, debaterA, debaterB, votesA, votesB, userVote, onV
         <p style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: 0 }}>🗳️ Who's winning?</p>
         <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.5)', fontWeight: 600 }}>{total} vote{total !== 1 ? 's' : ''}</span>
       </div>
-
-      {/* Vote bar */}
       <div style={{ display: 'flex', height: 36, borderRadius: 12, overflow: 'hidden', marginBottom: 14, border: '1px solid rgba(11,37,69,0.08)' }}>
         <div style={{ width: pctA + '%', background: 'linear-gradient(135deg, #16a34a, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'width 0.6s ease', minWidth: total > 0 ? '8%' : '50%' }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{total > 0 ? pctA + '%' : '-'}</span>
@@ -357,8 +348,6 @@ function LiveVoteBar({ debate, debaterA, debaterB, votesA, votesB, userVote, onV
           <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{total > 0 ? pctB + '%' : '-'}</span>
         </div>
       </div>
-
-      {/* Vote buttons */}
       {currentUser && !isDebater && (
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={function() { onVote(debate.creator_id); }}
@@ -393,52 +382,38 @@ function LiveVoteBar({ debate, debaterA, debaterB, votesA, votesB, userVote, onV
   );
 }
 
-// ─── Audio Controls Panel ───
 function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected, setAudioConnected, isMuted, setIsMuted }) {
   var [joining, setJoining] = useState(false);
   var [audioError, setAudioError] = useState(null);
   var audioContainerRef = useRef(null);
 
-  // Auto-mute/unmute based on whose turn it is
   useEffect(function() {
     if (!audioConnected || !callObjRef.current || !isDebater || !currentUser) return;
     if (!debate || debate.status !== 'live') return;
-
     var isMyTurn = debate.active_speaker_id === currentUser.id;
     callObjRef.current.setLocalAudio(isMyTurn);
     setIsMuted(!isMyTurn);
-    console.log('[CivicVerify Audio] Turn-based mute:', isMyTurn ? 'YOUR TURN - unmuted' : 'NOT your turn - muted');
-  }, [debate?.active_speaker_id, audioConnected]);
+  }, [debate && debate.active_speaker_id, audioConnected]);
 
   async function joinAudio() {
     if (joining) return;
     setJoining(true); setAudioError(null);
     try {
-      // Destroy any existing instance first to prevent duplicates
       if (callObjRef.current) {
         try { await callObjRef.current.leave(); } catch(e) {}
         try { callObjRef.current.destroy(); } catch(e) {}
         callObjRef.current = null;
       }
-
-      // Step 1: Request mic permission BEFORE Daily (debaters only)
       if (isDebater) {
         try {
           var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          // Stop tracks immediately - Daily will create its own
           stream.getTracks().forEach(function(t) { t.stop(); });
-          console.log('[CivicVerify Audio] Mic permission granted');
         } catch(micErr) {
           throw new Error('Microphone access denied. Please allow mic permission and try again.');
         }
       }
-
-      // Step 2: Get Daily.co token from edge function
       var tokenData = await apiGetDailyToken(debate.id);
       if (!tokenData.token) throw new Error('No token received');
-      console.log('[CivicVerify Audio] Token received, is_debater:', tokenData.is_debater);
-
-      // Step 3: Load Daily.co SDK if not loaded
       if (!window.DailyIframe) {
         await new Promise(function(resolve, reject) {
           var s = document.createElement('script');
@@ -447,125 +422,61 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
           document.head.appendChild(s);
         });
       }
-
-      // Step 4: Create call object
       var callObj = window.DailyIframe.createCallObject();
       callObjRef.current = callObj;
-
-      // Remote audio playback - THIS IS CRITICAL for createCallObject
       callObj.on('track-started', function(ev) {
-        console.log('[CivicVerify Audio] Track started:', ev.participant?.user_name, ev.track?.kind, 'local:', ev.participant?.local);
-        if (ev.participant?.local) return; // Skip local tracks
-        if (ev.track?.kind !== 'audio') return; // Only audio
-        
-        // Create audio element for remote participant
+        if (ev.participant && ev.participant.local) return;
+        if (ev.track && ev.track.kind !== 'audio') return;
         var audioEl = document.createElement('audio');
         audioEl.srcObject = new MediaStream([ev.track]);
         audioEl.autoplay = true;
         audioEl.setAttribute('data-participant-id', ev.participant.session_id);
-        if (audioContainerRef.current) {
-          audioContainerRef.current.appendChild(audioEl);
-        }
-        console.log('[CivicVerify Audio] Playing remote audio from:', ev.participant?.user_name);
+        if (audioContainerRef.current) audioContainerRef.current.appendChild(audioEl);
       });
-
       callObj.on('track-stopped', function(ev) {
-        console.log('[CivicVerify Audio] Track stopped:', ev.participant?.user_name, ev.track?.kind);
-        if (ev.participant?.local) return;
-        // Remove audio element for this participant
+        if (ev.participant && ev.participant.local) return;
         if (audioContainerRef.current) {
           var els = audioContainerRef.current.querySelectorAll('[data-participant-id="' + ev.participant.session_id + '"]');
           els.forEach(function(el) { el.remove(); });
         }
       });
-
       callObj.on('participant-left', function(ev) {
-        console.log('[CivicVerify Audio] Participant left:', ev.participant?.user_name);
         if (audioContainerRef.current) {
           var els = audioContainerRef.current.querySelectorAll('[data-participant-id="' + ev.participant.session_id + '"]');
           els.forEach(function(el) { el.remove(); });
         }
       });
-
-      callObj.on('participant-joined', function(ev) {
-        console.log('[CivicVerify Audio] Participant joined:', ev.participant.user_name, 'audio:', ev.participant.audio);
-      });
-      callObj.on('participant-updated', function(ev) {
-        console.log('[CivicVerify Audio] Participant updated:', ev.participant.user_name, 'audio:', ev.participant.audio);
-      });
-
       callObj.on('joined-meeting', function() {
-        setAudioConnected(true);
-        setJoining(false);
-        console.log('[CivicVerify Audio] Joined meeting! isDebater:', isDebater);
-        // Only unmute if it's YOUR turn right now
+        setAudioConnected(true); setJoining(false);
         var isMyTurn = isDebater && debate && currentUser && debate.active_speaker_id === currentUser.id;
-        if (isMyTurn) {
-          callObj.setLocalAudio(true);
-          setIsMuted(false);
-          console.log('[CivicVerify Audio] Your turn - unmuted');
-        } else {
-          callObj.setLocalAudio(false);
-          setIsMuted(true);
-          console.log('[CivicVerify Audio] Not your turn - muted');
-        }
-        var local = callObj.participants().local;
-        console.log('[CivicVerify Audio] Local participant:', local?.user_name, 'audio:', local?.audio);
+        callObj.setLocalAudio(!!isMyTurn);
+        setIsMuted(!isMyTurn);
       });
-
       callObj.on('error', function(e) {
-        console.error('[CivicVerify Audio] Error:', e);
         var msg = e.errorMsg || 'Audio error';
         if (msg.indexOf('payment') !== -1) msg = 'Audio provider requires billing setup. Debate features work without audio.';
-        setAudioError(msg);
-        setJoining(false);
+        setAudioError(msg); setJoining(false);
         try { callObj.destroy(); } catch(ex) {}
         callObjRef.current = null;
       });
-
       callObj.on('left-meeting', function() { setAudioConnected(false); });
-
-      // Step 5: Join the room - debaters join with audio ON
-      await callObj.join({
-        url: debate.audio_room_url,
-        token: tokenData.token,
-        startVideoOff: true,
-        startAudioOff: true, // Always join muted — turn logic handles unmuting
-      });
-
-      console.log('[CivicVerify Audio] Join call complete');
-
+      await callObj.join({ url: debate.audio_room_url, token: tokenData.token, startVideoOff: true, startAudioOff: true });
     } catch (err) {
-      console.error('[CivicVerify Audio] Join failed:', err);
-      if (callObjRef.current) {
-        try { callObjRef.current.destroy(); } catch(e) {}
-        callObjRef.current = null;
-      }
+      if (callObjRef.current) { try { callObjRef.current.destroy(); } catch(e) {} callObjRef.current = null; }
       var msg = err.message || 'Failed to connect audio';
-      if (msg.indexOf('payment') !== -1 || msg.indexOf('Payment') !== -1) {
-        msg = 'Audio provider requires billing setup. Debate features work without audio.';
-      }
-      setAudioError(msg);
-      setJoining(false);
+      if (msg.indexOf('payment') !== -1 || msg.indexOf('Payment') !== -1) msg = 'Audio provider requires billing setup. Debate features work without audio.';
+      setAudioError(msg); setJoining(false);
     }
   }
 
   function leaveAudio() {
-    if (callObjRef.current) {
-      try { callObjRef.current.leave(); } catch(e) {}
-      try { callObjRef.current.destroy(); } catch(e) {}
-      callObjRef.current = null;
-    }
-    // Clean up remote audio elements
-    if (audioContainerRef.current) {
-      audioContainerRef.current.innerHTML = '';
-    }
+    if (callObjRef.current) { try { callObjRef.current.leave(); } catch(e) {} try { callObjRef.current.destroy(); } catch(e) {} callObjRef.current = null; }
+    if (audioContainerRef.current) audioContainerRef.current.innerHTML = '';
     setAudioConnected(false);
   }
 
   function toggleMute() {
     if (!callObjRef.current) return;
-    // Only allow toggle during your turn
     if (debate && currentUser && debate.active_speaker_id !== currentUser.id) return;
     callObjRef.current.setLocalAudio(isMuted);
     setIsMuted(!isMuted);
@@ -588,57 +499,22 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
 
   return (
     <div style={{ padding: '14px 18px', borderRadius: 16, background: audioConnected ? 'rgba(22,163,74,0.06)' : 'rgba(11,37,69,0.03)', border: '1px solid ' + (audioConnected ? 'rgba(22,163,74,0.15)' : 'rgba(11,37,69,0.06)') }}>
-      {/* Hidden container for remote audio elements */}
       <div ref={audioContainerRef} style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: audioConnected ? C.green : '#94a3b8', animation: audioConnected ? 'liveDot 1.5s ease-in-out infinite' : 'none' }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>
-            {audioConnected ? '🔊 Audio Connected' : '🔇 Audio Disconnected'}
-          </span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{audioConnected ? '🔊 Audio Connected' : '🔇 Audio Disconnected'}</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {audioConnected && isDebater && (function() {
             var isMyTurn = debate && currentUser && debate.active_speaker_id === currentUser.id;
-            if (!isMyTurn) {
-              return (
-                <span style={{
-                  padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 700,
-                  fontFamily: 'DM Sans, sans-serif',
-                  background: 'rgba(239,68,68,0.08)', color: 'rgba(239,68,68,0.6)',
-                }}>
-                  🔇 Muted — Not your turn
-                </span>
-              );
-            }
-            return (
-              <button onClick={toggleMute} style={{
-                padding: '8px 16px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                fontFamily: 'DM Sans, sans-serif',
-                background: isMuted ? 'rgba(239,68,68,0.1)' : 'rgba(22,163,74,0.1)',
-                color: isMuted ? C.red : C.green,
-              }}>
-                {isMuted ? '🔇 Unmute' : '🎙 Mute'}
-              </button>
-            );
+            if (!isMyTurn) return (<span style={{ padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', background: 'rgba(239,68,68,0.08)', color: 'rgba(239,68,68,0.6)' }}>🔇 Muted — Not your turn</span>);
+            return (<button onClick={toggleMute} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', background: isMuted ? 'rgba(239,68,68,0.1)' : 'rgba(22,163,74,0.1)', color: isMuted ? C.red : C.green }}>{isMuted ? '🔇 Unmute' : '🎙 Mute'}</button>);
           })()}
           {!audioConnected ? (
-            <button onClick={joinAudio} disabled={joining} style={{
-              padding: '8px 20px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'DM Sans, sans-serif',
-              background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
-              color: '#fff', boxShadow: '0 2px 8px rgba(197,150,12,0.25)',
-            }}>
-              {joining ? '⏳ Connecting...' : '🎧 Join Audio'}
-            </button>
+            <button onClick={joinAudio} disabled={joining} style={{ padding: '8px 20px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', color: '#fff', boxShadow: '0 2px 8px rgba(197,150,12,0.25)' }}>{joining ? '⏳ Connecting...' : '🎧 Join Audio'}</button>
           ) : (
-            <button onClick={leaveAudio} style={{
-              padding: '8px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.2)',
-              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-              background: 'rgba(239,68,68,0.06)', color: C.red,
-            }}>
-              Leave Audio
-            </button>
+            <button onClick={leaveAudio} style={{ padding: '8px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.2)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', background: 'rgba(239,68,68,0.06)', color: C.red }}>Leave Audio</button>
           )}
         </div>
       </div>
@@ -647,20 +523,13 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
   );
 }
 
-// ─── Live Transcript Panel ───
 function TranscriptPanel({ debateId, transcriptSegments, isLive, isActiveSpeaker }) {
   if (transcriptSegments.length === 0) {
     return (
       <div style={{ padding: '30px 16px', textAlign: 'center' }}>
         <div style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px', background: 'rgba(197,150,12,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 24 }}>📝</span></div>
-        <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: '0 0 8px', fontWeight: 500 }}>
-          {isLive ? 'Live transcript will appear here when debaters speak' : 'No transcript segments recorded yet'}
-        </p>
-        {isLive && (
-          <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.35)', margin: 0, lineHeight: 1.5 }}>
-            Transcription requires Chrome, Edge, or Safari. The active speaker's browser auto-transcribes their speech.
-          </p>
-        )}
+        <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.5)', margin: '0 0 8px', fontWeight: 500 }}>{isLive ? 'Live transcript will appear here when debaters speak' : 'No transcript segments recorded yet'}</p>
+        {isLive && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.35)', margin: 0, lineHeight: 1.5 }}>Transcription requires Chrome, Edge, or Safari.</p>}
       </div>
     );
   }
@@ -668,12 +537,7 @@ function TranscriptPanel({ debateId, transcriptSegments, isLive, isActiveSpeaker
     <div style={{ padding: '12px 14px' }}>
       {transcriptSegments.map(function(seg, i) {
         return (
-          <div key={seg.id || i} style={{
-            marginBottom: 8, padding: '10px 14px', borderRadius: 12,
-            background: 'rgba(11,37,69,0.03)',
-            borderLeft: '3px solid ' + C.gold,
-            animation: 'slideUp 0.3s ease',
-          }}>
+          <div key={seg.id || i} style={{ marginBottom: 8, padding: '10px 14px', borderRadius: 12, background: 'rgba(11,37,69,0.03)', borderLeft: '3px solid ' + C.gold, animation: 'slideUp 0.3s ease' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: C.gold }}>{seg.speaker_name || 'Speaker'}</span>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -714,8 +578,6 @@ export default function DebateSpace() {
   var [featuredPolls, setFeaturedPolls] = useState([]);
   var [audiencePolls, setAudiencePolls] = useState([]);
   var [countdown, setCountdown] = useState(null);
-
-  // Phase 4 state
   var [audioConnected, setAudioConnected] = useState(false);
   var [isMuted, setIsMuted] = useState(true);
   var callObjRef = useRef(null);
@@ -726,12 +588,14 @@ export default function DebateSpace() {
   var warningFired = useRef(false);
   var analysisTriggered = useRef(false);
   var debateStartTimeRef = useRef(null);
-
-  // Phase 5 state: live voting + listeners
   var [audienceVotes, setAudienceVotes] = useState({ a: 0, b: 0 });
   var [userVote, setUserVote] = useState(null);
   var [listenerCount, setListenerCount] = useState(0);
   var presenceChannelRef = useRef(null);
+
+  // ══════════════════════════════════════════════════════════════
+  // ALL DATA LOADERS — GUARDED with if (!id) return;
+  // ══════════════════════════════════════════════════════════════
 
   var loadDebate = useCallback(async function() {
     if (!id) return;
@@ -743,7 +607,6 @@ export default function DebateSpace() {
       var { data: users } = await supabase.from('users').select('id, full_name, identity_verified').in('id', ids);
       if (users) { users.forEach(function(u) { if (u.id === data.creator_id) setDebaterA(u); if (u.id === data.opponent_id) setDebaterB(u); }); }
     }
-    // Set timer from server-synced turn data
     if (data.turn_started_at && data.turn_duration) {
       var elapsed = Math.floor((Date.now() - new Date(data.turn_started_at).getTime()) / 1000);
       var remaining = Math.max(0, data.turn_duration - elapsed);
@@ -780,7 +643,6 @@ export default function DebateSpace() {
     if (!id) return;
     var { data: pd } = await supabase.from('debate_polls').select('*').eq('debate_id', id).eq('is_active', true);
     if (pd && pd.length > 0) {
-      // Get creator names
       var creatorIds = pd.map(function(p) { return p.created_by; }).filter(Boolean);
       var creatorMap = {};
       if (creatorIds.length > 0) {
@@ -808,7 +670,6 @@ export default function DebateSpace() {
     }
   }, [id]);
 
-  // Load audience votes
   var loadAudienceVotes = useCallback(async function() {
     if (!id) return;
     var { data } = await supabase.from('debate_audience_votes').select('voted_for').eq('debate_id', id);
@@ -820,7 +681,6 @@ export default function DebateSpace() {
       });
       setAudienceVotes({ a: a, b: b });
     }
-    // Load current user's vote
     if (currentUser) {
       var { data: mv } = await supabase.from('debate_audience_votes').select('voted_for').eq('debate_id', id).eq('user_id', currentUser.id).single();
       if (mv) setUserVote(mv.voted_for);
@@ -828,66 +688,51 @@ export default function DebateSpace() {
     }
   }, [id, currentUser, debate]);
 
-  // Cast or change audience vote
   async function castAudienceVote(votedFor) {
-    if (!currentUser) return;
-    if (userVote === votedFor) return; // Same vote, do nothing
+    if (!currentUser || !id) return;
+    if (userVote === votedFor) return;
     if (userVote) {
-      // Update existing vote
-      await supabase.from('debate_audience_votes').update({
-        voted_for: votedFor,
-        section: debate ? debate.current_section : null,
-        updated_at: new Date().toISOString(),
-      }).eq('debate_id', id).eq('user_id', currentUser.id);
+      await supabase.from('debate_audience_votes').update({ voted_for: votedFor }).eq('debate_id', id).eq('user_id', currentUser.id);
     } else {
-      // Insert new vote
-      await supabase.from('debate_audience_votes').insert({
-        debate_id: id,
-        user_id: currentUser.id,
-        voted_for: votedFor,
-        section: debate ? debate.current_section : null,
-      });
+      await supabase.from('debate_audience_votes').insert({ debate_id: id, user_id: currentUser.id, voted_for: votedFor });
     }
     setUserVote(votedFor);
     loadAudienceVotes();
   }
 
-  // Presence tracking for listener count
+  // Presence tracking
   useEffect(function() {
+    if (!id) return;
     var channel = supabase.channel('presence-debate-' + id, { config: { presence: { key: currentUser ? currentUser.id : 'anon-' + Math.random().toString(36).substr(2, 9) } } });
-
     channel.on('presence', { event: 'sync' }, function() {
       var state = channel.presenceState();
-      var count = Object.keys(state).length;
-      setListenerCount(count);
+      setListenerCount(Object.keys(state).length);
     });
-
     channel.subscribe(async function(status) {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({ user_id: currentUser ? currentUser.id : null, joined_at: new Date().toISOString() });
-      }
+      if (status === 'SUBSCRIBED') await channel.track({ user_id: currentUser ? currentUser.id : null, joined_at: new Date().toISOString() });
     });
-
     presenceChannelRef.current = channel;
     return function() { supabase.removeChannel(channel); };
   }, [id, currentUser]);
 
   // Subscribe to audience vote changes
   useEffect(function() {
+    if (!id) return;
     var ch = supabase.channel('av-' + id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'debate_audience_votes', filter: 'debate_id=eq.' + id }, function() {
-        loadAudienceVotes();
-      }).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'debate_audience_votes', filter: 'debate_id=eq.' + id }, function() { loadAudienceVotes(); }).subscribe();
     return function() { supabase.removeChannel(ch); };
   }, [id, loadAudienceVotes]);
 
-  useEffect(function() { loadDebate(); loadModLog(); loadChat(); loadPolls(); loadTranscript(); }, [loadDebate, loadModLog, loadChat, loadPolls, loadTranscript]);
+  useEffect(function() {
+    if (!id) return;
+    loadDebate(); loadModLog(); loadChat(); loadPolls(); loadTranscript();
+  }, [loadDebate, loadModLog, loadChat, loadPolls, loadTranscript]);
 
-  // Load audience votes once debate is loaded
   useEffect(function() { if (debate) loadAudienceVotes(); }, [debate, loadAudienceVotes]);
 
-  // Realtime subscriptions
+  // Realtime subscriptions — ALL GUARDED
   useEffect(function() {
+    if (!id) return;
     var ch = supabase.channel('dc-' + id)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'debate_chat_messages', filter: 'debate_id=eq.' + id }, function(p) {
         setChatMessages(function(prev) { return prev.concat([p.new]); });
@@ -899,7 +744,6 @@ export default function DebateSpace() {
     var ds = supabase.channel('ds-' + id)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'debates', filter: 'id=eq.' + id }, function(p) {
         setDebate(p.new);
-        // Sync timer from server on turn change
         if (p.new.turn_started_at && p.new.turn_duration) {
           var elapsed = Math.floor((Date.now() - new Date(p.new.turn_started_at).getTime()) / 1000);
           var remaining = Math.max(0, p.new.turn_duration - elapsed);
@@ -917,16 +761,13 @@ export default function DebateSpace() {
         }
       }).subscribe();
     var pl = supabase.channel('dp-' + id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'debate_polls', filter: 'debate_id=eq.' + id }, function() {
-        loadPolls();
-      }).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'debate_polls', filter: 'debate_id=eq.' + id }, function() { loadPolls(); }).subscribe();
     return function() { supabase.removeChannel(ch); supabase.removeChannel(ml); supabase.removeChannel(ds); supabase.removeChannel(ts); supabase.removeChannel(pl); };
   }, [id]);
 
   useEffect(function() { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chatMessages]);
   useEffect(function() { if (modLogRef.current) modLogRef.current.scrollTop = modLogRef.current.scrollHeight; }, [modLog]);
 
-  // Waiting room countdown
   useEffect(function() {
     if (!debate) return;
     if (debate.status === 'waiting_room' || debate.status === 'confirmed') {
@@ -935,32 +776,24 @@ export default function DebateSpace() {
     }
   }, [debate]);
 
-  // Auto-timer: countdown + auto-advance + MIC ENFORCEMENT
   useEffect(function() {
     if (!debate || debate.status !== 'live') return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(function() {
       var isCreatorTurn = debate.active_speaker_id === debate.creator_id;
       var setTimer = isCreatorTurn ? setTimerA : setTimerB;
-
       setTimer(function(t) {
         var newT = Math.max(0, t - 1);
-
-        // 30-second warning — only fire once per turn
         if (newT === 30 && !warningFired.current && currentUser && debate.active_speaker_id === currentUser.id) {
           warningFired.current = true;
-          apiTimerWarning(debate.id, 30).catch(function(e) { console.error('Timer warning error:', e); });
+          apiTimerWarning(debate.id, 30).catch(function(e) {});
         }
-
-        // Auto-advance: only the active speaker's client triggers next_turn
         if (newT === 0 && !autoTimerFired.current && currentUser && debate.active_speaker_id === currentUser.id) {
           autoTimerFired.current = true;
-          apiNextTurn(debate.id).catch(function(err) { console.error('Auto next_turn error:', err); });
+          apiNextTurn(debate.id).catch(function(err) {});
         }
         return newT;
       });
-
-      // ENFORCE mic mute every second
       if (callObjRef.current && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id)) {
         var shouldBeUnmuted = debate.active_speaker_id === currentUser.id;
         var localParticipant = callObjRef.current.participants().local;
@@ -973,116 +806,68 @@ export default function DebateSpace() {
     return function() { clearInterval(timerRef.current); };
   }, [debate, currentUser]);
 
-  // Reset warning ref on turn change
-  useEffect(function() {
-    if (debate) { warningFired.current = false; analysisTriggered.current = false; }
-  }, [debate && debate.active_speaker_id]);
+  useEffect(function() { if (debate) { warningFired.current = false; analysisTriggered.current = false; } }, [debate && debate.active_speaker_id]);
 
-  // Trigger AI transcript analysis on section changes (debater's client only)
   useEffect(function() {
     if (!debate || debate.status !== 'live' || !currentUser) return;
     if (debate.active_speaker_id === currentUser.id && !analysisTriggered.current && debate.moderator_type !== 'user') {
       analysisTriggered.current = true;
-      // Delay analysis to let transcript build up
-      var timer = setTimeout(function() {
-        apiAnalyzeTranscript(debate.id).catch(function(e) { console.error('Transcript analysis error:', e); });
-      }, 10000); // 10 seconds after turn starts
+      var timer = setTimeout(function() { apiAnalyzeTranscript(debate.id).catch(function(e) {}); }, 10000);
       return function() { clearTimeout(timer); };
     }
   }, [debate && debate.current_section, currentUser]);
 
-  // Web Speech API transcription
   useEffect(function() {
     if (!debate || debate.status !== 'live' || !currentUser) return;
-    var isActiveSpeaker = debate.active_speaker_id === currentUser.id;
-
-    if (isActiveSpeaker && !isTranscribing) {
-      startTranscription();
-    } else if (!isActiveSpeaker && isTranscribing) {
-      stopTranscription();
-    }
+    var isActiveSpeakerNow = debate.active_speaker_id === currentUser.id;
+    if (isActiveSpeakerNow && !isTranscribing) startTranscription();
+    else if (!isActiveSpeakerNow && isTranscribing) stopTranscription();
   }, [debate, currentUser, isTranscribing]);
 
   function startTranscription() {
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.log('[CivicVerify] Speech recognition not supported in this browser');
-      return;
-    }
-
+    if (!SpeechRecognition) return;
     var recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
+    recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
     recognition.onresult = function(event) {
       for (var i = event.resultIndex; i < event.results.length; i++) {
         var result = event.results[i];
         if (result.isFinal && result[0].transcript.trim()) {
-          console.log('[CivicVerify Transcript]', result[0].transcript.trim());
           supabase.from('debate_transcript_segments').insert({
-            debate_id: id,
-            speaker_id: currentUser.id,
-            section: debate ? debate.current_section : null,
-            content: result[0].transcript.trim(),
-            is_final: true,
+            debate_id: id, speaker_id: currentUser.id, section: debate ? debate.current_section : null,
+            content: result[0].transcript.trim(), is_final: true,
             start_time: debateStartTimeRef.current ? (Date.now() - debateStartTimeRef.current) / 1000 : null,
-          }).then(function(res) {
-            if (res.error) console.error('[CivicVerify Transcript] Insert error:', res.error);
-          });
+          }).then(function(res) { if (res.error) console.error('[Transcript] Insert error:', res.error); });
         }
       }
     };
-
-    recognition.onerror = function(e) {
-      console.log('[CivicVerify Transcript] Error:', e.error);
-      if (e.error === 'not-allowed') {
-        console.error('[CivicVerify Transcript] Mic permission denied for transcription');
-      }
-    };
-
-    recognition.onend = function() {
-      // Auto-restart if recognition ref still exists (meaning we haven't stopped)
-      if (recognitionRef.current) {
-        try { setTimeout(function() { if (recognitionRef.current) recognitionRef.current.start(); }, 200); } catch (e) { /* ignore */ }
-      }
-    };
-
+    recognition.onerror = function(e) { console.log('[Transcript] Error:', e.error); };
+    recognition.onend = function() { if (recognitionRef.current) { try { setTimeout(function() { if (recognitionRef.current) recognitionRef.current.start(); }, 200); } catch (e) {} } };
     recognitionRef.current = recognition;
     if (!debateStartTimeRef.current) debateStartTimeRef.current = Date.now();
-    try { recognition.start(); setIsTranscribing(true); console.log('[CivicVerify Transcript] Started'); } catch (e) { console.error('[CivicVerify Transcript] Start failed:', e); }
+    try { recognition.start(); setIsTranscribing(true); } catch (e) {}
   }
 
   function stopTranscription() {
-    if (recognitionRef.current) {
-      recognitionRef.current.onend = null; // Prevent auto-restart
-      try { recognitionRef.current.stop(); } catch (e) { /* ignore */ }
-      recognitionRef.current = null;
-    }
+    if (recognitionRef.current) { recognitionRef.current.onend = null; try { recognitionRef.current.stop(); } catch (e) {} recognitionRef.current = null; }
     setIsTranscribing(false);
   }
 
-  // Cleanup audio + transcription on unmount
   useEffect(function() {
     return function() {
-      if (callObjRef.current) {
-        try { callObjRef.current.leave(); } catch(e) {}
-        try { callObjRef.current.destroy(); } catch(e) {}
-        callObjRef.current = null;
-      }
+      if (callObjRef.current) { try { callObjRef.current.leave(); } catch(e) {} try { callObjRef.current.destroy(); } catch(e) {} callObjRef.current = null; }
       if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch (e) {} }
     };
   }, []);
 
   async function sendChat() {
-    if (!chatInput.trim() || sendingChat || !currentUser) return;
+    if (!chatInput.trim() || sendingChat || !currentUser || !id) return;
     setSendingChat(true);
     var content = chatInput.trim();
     var { data: inserted } = await supabase.from('debate_chat_messages').insert({ debate_id: id, user_id: currentUser.id, content: content }).select().single();
     setChatInput(''); setSendingChat(false);
-    // AI chat moderation (async, non-blocking)
     if (inserted && debate && debate.moderator_type !== 'user') {
-      apiModerateChat(debate.id, inserted.id, content, profile ? profile.full_name : 'User').catch(function(e) { console.error('Chat mod error:', e); });
+      apiModerateChat(debate.id, inserted.id, content, profile ? profile.full_name : 'User').catch(function(e) {});
     }
   }
   async function votePoll(pollId, choice) {
@@ -1090,22 +875,10 @@ export default function DebateSpace() {
     await supabase.from('debate_poll_votes').insert({ poll_id: pollId, user_id: currentUser.id, choice: choice });
     loadPolls();
   }
-  async function concedeTime() {
-    if (!currentUser || !debate) return;
-    try { await apiConcedeTime(debate.id); } catch (err) { console.error('Concede error:', err); }
-  }
-  async function handleStartDebate() {
-    if (!currentUser || !debate) return;
-    try { await apiStartDebate(debate.id); } catch (err) { console.error('Start error:', err); }
-  }
-  async function handleGenerateScorecard() {
-    if (!debate) return;
-    try { await apiScorecard(debate.id); } catch (err) { console.error('Scorecard error:', err); }
-  }
-  async function handleGenerateReport() {
-    if (!debate) return;
-    try { await apiGenerateReport(debate.id); } catch (err) { console.error('Report error:', err); }
-  }
+  async function concedeTime() { if (!currentUser || !debate) return; try { await apiConcedeTime(debate.id); } catch (err) {} }
+  async function handleStartDebate() { if (!currentUser || !debate) return; try { await apiStartDebate(debate.id); } catch (err) {} }
+  async function handleGenerateScorecard() { if (!debate) return; try { await apiScorecard(debate.id); } catch (err) {} }
+  async function handleGenerateReport() { if (!debate) return; try { await apiGenerateReport(debate.id); } catch (err) {} }
 
   var isDebater = debate && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id);
   var isModerator = debate && currentUser && debate.moderator_type === 'user' && debate.moderator_user_id === currentUser.id;
@@ -1142,12 +915,8 @@ export default function DebateSpace() {
         @media(max-width:768px){.cv-ds-main{flex-direction:column!important}.cv-ds-speakers{flex-direction:column!important;gap:16px!important}.cv-ds-sidebar{width:100%!important;height:420px!important}}
       `}</style>
 
-      {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <button onClick={function() { navigate(-1); }}
-          style={{ background: 'rgba(11,37,69,0.04)', border: 'none', color: C.navy, cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 10, marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>
-          ← Back to Debates
-        </button>
+        <button onClick={function() { navigate(-1); }} style={{ background: 'rgba(11,37,69,0.04)', border: 'none', color: C.navy, cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 10, marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>← Back to Debates</button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -1167,18 +936,12 @@ export default function DebateSpace() {
         </div>
       </div>
 
-      {/* Audio Panel */}
       {!isCompleted && (
         <div style={{ marginBottom: 16 }}>
-          <AudioPanel
-            debate={debate} currentUser={currentUser} isDebater={isDebater}
-            callObjRef={callObjRef} audioConnected={audioConnected} setAudioConnected={setAudioConnected}
-            isMuted={isMuted} setIsMuted={setIsMuted}
-          />
+          <AudioPanel debate={debate} currentUser={currentUser} isDebater={isDebater} callObjRef={callObjRef} audioConnected={audioConnected} setAudioConnected={setAudioConnected} isMuted={isMuted} setIsMuted={setIsMuted} />
         </div>
       )}
 
-      {/* Countdown / Waiting Room */}
       {isWaiting && countdown !== null && (
         <div style={{ padding: '36px 28px', borderRadius: 22, textAlign: 'center', marginBottom: 24, background: 'linear-gradient(135deg, #0B2545, #163a64)', border: '1px solid rgba(197,150,12,0.2)', boxShadow: '0 8px 32px rgba(11,37,69,0.15)' }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)', margin: '0 0 10px', letterSpacing: 1, textTransform: 'uppercase' }}>{countdown > 0 ? 'Debate begins in' : 'Starting any moment...'}</p>
@@ -1192,7 +955,6 @@ export default function DebateSpace() {
         </div>
       )}
 
-      {/* Speakers */}
       <div style={{ background: '#fff', borderRadius: 20, padding: '20px 14px', border: isLive ? '2px solid rgba(197,150,12,0.2)' : '1px solid rgba(11,37,69,0.06)', marginBottom: 20, boxShadow: '0 4px 24px rgba(11,37,69,0.04)' }}>
         {debate.current_section && <div style={{ textAlign: 'center', marginBottom: 16 }}><span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(197,150,12,0.1), rgba(197,150,12,0.15))', fontSize: 12, fontWeight: 700, color: C.darkGold, border: '1px solid rgba(197,150,12,0.2)' }}>📌 {debate.current_section}</span></div>}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -1211,16 +973,10 @@ export default function DebateSpace() {
         )}
       </div>
 
-      {/* Live Audience Vote */}
       {(isLive || isCompleted) && (
-        <LiveVoteBar
-          debate={debate} debaterA={debaterA} debaterB={debaterB}
-          votesA={audienceVotes.a} votesB={audienceVotes.b}
-          userVote={userVote} onVote={castAudienceVote} currentUser={currentUser}
-        />
+        <LiveVoteBar debate={debate} debaterA={debaterA} debaterB={debaterB} votesA={audienceVotes.a} votesB={audienceVotes.b} userVote={userVote} onVote={castAudienceVote} currentUser={currentUser} />
       )}
 
-      {/* Featured Polls (from debaters/moderator) */}
       {(isLive || isCompleted) && (featuredPolls.length > 0 || (isDebater || isModerator)) && (
         <div style={{ padding: '18px 22px', borderRadius: 18, background: 'linear-gradient(135deg, rgba(197,150,12,0.03), rgba(197,150,12,0.06))', border: '1px solid rgba(197,150,12,0.12)', marginBottom: 20 }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: '0 0 14px' }}>📊 Featured Polls</p>
@@ -1234,9 +990,7 @@ export default function DebateSpace() {
         </div>
       )}
 
-      {/* Moderator + Chat/Polls/Transcript */}
       <div className="cv-ds-main" style={{ display: 'flex', gap: 16 }}>
-        {/* Moderator Panel */}
         <div style={{ flex: 1, borderRadius: 20, display: 'flex', flexDirection: 'column', minHeight: 420, background: 'linear-gradient(180deg, #fff 0%, #fafaf8 100%)', border: '1px solid rgba(11,37,69,0.06)', boxShadow: '0 2px 16px rgba(11,37,69,0.03)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px', borderBottom: '1px solid rgba(11,37,69,0.06)', background: 'linear-gradient(135deg, #0B2545, #163a64)', borderRadius: '20px 20px 0 0' }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(197,150,12,0.3)' }}><span style={{ fontSize: 18 }}>{debate.moderator_type === 'user' ? '👤' : '⚖️'}</span></div>
@@ -1252,7 +1006,6 @@ export default function DebateSpace() {
           </div>
         </div>
 
-        {/* Sidebar: Chat / Polls / Transcript / Info */}
         <div className="cv-ds-sidebar" style={{ width: 380, borderRadius: 20, display: 'flex', flexDirection: 'column', minHeight: 420, background: '#fff', border: '1px solid rgba(11,37,69,0.06)', boxShadow: '0 2px 16px rgba(11,37,69,0.03)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', background: C.navy }}>
             {[{ id: 'chat', label: '💬 Chat', count: chatMessages.length }, { id: 'transcript', label: '📝 Transcript', count: transcriptSegments.length }, { id: 'polls', label: '📊 Polls', count: audiencePolls.length }, { id: 'info', label: 'ℹ️ Info' }].map(function(t) {
@@ -1293,28 +1046,23 @@ export default function DebateSpace() {
 
             {activeTab === 'polls' && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                {/* Audience poll creation for non-debaters */}
                 {currentUser && !isDebater && !isModerator && isLive && (
                   <div style={{ marginBottom: 14 }}>
                     <CreatePollForm debateId={id} currentUser={currentUser} pollType="audience" onCreated={loadPolls} />
                   </div>
                 )}
-
                 {audiencePolls.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.5)', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>🎤 Audience Polls</p>
                     {audiencePolls.map(function(p) { return <PollCard key={p.id} poll={p} onVote={votePoll} />; })}
                   </div>
                 )}
-
-                {/* Also show featured polls here for reference */}
                 {featuredPolls.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1 }}>⭐ Featured Polls</p>
                     {featuredPolls.map(function(p) { return <PollCard key={p.id} poll={p} onVote={votePoll} />; })}
                   </div>
                 )}
-
                 {polls.length === 0 && (
                   <div style={{ padding: '40px 8px', textAlign: 'center' }}>
                     <div style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px', background: 'rgba(197,150,12,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 24 }}>📊</span></div>
@@ -1348,8 +1096,6 @@ export default function DebateSpace() {
                     </div>;
                   })}
                 </div>
-
-                {/* AI Actions for completed debates */}
                 {isCompleted && (
                   <div style={{ marginBottom: 22 }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: 1.5 }}>🤖 AI Analysis</p>
@@ -1359,15 +1105,12 @@ export default function DebateSpace() {
                     </div>
                   </div>
                 )}
-
                 {debate.summary && (
                   <div style={{ marginTop: 14, padding: '16px 18px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(197,150,12,0.06), rgba(197,150,12,0.1))', border: '1px solid rgba(197,150,12,0.15)' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: C.gold, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 1.5 }}>⚖️ AI Summary</p>
                     <p style={{ fontSize: 13, color: C.navy, margin: 0, lineHeight: 1.6 }}>{debate.summary}</p>
                   </div>
                 )}
-
-                {/* Report Card Display */}
                 {debate.report_card && (
                   <div style={{ marginTop: 14 }}>
                     <div style={{ padding: '16px 18px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(11,37,69,0.02), rgba(197,150,12,0.04))', border: '1px solid rgba(197,150,12,0.12)' }}>
@@ -1379,9 +1122,7 @@ export default function DebateSpace() {
                             <p style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? C.green : C.darkGold, margin: '0 0 8px' }}>{d.name}</p>
                             {d.scores && (
                               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
-                                {Object.entries(d.scores).map(function(s) {
-                                  return <span key={s[0]} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 6, background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.7)', fontWeight: 600 }}>{s[0]}: {s[1]}/10</span>;
-                                })}
+                                {Object.entries(d.scores).map(function(s) { return <span key={s[0]} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 6, background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.7)', fontWeight: 600 }}>{s[0]}: {s[1]}/10</span>; })}
                               </div>
                             )}
                             {d.strengths && <p style={{ fontSize: 11, color: 'rgba(11,37,69,0.6)', margin: '0 0 4px', lineHeight: 1.4 }}>💪 {d.strengths}</p>}
@@ -1401,4 +1142,3 @@ export default function DebateSpace() {
     </div>
   );
 }
-
