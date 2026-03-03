@@ -103,6 +103,7 @@ export default function App() {
           <Route path="/results" element={<PublicResults />} />
           <Route path="/dashboard" element={<AuthRedirect />} />
           <Route path="/org-pending" element={<OrgPending />} />
+          <Route path="reels" element={<CivicReels />} />
 
           {/* Blog (database-driven) */}
           <Route path="/blog" element={<Blog />} />
