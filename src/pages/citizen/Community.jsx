@@ -627,7 +627,7 @@ const PollCard = ({ poll, currentUserId, onVote, onDelete }) => {
 // ── Comment Row ───────────────────────────────────────────────────────────────
 const CommentRow = ({ c, navigate }) => (
   <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
-    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified &&} onClick={() => c.user_id && navigate("/citizen/profile/" + c.user_id)} />
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} onClick={() => c.user_id && navigate("/citizen/profile/" + c.user_id)} />
     <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
       <div style={{ background: T.cream, borderRadius: "12px 12px 12px 3px", padding: "7px 12px", border: "1px solid " + T.border, display: "inline-block", maxWidth: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
