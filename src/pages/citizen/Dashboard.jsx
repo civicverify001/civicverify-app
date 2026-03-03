@@ -234,6 +234,7 @@ create index if not exists idx_dc_survey
                     Take Poll
                   </button>
                 )}
+                <ShareButton type="survey" id={survey.id} title={survey.title} size="sm" />
               </div>
             </div>
 
