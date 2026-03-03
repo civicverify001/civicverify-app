@@ -560,7 +560,8 @@ const PollCard = ({ poll, currentUserId, onVote, onDelete }) => {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
               <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 14, color: T.navy }}>{poll.author_name || "Citizen"}</span>
-              {poll.author_verified && <VerifiedBadge />}
+          {c.users?.username && <span style={{ fontSize: 10, color: "#64748b", fontWeight: 500 }}>@{c.users.username}</span>}
+          {c.users?.identity_verified
               <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted, marginLeft: "auto" }}>{timeAgo(poll.created_at)}</span>
             </div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 10, background: T.gold + "12", border: "1px solid " + T.gold + "33" }}>
@@ -764,6 +765,7 @@ const PostCard = ({ post, onLike, onComment, onReact, currentUserId, followingSe
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
               <span onClick={() => authorUserId && navigate("/citizen/profile/" + authorUserId)} style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 15, color: T.navy, cursor: "pointer" }}>{post.author_name || "Anonymous Citizen"}</span>
+              {post.author_username && <span style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>@{post.author_username}</span>}
               {post.author_verified && <VerifiedBadge />}
               {currentUserId && authorUserId && <FollowButton targetUserId={authorUserId} currentUserId={currentUserId} followingSet={followingSet} onToggle={onFollowToggle} />}
               {post.survey_tag && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, background: T.navy + "08", border: "1px solid " + T.border, fontSize: 10, color: T.muted, fontFamily: T.sans }}><Ico d={ICONS.hash} size={8} /> {post.survey_tag}</span>}
@@ -922,7 +924,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
               <div key={msg.id} style={{ display: "flex", gap: 8, flexDirection: isMe ? "row-reverse" : "row", alignItems: "flex-end" }}>
                 {!isMe && <Avatar name={name} size={32} verified={msg.users?.identity_verified} onClick={() => navigate("/citizen/profile/" + msg.user_id)} />}
                 <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 3 }}>
-                  {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4, cursor: "pointer" }} onClick={() => navigate("/citizen/profile/" + msg.user_id)}>{name}</span>}
+                  {!isMe && <span style={{ fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.navy, paddingLeft: 4, cursor: "pointer" }} onClick={() => navigate("/citizen/profile/" + msg.user_id)}>{name}{msg.users?.username && <span style={{ color: T.muted, fontWeight: 500, marginLeft: 4 }}>@{msg.users.username}</span>}</span>}
                   <div style={{ padding: "10px 14px", background: isMe ? T.navy : "#fff", color: isMe ? T.cream : T.ink, borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontFamily: T.sans, fontSize: 14, lineHeight: 1.5, boxShadow: "0 1px 4px rgba(11,37,69,0.08)", border: isMe ? "none" : "1px solid " + T.border }}>{msg.content}</div>
                   <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, padding: "0 4px" }}>{timeAgo(msg.created_at)}</span>
                 </div>
@@ -1109,14 +1111,14 @@ export default function Community() {
 
   const fetchPosts = async (p) => {
     const from = p * PAGE;
-    const { data } = await supabase.from("community_posts").select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, user_id, users:user_id(full_name, identity_verified, avatar_url)").order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+    const { data } = await supabase.from("community_posts").select("id, content, created_at, likes_count, dislikes_count, comments_count, survey_tag, image_url, linked_survey_data, user_id, users:user_id(full_name, identity_verified, avatar_url, username)").order("created_at", { ascending: false }).range(from, from + PAGE - 1);
     const ids = (data || []).map((x) => x.id);
     let myVotes = {};
     if (ids.length && user?.id) {
       const { data: votes } = await supabase.from("community_post_likes").select("post_id, type").eq("user_id", user.id).in("post_id", ids);
       (votes || []).forEach((v) => { myVotes[v.post_id] = v.type; });
     }
-    const shaped = (data || []).map((x) => ({ ...x, author_name: x.users?.full_name, author_verified: x.users?.identity_verified, author_avatar: x.users?.avatar_url, linked_survey: x.linked_survey_data, my_vote: myVotes[x.id] || null }));
+    const shaped = (data || []).map((x) => ({ ...x, author_name: x.users?.full_name, author_verified: x.users?.identity_verified, author_username: x.users?.username, author_avatar: x.users?.avatar_url, linked_survey: x.linked_survey_data, my_vote: myVotes[x.id] || null }));
     if (p === 0) setPosts(shaped); else setPosts((prev) => [...prev, ...shaped]);
     setHasMore((data || []).length === PAGE);
     setPage(p);
@@ -1135,9 +1137,9 @@ export default function Community() {
   };
 
   const handlePost = async (content, imageUrl, mentionIds, mentionMap) => {
-    const { data, error } = await supabase.from("community_posts").insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 }).select("id, content, created_at, likes_count, comments_count, image_url, user_id, users:user_id(full_name, identity_verified, avatar_url)").single();
+    const { data, error } = await supabase.from("community_posts").insert({ user_id: user.id, content, image_url: imageUrl, likes_count: 0, comments_count: 0 }).select("id, content, created_at, likes_count, comments_count, image_url, user_id, users:user_id(full_name, identity_verified, avatar_url, username)").single();
     if (error) { console.error("post error:", error); return; }
-    if (data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_avatar: data.users?.avatar_url }, ...prev]);
+    if (data) setPosts((prev) => [{ ...data, author_name: data.users?.full_name, author_verified: data.users?.identity_verified, author_username: data.users?.username, author_avatar: data.users?.avatar_url }, ...prev]);
   };
 
   const handleLike = async (postId, type, active, removingOpposite) => {
