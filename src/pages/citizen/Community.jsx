@@ -561,7 +561,7 @@ const PollCard = ({ poll, currentUserId, onVote, onDelete }) => {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
               <span style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 14, color: T.navy }}>{poll.author_name || "Citizen"}</span>
           {c.users?.username && <span style={{ fontSize: 10, color: "#64748b", fontWeight: 500 }}>@{c.users.username}</span>}
-          {c.users?.identity_verified
+          {c.users?.identity_verified &&
               <span style={{ fontFamily: T.sans, fontSize: 11, color: T.muted, marginLeft: "auto" }}>{timeAgo(poll.created_at)}</span>
             </div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 10, background: T.gold + "12", border: "1px solid " + T.gold + "33" }}>
@@ -628,12 +628,12 @@ const PollCard = ({ poll, currentUserId, onVote, onDelete }) => {
 // ── Comment Row ───────────────────────────────────────────────────────────────
 const CommentRow = ({ c, navigate }) => (
   <div style={{ display: "flex", gap: 10, paddingLeft: 4 }}>
-    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified} onClick={() => c.user_id && navigate("/citizen/profile/" + c.user_id)} />
+    <Avatar name={c.users?.full_name || "?"} size={28} verified={c.users?.identity_verified &&} onClick={() => c.user_id && navigate("/citizen/profile/" + c.user_id)} />
     <div style={{ flex: 1, minWidth: 0, paddingBottom: 10 }}>
       <div style={{ background: T.cream, borderRadius: "12px 12px 12px 3px", padding: "7px 12px", border: "1px solid " + T.border, display: "inline-block", maxWidth: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
           <span onClick={() => c.user_id && navigate("/citizen/profile/" + c.user_id)} style={{ fontFamily: T.sans, fontWeight: 700, fontSize: 12, color: T.navy, cursor: "pointer" }}>{c.users?.full_name || "Citizen"}</span>
-          {c.users?.identity_verified && <span style={{ fontSize: 9, fontWeight: 700, color: T.gold }}>✓</span>}
+          {c.users?.identity_verified && && <span style={{ fontSize: 9, fontWeight: 700, color: T.gold }}>✓</span>}
           <span style={{ fontFamily: T.sans, fontSize: 10, color: T.muted, marginLeft: 2 }}>· {timeAgo(c.created_at)}</span>
         </div>
         {c.content && <p style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, margin: 0, lineHeight: 1.5 }}>{c.content}</p>}
