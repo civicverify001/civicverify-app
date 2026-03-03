@@ -493,7 +493,7 @@ export default function Debates() {
                       <input
                         className="cv-form-input"
                         style={inputStyle}
-                        placeholder="Search by @username..."..."
+                        placeholder="Search by @username"
                         value={searchUser}
                         onChange={function(e) { setSearchUser(e.target.value); searchOpponent(e.target.value); }}
                       />
