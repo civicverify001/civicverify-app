@@ -33,7 +33,7 @@ function timeAgo(d) {
   return Math.floor(diff / 3600) + 'h ago';
 }
 
-function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAudioConnected }) {
+function SpeakerCard({ name, username, isActive, isVerified, timeLeft, side, isMuted, isAudioConnected }) {
   var initial = (name || '?').charAt(0).toUpperCase();
   var sideColor = side === 'Proposition' ? C.green : C.darkGold;
   var sideBg = side === 'Proposition' ? 'rgba(22,163,74,0.08)' : 'rgba(197,150,12,0.08)';
@@ -85,6 +85,7 @@ function SpeakerCard({ name, isActive, isVerified, timeLeft, side, isMuted, isAu
           fontSize: 13, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{name || 'TBD'}</p>
+        {username && <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.4)', fontWeight: 500 }}>@{username}</span>}
         {isVerified && (
           <span style={{ fontSize: 9, fontWeight: 700, color: C.green, display: 'inline-block', marginTop: 2 }}>
             ✓ Verified
@@ -958,13 +959,13 @@ export default function DebateSpace() {
       <div style={{ background: '#fff', borderRadius: 20, padding: '20px 14px', border: isLive ? '2px solid rgba(197,150,12,0.2)' : '1px solid rgba(11,37,69,0.06)', marginBottom: 20, boxShadow: '0 4px 24px rgba(11,37,69,0.04)' }}>
         {debate.current_section && <div style={{ textAlign: 'center', marginBottom: 16 }}><span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(197,150,12,0.1), rgba(197,150,12,0.15))', fontSize: 12, fontWeight: 700, color: C.darkGold, border: '1px solid rgba(197,150,12,0.2)' }}>📌 {debate.current_section}</span></div>}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <SpeakerCard name={debaterA ? debaterA.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.creator_id} isVerified={debaterA && debaterA.identity_verified} timeLeft={timerA} side="Proposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.creator_id === currentUser.id} />
+          <SpeakerCard name={debaterA ? debaterA.full_name : 'TBD'} username={debaterA ? debaterA.username : null} isActive={debate.active_speaker_id === debate.creator_id} isVerified={debaterA && debaterA.identity_verified} timeLeft={timerA} side="Proposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.creator_id === currentUser.id} />
           <div style={{ flexShrink: 0 }}>
             <div style={{ width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0B2545, #163a64)', boxShadow: '0 2px 10px rgba(11,37,69,0.15)' }}>
               <span style={{ fontSize: 11, fontWeight: 800, color: C.gold }}>VS</span>
             </div>
           </div>
-          <SpeakerCard name={debaterB ? debaterB.full_name : 'TBD'} isActive={debate.active_speaker_id === debate.opponent_id} isVerified={debaterB && debaterB.identity_verified} timeLeft={timerB} side="Opposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.opponent_id === currentUser.id} />
+          <SpeakerCard name={debaterB ? debaterB.full_name : 'TBD'} username={debaterB ? debaterB.username : null} isActive={debate.active_speaker_id === debate.opponent_id} isVerified={debaterB && debaterB.identity_verified} timeLeft={timerB} side="Opposition" isMuted={isMuted} isAudioConnected={audioConnected && currentUser && debate.opponent_id === currentUser.id} />
         </div>
         {isActiveSpeaker && isLive && (
           <div style={{ textAlign: 'center', marginTop: 24 }}>
