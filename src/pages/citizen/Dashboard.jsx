@@ -244,7 +244,7 @@ create index if not exists idx_dc_survey
                     alert('Link copied!');
                   }
                 }}
-                  style={{ padding: '5px 11px', background: 'rgba(11,37,69,0.04)', color: 'rgba(11,37,69,0.4)', border: '1px solid rgba(11,37,69,0.08)', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ padding: '5px 11px', background: 'rgba(197,150,12,0.08)', color: '#C5960C', border: '1px solid rgba(197,150,12,0.25)', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
                   &#x1F517;
                 </button>
               </div>
