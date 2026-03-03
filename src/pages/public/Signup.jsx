@@ -1,5 +1,5 @@
 import CanonicalUrl from '../../components/CanonicalUrl'
-// src/pages/public/Signup.jsx — Full demographics + hCaptcha + 3-step signup + ICDPA consent
+// src/pages/public/Signup.jsx — Full demographics + hCaptcha + 3-step signup + ICDPA consent + Username
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -27,7 +27,7 @@ var labelStyle = { display: 'block', fontSize: 11, fontWeight: 700, textTransfor
 export default function Signup() {
   var navigate = useNavigate();
   var [form, setForm] = useState({
-    fullName: '', email: '', password: '', confirmPassword: '', phone: '', role: 'citizen',
+    fullName: '', username: '', email: '', password: '', confirmPassword: '', phone: '', role: 'citizen',
     state: '', county: '', city: '', zip: '',
     race: '', sex: '', dob: '', education: '', employment: '', income: '', marital_status: '', party: '', voter_registered: false, veteran: false, housing: '',
     agreeTerms: false, agreeAge: false, agreeData: false
@@ -36,6 +36,8 @@ export default function Signup() {
   var [error, setError] = useState('');
   var [step, setStep] = useState(1);
   var [captchaToken, setCaptchaToken] = useState('');
+  var [usernameStatus, setUsernameStatus] = useState(null);
+  var [checkingUsername, setCheckingUsername] = useState(false);
   var captchaRef = useRef(null);
 
   useEffect(function() {
@@ -55,6 +57,17 @@ export default function Signup() {
     return function() { clearInterval(interval); };
   }, [step]);
 
+  async function checkUsername(val) {
+    if (!val || val.length < 3) { setUsernameStatus(null); return; }
+    if (!/^[a-z0-9_]+$/.test(val)) { setUsernameStatus({ ok: false, msg: 'Only lowercase letters, numbers, underscores' }); return; }
+    if (val.length > 25) { setUsernameStatus({ ok: false, msg: 'Max 25 characters' }); return; }
+    setCheckingUsername(true);
+    var { data } = await supabase.rpc('check_username_available', { desired_username: val });
+    setCheckingUsername(false);
+    if (data === true) { setUsernameStatus({ ok: true, msg: 'Available!' }); }
+    else { setUsernameStatus({ ok: false, msg: 'Already taken' }); }
+  }
+
   function update(field, value) {
     setForm(function(prev) { var n = Object.assign({}, prev, { [field]: value }); if (field === 'state') { n.county = ''; n.city = ''; } return n; });
     setError('');
@@ -68,6 +81,8 @@ export default function Signup() {
 
   async function handleStep1() {
     if (!form.fullName.trim()) return setError('Full name is required');
+    if (!form.username || form.username.length < 3) return setError('Username must be at least 3 characters');
+    if (usernameStatus && !usernameStatus.ok) return setError('Username is not available');
     if (!form.email.trim()||!/\S+@\S+\.\S+/.test(form.email)) return setError('Enter a valid email');
     if (!form.phone||form.phone.replace(/\D/g,'').length<10) return setError('Enter a valid 10-digit phone');
     if (form.password.length<8) return setError('Password must be 8+ characters');
@@ -96,7 +111,7 @@ export default function Signup() {
     if (res.error) { setLoading(false); return setError(res.error.message); }
     if (res.data.user) {
       var now = new Date().toISOString();
-      var p = { id: res.data.user.id, email: form.email.trim().toLowerCase(), full_name: form.fullName.trim(), phone: form.phone.replace(/\D/g,''), role: form.role, state: form.state, county: form.county.trim(), city: form.city.trim(), zip: form.zip.replace(/\D/g,'').slice(0,5), race: form.race||null, sex: form.sex||null, date_of_birth: form.dob||null, education: form.education||null, employment: form.employment||null, income: form.income||null, marital_status: form.marital_status||null, party: form.party||null, voter_registered: form.voter_registered, veteran: form.veteran, housing: form.housing||null, is_verified: false, identity_verified: false, consent_privacy_terms: true, consent_age_verified: true, consent_data_processing: true, consent_timestamp: now };
+      var p = { id: res.data.user.id, email: form.email.trim().toLowerCase(), full_name: form.fullName.trim(), username: form.username || null, phone: form.phone.replace(/\D/g,''), role: form.role, state: form.state, county: form.county.trim(), city: form.city.trim(), zip: form.zip.replace(/\D/g,'').slice(0,5), race: form.race||null, sex: form.sex||null, date_of_birth: form.dob||null, education: form.education||null, employment: form.employment||null, income: form.income||null, marital_status: form.marital_status||null, party: form.party||null, voter_registered: form.voter_registered, veteran: form.veteran, housing: form.housing||null, is_verified: false, identity_verified: false, consent_privacy_terms: true, consent_age_verified: true, consent_data_processing: true, consent_timestamp: now };
       var r = await supabase.from('users').upsert(p);
       if (r.error) { setLoading(false); return setError('Profile save failed: '+r.error.message); }
     }
@@ -121,6 +136,16 @@ export default function Signup() {
 
           {step===1&&<div>
             <div style={{marginBottom:16}}><label style={labelStyle}>Full Name <span style={{color:C.red}}>*</span></label><input value={form.fullName} onChange={function(e){update('fullName',e.target.value)}} placeholder="Your legal full name" style={inputStyle}/></div>
+            <div style={{marginBottom:16}}>
+              <label style={labelStyle}>Username <span style={{color:C.red}}>*</span></label>
+              <div style={{position:'relative'}}>
+                <span style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',fontSize:14,color:C.gold,fontWeight:700,pointerEvents:'none'}}>@</span>
+                <input value={form.username} onChange={function(e){var v=e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,'');update('username',v);checkUsername(v);}} placeholder="your_handle" maxLength={25} style={Object.assign({},inputStyle,{paddingLeft:30,borderColor:usernameStatus?(usernameStatus.ok?'#16a34a40':'#dc262640'):'rgba(11,37,69,0.1)'})}/>
+                {form.username&&form.username.length>=3&&<span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',fontSize:11,fontWeight:700,color:checkingUsername?'rgba(11,37,69,0.3)':usernameStatus?(usernameStatus.ok?'#16a34a':'#dc2626'):'rgba(11,37,69,0.3)'}}>{checkingUsername?'...':usernameStatus?(usernameStatus.ok?'\u2713 '+usernameStatus.msg:'\u2717 '+usernameStatus.msg):''}</span>}
+              </div>
+              {form.username&&form.username.length>0&&form.username.length<3&&<p style={{fontSize:11,color:'rgba(11,37,69,0.35)',margin:'4px 0 0'}}>Min 3 characters</p>}
+              <p style={{fontSize:11,color:'rgba(11,37,69,0.25)',margin:'4px 0 0'}}>This is how people find you — your real name stays visible for transparency</p>
+            </div>
             <div style={{marginBottom:16}}><label style={labelStyle}>Email <span style={{color:C.red}}>*</span></label><input type="email" value={form.email} onChange={function(e){update('email',e.target.value)}} placeholder="you@example.com" style={inputStyle}/></div>
             <div style={{marginBottom:16}}><label style={labelStyle}>Phone <span style={{color:C.red}}>*</span></label><input value={formatPhone(form.phone)} onChange={function(e){update('phone',e.target.value.replace(/\D/g,'').slice(0,10))}} placeholder="(555) 123-4567" style={inputStyle}/><p style={{fontSize:11,color:'rgba(11,37,69,0.25)',margin:'4px 0 0'}}>One account per phone number</p></div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}><div><label style={labelStyle}>Password <span style={{color:C.red}}>*</span></label><input type="password" value={form.password} onChange={function(e){update('password',e.target.value)}} placeholder="Min 8 chars" style={inputStyle}/></div><div><label style={labelStyle}>Confirm <span style={{color:C.red}}>*</span></label><input type="password" value={form.confirmPassword} onChange={function(e){update('confirmPassword',e.target.value)}} placeholder="Re-enter" style={inputStyle}/></div></div>
