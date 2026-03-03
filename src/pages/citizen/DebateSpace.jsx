@@ -85,7 +85,7 @@ function SpeakerCard({ name, username, isActive, isVerified, timeLeft, side, isM
           fontSize: 13, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{name || 'TBD'}</p>
-        {username && <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.4)', fontWeight: 500 }}>@{username}</span>}
+        {username && <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.4)', fontWeight: 500, marginBottom: 1 }}>@{username}</span>}
         {isVerified && (
           <span style={{ fontSize: 9, fontWeight: 700, color: C.green, display: 'inline-block', marginTop: 2 }}>
             ✓ Verified
