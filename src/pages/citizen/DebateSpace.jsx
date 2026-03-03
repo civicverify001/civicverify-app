@@ -160,7 +160,7 @@ function ModMessage({ message, eventType, time }) {
   );
 }
 
-function ChatMsg({ name, content, isVerified: verified, time, index }) {
+function ChatMsg(props) {   var { name, content, isVerified: verified, time, index, username } = props;
   var isEven = index % 2 === 0;
   var bubbleBg = isEven ? 'rgba(22,163,74,0.08)' : 'rgba(197,150,12,0.08)';
   var bubbleBorder = isEven ? 'rgba(22,163,74,0.15)' : 'rgba(197,150,12,0.15)';
@@ -181,7 +181,7 @@ function ChatMsg({ name, content, isVerified: verified, time, index }) {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: nameColor }}>{name}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: nameColor }}>{name}</span> {props.username && <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.4)', fontWeight: 500 }}>@{props.username}</span>}
             {verified && <span style={{ fontSize: 9, color: '#fff', fontWeight: 700, background: C.green, padding: '1px 5px', borderRadius: 6 }}>✓</span>}
             <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.4)', fontWeight: 500 }}>{timeAgo(time)}</span>
           </div>
@@ -604,7 +604,7 @@ export default function DebateSpace() {
     setDebate(data);
     var ids = [data.creator_id, data.opponent_id].filter(Boolean);
     if (ids.length > 0) {
-      var { data: users } = await supabase.from('users').select('id, full_name, identity_verified').in('id', ids);
+      var { data: users } = await supabase.from('users').select('id, full_name, identity_verified, username').in('id', ids);
       if (users) { users.forEach(function(u) { if (u.id === data.creator_id) setDebaterA(u); if (u.id === data.opponent_id) setDebaterB(u); }); }
     }
     if (data.turn_started_at && data.turn_duration) {
@@ -633,7 +633,7 @@ export default function DebateSpace() {
       var uids = Array.from(new Set(data.map(function(m) { return m.user_id; })));
       var unknowns = uids.filter(function(uid) { return !chatUsers[uid]; });
       if (unknowns.length > 0) {
-        var { data: uData } = await supabase.from('users').select('id, full_name, identity_verified').in('id', unknowns);
+        var { data: uData } = await supabase.from('users').select('id, full_name, identity_verified, username').in('id', unknowns);
         if (uData) { var map = Object.assign({}, chatUsers); uData.forEach(function(u) { map[u.id] = u; }); setChatUsers(map); }
       }
     }
@@ -737,7 +737,7 @@ export default function DebateSpace() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'debate_chat_messages', filter: 'debate_id=eq.' + id }, function(p) {
         setChatMessages(function(prev) { return prev.concat([p.new]); });
         var uid = p.new.user_id;
-        if (!chatUsers[uid]) supabase.from('users').select('id, full_name, identity_verified').eq('id', uid).single().then(function(r) { if (r.data) setChatUsers(function(prev) { return Object.assign({}, prev, { [uid]: r.data }); }); });
+        if (!chatUsers[uid]) supabase.from('users').select('id, full_name, identity_verified, username').eq('id', uid).single().then(function(r) { if (r.data) setChatUsers(function(prev) { return Object.assign({}, prev, { [uid]: r.data }); }); });
       }).subscribe();
     var ml = supabase.channel('dm-' + id)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'debate_moderator_log', filter: 'debate_id=eq.' + id }, function(p) { setModLog(function(prev) { return prev.concat([p.new]); }); }).subscribe();
@@ -1025,7 +1025,7 @@ export default function DebateSpace() {
                   </div>
                 ) : chatMessages.map(function(m, idx) {
                   var u = chatUsers[m.user_id];
-                  return <ChatMsg key={m.id} name={u ? u.full_name : '...'} content={m.content} isVerified={u && u.identity_verified} time={m.created_at} index={idx} />;
+                  return <ChatMsg key={m.id} name={u ? u.full_name : '...'} username={u ? u.username : null} content={m.content} isVerified={u && u.identity_verified} time={m.created_at} index={idx} />;
                 })}
               </div>
               {currentUser ? (
