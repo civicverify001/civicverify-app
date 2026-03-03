@@ -68,6 +68,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
   async function loadFeed(silent) {
     if (!silent) setLoading(true);
     try {
+      // Get surveys (active + ended)
       var sr = await supabase.from('surveys')
         .select('id,title,status,response_count,target_responses')
         .in('status', ['active', 'completed', 'closed', 'inactive'])
@@ -75,9 +76,11 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         .limit(30);
       var surveys = sr.data || [];
 
+      // Also include active ones
       var sr2 = await supabase.from('surveys').select('id,title,status,response_count,target_responses').eq('status','active');
       var activeSurveys = sr2.data || [];
       
+      // Merge and dedupe
       var allSurveys = surveys.slice();
       activeSurveys.forEach(function(s) {
         if (!allSurveys.find(function(x){return x.id===s.id;})) allSurveys.push(s);
@@ -87,6 +90,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
 
       var ids = allSurveys.map(function(s) { return s.id; });
 
+      // Try to get comments with survey_id column
       var cr = await supabase.from('comments')
         .select('*')
         .in('survey_id', ids)
@@ -94,6 +98,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
         .limit(100);
 
       if (cr.error) {
+        // survey_id column may not exist yet
         setError('sql_missing');
         setLoading(false);
         return;
@@ -101,6 +106,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
 
       var allComments = cr.data || [];
 
+      // Fetch profiles for all comment authors
       var userIds = [...new Set(allComments.map(function(c) { return c.user_id; }).filter(Boolean))];
       var profileMap = {};
       if (userIds.length) {
@@ -125,6 +131,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
           return (b.comments[0]?.created_at || '') > (a.comments[0]?.created_at || '') ? 1 : -1;
         });
 
+      // If no comments yet, show the surveys anyway so users can start discussing
       if (!result.length) {
         result = allSurveys.map(function(s) { return { survey: s, comments: [] }; });
       }
@@ -167,6 +174,7 @@ function PollDiscussionFeed({ navigate, currentUser, currentProfile }) {
     loadFeed(true);
   }
 
+  // SQL patch not run yet — show clear instructions
   if (error === 'sql_missing') return (
     <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(197,150,12,0.25)', padding: '22px 24px', boxShadow: '0 2px 12px rgba(11,37,69,0.04)' }}>
       <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 8px' }}>&#9888; One-time database setup required</p>
@@ -306,12 +314,6 @@ export default function CitizenDashboard() {
   var [stats, setStats] = useState({ matched: 0, available: 0, completed: 0, trust: 0 });
   var [recentSurveys, setRecentSurveys] = useState([]);
   var [loading, setLoading] = useState(true);
-  var [followers, setFollowers] = useState([]);
-  var [following, setFollowing] = useState([]);
-  var [showFollowers, setShowFollowers] = useState(false);
-  var [showFollowing, setShowFollowing] = useState(false);
-  var [notifications, setNotifications] = useState([]);
-  var [debateStats, setDebateStats] = useState({ total: 0, live: 0, wins: 0 });
 
   useEffect(function() {
     if (!user) return;
@@ -327,70 +329,7 @@ export default function CitizenDashboard() {
       setRecentSurveys(avail.slice(0, 4));
       setLoading(false);
     });
-
-    loadSocialData();
   }, [user, profile]);
-
-  async function loadSocialData() {
-    if (!user) return;
-    var { data: followerRows } = await supabase
-      .from('user_follows')
-      .select('follower_id, created_at')
-      .eq('following_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
-    if (followerRows && followerRows.length > 0) {
-      var fIds = followerRows.map(function(f) { return f.follower_id; });
-      var { data: fUsers } = await supabase.from('users').select('id, full_name, identity_verified, avatar_url').in('id', fIds);
-      var fMap = {};
-      (fUsers || []).forEach(function(u) { fMap[u.id] = u; });
-      setFollowers(followerRows.map(function(f) { return Object.assign({}, f, fMap[f.follower_id] || {}); }));
-    }
-
-    var { data: followingRows } = await supabase
-      .from('user_follows')
-      .select('following_id, created_at')
-      .eq('follower_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
-    if (followingRows && followingRows.length > 0) {
-      var gIds = followingRows.map(function(f) { return f.following_id; });
-      var { data: gUsers } = await supabase.from('users').select('id, full_name, identity_verified, avatar_url').in('id', gIds);
-      var gMap = {};
-      (gUsers || []).forEach(function(u) { gMap[u.id] = u; });
-      setFollowing(followingRows.map(function(f) { return Object.assign({}, f, gMap[f.following_id] || {}); }));
-    }
-
-    var { data: notifs } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    if (notifs) setNotifications(notifs);
-
-    var { data: debates } = await supabase
-      .from('debates')
-      .select('id, status')
-      .or('creator_id.eq.' + user.id + ',opponent_id.eq.' + user.id);
-    if (debates) {
-      setDebateStats({
-        total: debates.length,
-        live: debates.filter(function(d) { return d.status === 'live'; }).length,
-        wins: 0,
-      });
-    }
-  }
-
-  async function unfollowUser(userId) {
-    await supabase.from('user_follows').delete().eq('follower_id', user.id).eq('following_id', userId);
-    setFollowing(function(prev) { return prev.filter(function(f) { return f.following_id !== userId; }); });
-  }
-
-  async function markAllRead() {
-    await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
-    setNotifications(function(prev) { return prev.map(function(n) { return Object.assign({}, n, { is_read: true }); }); });
-  }
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
@@ -407,8 +346,8 @@ export default function CitizenDashboard() {
   var tierColor = trust <= 2 ? 'rgba(11,37,69,0.35)' : trust <= 10 ? C.gold : trust <= 25 ? C.green : C.purple;
 
   return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', overflowX: 'hidden' }}>
-      <style>{'@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @media(max-width:768px){.cv-stats-grid{grid-template-columns:repeat(2,1fr)!important} .cv-social-grid{grid-template-columns:1fr!important} .cv-dash-cols{grid-template-columns:1fr!important}}'}</style>
+    <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 980 }}>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}'}</style>
 
       <h1 style={{ fontSize: 27, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Welcome back{name ? ', ' + name : ''}</h1>
       <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Your civic voice matters.</p>
@@ -425,15 +364,15 @@ export default function CitizenDashboard() {
       )}
 
       {/* Stats */}
-      <div className="cv-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
         {[
-          { label: 'Surveys Matched', val: stats.matched,   color: C.navy,   bg: 'rgba(11,37,69,0.04)',   icon: '\uD83D\uDCCB' },
-          { label: 'Available Now',   val: stats.available, color: C.gold,   bg: 'rgba(197,150,12,0.06)', icon: '\uD83D\uDCE9' },
-          { label: 'Completed',       val: stats.completed, color: C.green,  bg: 'rgba(26,122,60,0.06)',  icon: '\u2713' },
-          { label: tier,              val: trust,           color: tierColor, bg: 'rgba(109,40,217,0.05)', icon: '\u2605' },
+          { label: 'Surveys Matched', val: stats.matched,   color: C.navy,   bg: 'rgba(11,37,69,0.04)',   icon: '\uD83D\uDCCB', onClick: function() { navigate('/citizen/surveys'); } },
+          { label: 'Available Now',   val: stats.available, color: C.gold,   bg: 'rgba(197,150,12,0.06)', icon: '\uD83D\uDCE9', onClick: function() { navigate('/citizen/surveys'); } },
+          { label: 'Completed',       val: stats.completed, color: C.green,  bg: 'rgba(26,122,60,0.06)',  icon: '\u2713', onClick: function() { navigate('/citizen/impact'); } },
+          { label: tier,              val: trust,           color: tierColor, bg: 'rgba(109,40,217,0.05)', icon: '\u2605', onClick: function() { navigate('/citizen/account'); } },
         ].map(function(s, i) {
           return (
-            <div key={i} style={{ background: s.bg, borderRadius: 13, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.06)' }}>
+            <div key={i} onClick={s.onClick} style={{ background: s.bg, borderRadius: 13, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.06)', cursor: 'pointer', transition: 'all 0.15s' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <span style={{ fontSize: 15 }}>{s.icon}</span>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{s.label}</span>
@@ -444,101 +383,8 @@ export default function CitizenDashboard() {
         })}
       </div>
 
-      {/* Social Stats Row */}
-      <div className="cv-social-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
-        <div
-          onClick={function() { setShowFollowers(!showFollowers); setShowFollowing(false); }}
-          style={{ background: '#fff', borderRadius: 13, padding: '16px 20px', border: showFollowers ? '2px solid ' + C.gold : '1px solid rgba(11,37,69,0.06)', cursor: 'pointer', transition: 'all 0.2s' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-            <span style={{ fontSize: 15 }}>👥</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Followers</span>
-          </div>
-          <p style={{ fontSize: 28, fontWeight: 800, color: C.navy, margin: 0, fontFamily: font, lineHeight: 1 }}>
-            {profile ? (profile.follower_count || followers.length) : 0}
-          </p>
-        </div>
-        <div
-          onClick={function() { setShowFollowing(!showFollowing); setShowFollowers(false); }}
-          style={{ background: '#fff', borderRadius: 13, padding: '16px 20px', border: showFollowing ? '2px solid ' + C.gold : '1px solid rgba(11,37,69,0.06)', cursor: 'pointer', transition: 'all 0.2s' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-            <span style={{ fontSize: 15 }}>🤝</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Following</span>
-          </div>
-          <p style={{ fontSize: 28, fontWeight: 800, color: C.gold, margin: 0, fontFamily: font, lineHeight: 1 }}>
-            {profile ? (profile.following_count || following.length) : 0}
-          </p>
-        </div>
-        <div
-          onClick={function() { navigate('/citizen/debates'); }}
-          style={{ background: '#fff', borderRadius: 13, padding: '16px 20px', border: '1px solid rgba(11,37,69,0.06)', cursor: 'pointer', transition: 'all 0.2s' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-            <span style={{ fontSize: 15 }}>🏛</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Debates</span>
-          </div>
-          <p style={{ fontSize: 28, fontWeight: 800, color: C.purple, margin: 0, fontFamily: font, lineHeight: 1 }}>
-            {debateStats.total}
-          </p>
-        </div>
-      </div>
-
-      {/* Followers/Following List (expandable) — FIXED: names are now clickable */}
-      {(showFollowers || showFollowing) && (
-        <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.07)', boxShadow: '0 2px 12px rgba(11,37,69,0.04)', marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>
-              {showFollowers ? '👥 Your Followers' : '🤝 You Follow'}
-            </h3>
-            <button onClick={function() { setShowFollowers(false); setShowFollowing(false); }}
-              style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(11,37,69,0.3)', padding: 0 }}>✕</button>
-          </div>
-          {(showFollowers ? followers : following).length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <p style={{ fontSize: 13, color: 'rgba(11,37,69,0.35)', margin: '0 0 8px' }}>
-                {showFollowers ? 'No followers yet' : 'Not following anyone yet'}
-              </p>
-              <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.25)', margin: 0 }}>
-                {showFollowers ? 'Participate in community to grow your network' : 'Follow people in the Community tab'}
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
-              {(showFollowers ? followers : following).map(function(f) {
-                var personId = showFollowers ? f.follower_id : f.following_id;
-                var personName = f.full_name || 'Citizen';
-                return (
-                  <div key={personId} style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                    borderRadius: 10, background: 'rgba(11,37,69,0.02)', border: '1px solid rgba(11,37,69,0.04)',
-                  }}>
-                    <div onClick={function() { navigate('/citizen/profile/' + personId); }} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, cursor: 'pointer' }}>
-                      <Avatar name={personName} size={36} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: C.navy, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{personName}</p>
-                        {f.identity_verified && (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: C.green }}>✓ Verified</span>
-                        )}
-                      </div>
-                    </div>
-                    <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.25)' }}>{timeAgo(f.created_at)}</span>
-                    {showFollowing && (
-                      <button onClick={function() { unfollowUser(personId); }}
-                        style={{ fontSize: 11, fontWeight: 600, color: '#ef4444', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.1)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer' }}>
-                        Unfollow
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Two-col layout */}
-      <div className="cv-dash-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
 
         {/* LEFT — Poll Discussions */}
         <div>
@@ -621,41 +467,6 @@ export default function CitizenDashboard() {
                 </div>
               );
             })}
-          </div>
-
-          {/* Notifications */}
-          <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.07)', boxShadow: '0 2px 12px rgba(11,37,69,0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ fontSize: 12, fontWeight: 700, color: 'rgba(11,37,69,0.4)', margin: 0, textTransform: 'uppercase', letterSpacing: 0.8 }}>Notifications</h3>
-              {notifications.filter(function(n) { return !n.is_read; }).length > 0 && (
-                <button onClick={markAllRead} style={{ fontSize: 10, fontWeight: 600, color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>Mark all read</button>
-              )}
-            </div>
-            {notifications.length === 0 ? (
-              <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', margin: 0, textAlign: 'center', padding: '10px 0' }}>No notifications yet</p>
-            ) : (
-              <div style={{ display: 'grid', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
-                {notifications.slice(0, 8).map(function(n) {
-                  var icons = { follow: '👤', mention: '@', reply: '💬', like: '❤️', debate_invite: '🏛' };
-                  return (
-                    <div key={n.id} onClick={function() { if (n.link) navigate(n.link); }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                        borderRadius: 8, background: n.is_read ? 'transparent' : 'rgba(197,150,12,0.04)',
-                        border: n.is_read ? 'none' : '1px solid rgba(197,150,12,0.08)',
-                        cursor: n.link ? 'pointer' : 'default',
-                      }}>
-                      <span style={{ fontSize: 14, flexShrink: 0 }}>{icons[n.type] || '🔔'}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 12, color: C.navy, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: n.is_read ? 400 : 600 }}>{n.content || 'New notification'}</p>
-                        <span style={{ fontSize: 10, color: 'rgba(11,37,69,0.25)' }}>{timeAgo(n.created_at)}</span>
-                      </div>
-                      {!n.is_read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.gold, flexShrink: 0 }} />}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
       </div>
