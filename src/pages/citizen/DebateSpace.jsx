@@ -734,6 +734,7 @@ export default function DebateSpace() {
   var presenceChannelRef = useRef(null);
 
   var loadDebate = useCallback(async function() {
+    if (!id) return;
     var { data } = await supabase.from('debates').select('*').eq('id', id).single();
     if (!data) { navigate('..'); return; }
     setDebate(data);
@@ -756,11 +757,13 @@ export default function DebateSpace() {
   }, [id, navigate]);
 
   var loadModLog = useCallback(async function() {
+    if (!id) return;
     var { data } = await supabase.from('debate_moderator_log').select('*').eq('debate_id', id).order('created_at', { ascending: true });
     setModLog(data || []);
   }, [id]);
 
   var loadChat = useCallback(async function() {
+    if (!id) return;
     var { data } = await supabase.from('debate_chat_messages').select('*').eq('debate_id', id).eq('is_flagged', false).order('created_at', { ascending: true }).limit(200);
     if (data && data.length > 0) {
       setChatMessages(data);
@@ -774,6 +777,7 @@ export default function DebateSpace() {
   }, [id]);
 
   var loadPolls = useCallback(async function() {
+    if (!id) return;
     var { data: pd } = await supabase.from('debate_polls').select('*').eq('debate_id', id).eq('is_active', true);
     if (pd && pd.length > 0) {
       // Get creator names
@@ -797,6 +801,7 @@ export default function DebateSpace() {
   }, [id, currentUser]);
 
   var loadTranscript = useCallback(async function() {
+    if (!id) return;
     var { data } = await supabase.from('debate_transcript_segments').select('*, users:speaker_id(full_name)').eq('debate_id', id).eq('is_final', true).order('created_at', { ascending: true });
     if (data) {
       setTranscriptSegments(data.map(function(s) { return Object.assign({}, s, { speaker_name: s.users ? s.users.full_name : 'Speaker' }); }));
@@ -805,6 +810,7 @@ export default function DebateSpace() {
 
   // Load audience votes
   var loadAudienceVotes = useCallback(async function() {
+    if (!id) return;
     var { data } = await supabase.from('debate_audience_votes').select('voted_for').eq('debate_id', id);
     if (data) {
       var a = 0, b = 0;
