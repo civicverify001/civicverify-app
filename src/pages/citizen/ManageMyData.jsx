@@ -54,7 +54,7 @@ export default function ManageMyData() {
 
       // Count survey responses
       var { count: sc } = await supabase
-        .from('survey_responses')
+        .from('responses')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
       setSurveyCount(sc || 0);
@@ -90,7 +90,7 @@ export default function ManageMyData() {
         .single();
 
       var { data: responses } = await supabase
-        .from('survey_responses')
+        .from('responses')
         .select('survey_id, answers, created_at')
         .eq('user_id', user.id);
 
