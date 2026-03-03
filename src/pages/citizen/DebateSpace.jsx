@@ -809,8 +809,9 @@ export default function DebateSpace() {
             callObjRef.current.setLocalAudio(true);
             setIsMuted(false);
           }
+          }
         }
-    }, 1000);
+      }, 1000);
     return function() { clearInterval(timerRef.current); };
   }, [debate, currentUser]);
 
