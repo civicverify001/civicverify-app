@@ -103,7 +103,6 @@ export default function App() {
           <Route path="/results" element={<PublicResults />} />
           <Route path="/dashboard" element={<AuthRedirect />} />
           <Route path="/org-pending" element={<OrgPending />} />
-          <Route path="reels" element={<CivicReels />} />
 
           {/* Blog (database-driven) */}
           <Route path="/blog" element={<Blog />} />
@@ -125,6 +124,7 @@ export default function App() {
             <Route path="impact" element={<CitizenImpact />} />
             <Route path="account" element={<CitizenAccount />} />
             <Route path="community" element={<CitizenCommunity />} />
+            <Route path="reels" element={<CivicReels />} />
             <Route path="debates" element={<CitizenDebates />} />
             <Route path="debates/:debateId" element={<CitizenDebateSpace />} />
             <Route path="profile/:userId" element={<UserProfile />} />
