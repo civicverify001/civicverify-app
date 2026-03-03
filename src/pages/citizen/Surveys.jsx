@@ -177,7 +177,19 @@ export default function CitizenSurveys() {
                     style={{ padding: '13px 18px', background: 'rgba(11,37,69,0.05)', color: 'rgba(11,37,69,0.5)', border: '1px solid rgba(11,37,69,0.08)', borderRadius: 11, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     &#128172; Discuss
                   </button>
-                  
+                  <button onClick={function() {
+                    var url = window.location.origin + '/citizen/surveys/' + s.id;
+                    var text = s.title + ' — CivicVerify';
+                    if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+                      navigator.share({ title: text, url: url });
+                    } else {
+                      navigator.clipboard.writeText(url);
+                      alert('Link copied!');
+                    }
+                  }}
+                    style={{ padding: '13px 16px', background: 'rgba(11,37,69,0.05)', color: 'rgba(11,37,69,0.5)', border: '1px solid rgba(11,37,69,0.08)', borderRadius: 11, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    &#x1F517; Share
+                  </button>
                 </div>
               </div>
             );
