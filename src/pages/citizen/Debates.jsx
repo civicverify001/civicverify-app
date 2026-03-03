@@ -900,6 +900,7 @@ export default function Debates() {
                       📜 View Summary & Transcript
                     </button>
                   )}
+                  <button onClick={function(e) { e.stopPropagation(); var url = window.location.origin + '/citizen/debates/' + d.id; var text = d.topic + ' — CivicVerify Debate'; if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) { navigator.share({ title: text, url: url }); } else { navigator.clipboard.writeText(url); alert('Link copied!'); } }} style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid rgba(197,150,12,0.25)', fontSize: 12, fontWeight: 600, background: 'rgba(197,150,12,0.08)', color: '#C5960C', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>&#x1F517; Share</button>
                 </div>
               </div>
             );
