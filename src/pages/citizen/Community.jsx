@@ -707,7 +707,7 @@ const PostCard = ({ post, onLike, onComment, onReact, currentUserId, followingSe
 
   const loadComments = async () => {
     setLoadingComments(true);
-    const { data } = await supabase.from("community_post_comments").select("id, content, created_at, image_url, user_id, users:user_id(full_name, identity_verified)").eq("post_id", post.id).order("created_at", { ascending: true });
+    const { data } = await supabase.from("community_post_comments").select("id, content, created_at, image_url, user_id, users:user_id(full_name, identity_verified, username)").eq("post_id", post.id).order("created_at", { ascending: true });
     setComments(data || []);
     setLoadingComments(false);
   };
@@ -891,7 +891,7 @@ const ChatRoom = ({ survey, currentUser, onBack }) => {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("survey_chat_messages").select("id, content, created_at, user_id, users:user_id(full_name, identity_verified)").eq("survey_id", survey.id).order("created_at", { ascending: true }).limit(100);
+    const { data } = await supabase.from("survey_chat_messages").select("id, content, created_at, user_id, users:user_id(full_name, identity_verified, username)").eq("survey_id", survey.id).order("created_at", { ascending: true }).limit(100);
     setMsgs(data || []);
     setLoading(false);
     setTimeout(() => bottomRef.current?.scrollIntoView(), 50);
@@ -1008,7 +1008,7 @@ export default function Community() {
   };
 
   const fetchProfile = async () => {
-    const { data } = await supabase.from("users").select("id, full_name, identity_verified, avatar_url").eq("id", user.id).single();
+    const { data } = await supabase.from("users").select("id, full_name, identity_verified, avatar_url, username").eq("id", user.id).single();
     setCurrentUser(data);
   };
 
@@ -1150,7 +1150,7 @@ export default function Community() {
   const handleComment = async (postId, content, imageUrl) => {
     const insertData = { post_id: postId, user_id: user.id, content: content || null };
     if (imageUrl) insertData.image_url = imageUrl;
-    const { data, error } = await supabase.from("community_post_comments").insert(insertData).select("id, content, created_at, image_url, user_id, users:user_id(full_name, identity_verified)").single();
+    const { data, error } = await supabase.from("community_post_comments").insert(insertData).select("id, content, created_at, image_url, user_id, users:user_id(full_name, identity_verified, username)").single();
     if (error) { console.error("Comment save error:", error); return null; }
     await supabase.rpc("increment_comment_count", { post_id: postId });
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p));
