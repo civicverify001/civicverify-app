@@ -28,6 +28,7 @@ export default function CitizenAccount() {
   var [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   var [usernameStatus, setUsernameStatus] = useState(null);
   var [checkingUsername, setCheckingUsername] = useState(false);
+  var [originalUsername, setOriginalUsername] = useState(null);
 
   // Profile form
   var [form, setForm] = useState({
@@ -70,6 +71,7 @@ export default function CitizenAccount() {
         marital_status: data.marital_status || '',
         voter_registered: data.voter_registered, veteran: data.veteran
       });
+      setOriginalUsername(data.username || null);
     }
     setLoading(false);
   }
@@ -259,10 +261,11 @@ export default function CitizenAccount() {
                   <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'rgba(11,37,69,0.35)', marginBottom: 6 }}>Username (how people find you)</label>
                   <div style={{ position: 'relative', maxWidth: 340 }}>
                     <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: C.gold, fontWeight: 700, pointerEvents: 'none' }}>@</span>
-                    <input value={form.username} onChange={function(e) { var v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''); updateForm('username', v); checkUsername(v); }} placeholder="your_handle" maxLength={25} style={{ width: '100%', padding: '11px 14px 11px 30px', fontSize: 13, fontFamily: sans, border: '1.5px solid ' + (usernameStatus ? (usernameStatus.ok ? '#16a34a40' : '#dc262640') : C.border), borderRadius: 10, outline: 'none', color: C.navy, background: '#fff', boxSizing: 'border-box', transition: 'border-color 0.2s' }} />
+                    <input value={form.username} onChange={function(e) { var v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''); updateForm('username', v); checkUsername(v); }} placeholder="your_handle" maxLength={25} disabled={!!originalUsername} style={{ width: '100%', padding: '11px 14px 11px 30px', fontSize: 13, fontFamily: sans, border: '1.5px solid ' + (usernameStatus ? (usernameStatus.ok ? '#16a34a40' : '#dc262640') : C.border), borderRadius: 10, outline: 'none', color: C.navy, background: '#fff', boxSizing: 'border-box', transition: 'border-color 0.2s' }} />
                     {form.username && form.username.length >= 3 && (<span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, fontWeight: 700, color: checkingUsername ? 'rgba(11,37,69,0.3)' : usernameStatus ? (usernameStatus.ok ? '#16a34a' : '#dc2626') : 'rgba(11,37,69,0.3)' }}>{checkingUsername ? '...' : usernameStatus ? (usernameStatus.ok ? '✓ ' + usernameStatus.msg : '✗ ' + usernameStatus.msg) : ''}</span>)}
                   </div>
                   {form.username && form.username.length > 0 && form.username.length < 3 && (<p style={{ fontSize: 11, color: 'rgba(11,37,69,0.35)', margin: '4px 0 0' }}>Min 3 characters</p>)}
+                  {originalUsername && (<p style={{ fontSize: 11, color: '#64748b', margin: '4px 0 0' }}>🔒 Username is permanent and cannot be changed</p>)}
                 </div>
                 <InputField label="Phone" field="phone" value={form.phone} placeholder="(555) 000-0000" />
                 <InputField label="Date of Birth" field="date_of_birth" value={form.date_of_birth} type="date" />
