@@ -682,7 +682,7 @@ export default function DebateSpace() {
       setAudienceVotes({ a: a, b: b });
     }
     if (currentUser) {
-      var { data: mv } = await supabase.from('debate_audience_votes').select('voted_for').eq('debate_id', id).eq('user_id', currentUser.id).single();
+      var { data: mv } = await supabase.from('debate_audience_votes').select('voted_for').eq('debate_id', id).eq('user_id', currentUser.id).maybeSingle();
       if (mv) setUserVote(mv.voted_for);
       else setUserVote(null);
     }
