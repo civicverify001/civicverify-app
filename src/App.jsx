@@ -4,6 +4,7 @@ import { usePageTracking } from './hooks/useAnalytics'
 import AdminCommunity from './pages/admin/Community'
 import AdminDebates from './pages/admin/Debates'
 import CookieConsent from './components/CookieConsent'
+import CivicReels from './pages/citizen/CivicReels'
 
 // Public pages
 import Landing from './pages/public/Landing'
