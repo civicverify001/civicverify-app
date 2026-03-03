@@ -26,10 +26,12 @@ export default function CitizenAccount() {
   var [saveMsg, setSaveMsg] = useState(null);
   var [activeTab, setActiveTab] = useState('profile');
   var [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  var [usernameStatus, setUsernameStatus] = useState(null);
+  var [checkingUsername, setCheckingUsername] = useState(false);
 
   // Profile form
   var [form, setForm] = useState({
-    full_name: '', phone: '', city: '', state: '', county: '', zip: '',
+    full_name: '', username: '', phone: '', city: '', state: '', county: '', zip: '',
     date_of_birth: '', race: '', sex: '', education: '', employment: '',
     income: '', party: '', housing: '', marital_status: '',
     voter_registered: null, veteran: null
@@ -60,7 +62,7 @@ export default function CitizenAccount() {
     if (data) {
       setProfile(data);
       setForm({
-        full_name: data.full_name || '', phone: data.phone || '',
+        full_name: data.full_name || '', username: data.username || '', phone: data.phone || '',
         city: data.city || '', state: data.state || '', county: data.county || '', zip: data.zip || '',
         date_of_birth: data.date_of_birth || '', race: data.race || '', sex: data.sex || '',
         education: data.education || '', employment: data.employment || '',
@@ -74,11 +76,24 @@ export default function CitizenAccount() {
 
   function updateForm(key, val) { setForm(function (p) { var n = Object.assign({}, p); n[key] = val; return n; }); }
 
+  async function checkUsername(val) {
+    if (!val || val.length < 3) { setUsernameStatus(null); return; }
+    if (!/^[a-z0-9_]+$/.test(val)) { setUsernameStatus({ ok: false, msg: 'Only lowercase letters, numbers, underscores' }); return; }
+    if (val.length > 25) { setUsernameStatus({ ok: false, msg: 'Max 25 characters' }); return; }
+    if (profile && profile.username === val) { setUsernameStatus({ ok: true, msg: 'Current username' }); return; }
+    setCheckingUsername(true);
+    var { data } = await supabase.rpc('check_username_available', { desired_username: val });
+    setCheckingUsername(false);
+    if (data === true) { setUsernameStatus({ ok: true, msg: 'Available!' }); }
+    else { setUsernameStatus({ ok: false, msg: 'Already taken' }); }
+  }
+
   async function handleSave(e) {
     e.preventDefault();
+    if (form.username && usernameStatus && !usernameStatus.ok) { setSaveMsg({ type: 'error', text: 'Username is not available.' }); return; }
     setSaving(true); setSaveMsg(null);
     var updates = {
-      full_name: form.full_name, phone: form.phone, city: form.city, state: form.state,
+      full_name: form.full_name, username: form.username || null, phone: form.phone, city: form.city, state: form.state,
       county: form.county, zip: form.zip, date_of_birth: form.date_of_birth || null,
       race: form.race, sex: form.sex, education: form.education, employment: form.employment,
       income: form.income, party: form.party, housing: form.housing, marital_status: form.marital_status,
@@ -150,7 +165,7 @@ export default function CitizenAccount() {
 
   if (loading) return (<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}><div style={{ textAlign: 'center' }}><div style={{ width: 40, height: 40, border: '3px solid rgba(11,37,69,0.08)', borderTopColor: C.gold, borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 16px' }} /><p style={{ fontSize: 14, color: C.muted }}>Loading account...</p></div><style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style></div>);
 
-  var fields = [form.full_name, form.phone, form.state, form.city, form.zip, form.race, form.sex, form.date_of_birth, form.education, form.employment, form.income, form.party, form.housing, form.marital_status];
+  var fields = [form.full_name, form.username, form.phone, form.state, form.city, form.zip, form.race, form.sex, form.date_of_birth, form.education, form.employment, form.income, form.party, form.housing, form.marital_status];
   var completePct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
 
   var tabs = [
@@ -192,6 +207,7 @@ export default function CitizenAccount() {
               <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: '#fff', margin: 0, fontFamily: font }}>Account Settings</h1>
             </div>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0, maxWidth: 420, lineHeight: 1.5 }}>Manage your profile, demographics, password, and account preferences.</p>
+            {form.username && <p style={{ fontSize: 12, color: C.gold, margin: '6px 0 0', fontWeight: 600 }}>@{form.username}</p>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
             {profile?.identity_verified && (
@@ -238,6 +254,15 @@ export default function CitizenAccount() {
                 <div>
                   <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'rgba(11,37,69,0.35)', marginBottom: 6 }}>Email</label>
                   <input value={user?.email || ''} disabled style={{ width: '100%', padding: '11px 14px', fontSize: 13, fontFamily: sans, border: '1.5px solid ' + C.border, borderRadius: 10, outline: 'none', color: C.muted, background: 'rgba(11,37,69,0.03)', boxSizing: 'border-box', cursor: 'not-allowed' }} />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'rgba(11,37,69,0.35)', marginBottom: 6 }}>Username (how people find you)</label>
+                  <div style={{ position: 'relative', maxWidth: 340 }}>
+                    <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: C.gold, fontWeight: 700, pointerEvents: 'none' }}>@</span>
+                    <input value={form.username} onChange={function(e) { var v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''); updateForm('username', v); checkUsername(v); }} placeholder="your_handle" maxLength={25} style={{ width: '100%', padding: '11px 14px 11px 30px', fontSize: 13, fontFamily: sans, border: '1.5px solid ' + (usernameStatus ? (usernameStatus.ok ? '#16a34a40' : '#dc262640') : C.border), borderRadius: 10, outline: 'none', color: C.navy, background: '#fff', boxSizing: 'border-box', transition: 'border-color 0.2s' }} />
+                    {form.username && form.username.length >= 3 && (<span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, fontWeight: 700, color: checkingUsername ? 'rgba(11,37,69,0.3)' : usernameStatus ? (usernameStatus.ok ? '#16a34a' : '#dc2626') : 'rgba(11,37,69,0.3)' }}>{checkingUsername ? '...' : usernameStatus ? (usernameStatus.ok ? '✓ ' + usernameStatus.msg : '✗ ' + usernameStatus.msg) : ''}</span>)}
+                  </div>
+                  {form.username && form.username.length > 0 && form.username.length < 3 && (<p style={{ fontSize: 11, color: 'rgba(11,37,69,0.35)', margin: '4px 0 0' }}>Min 3 characters</p>)}
                 </div>
                 <InputField label="Phone" field="phone" value={form.phone} placeholder="(555) 000-0000" />
                 <InputField label="Date of Birth" field="date_of_birth" value={form.date_of_birth} type="date" />
