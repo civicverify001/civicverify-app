@@ -479,8 +479,10 @@ function AudioPanel({ debate, currentUser, isDebater, callObjRef, audioConnected
   function toggleMute() {
     if (!callObjRef.current) return;
     if (debate && currentUser && debate.active_speaker_id !== currentUser.id) return;
-    callObjRef.current.setLocalAudio(isMuted);
-    setIsMuted(!isMuted);
+    var newMuted = !isMuted;
+    callObjRef.current.setLocalAudio(!newMuted);
+    setIsMuted(newMuted);
+    manualMuteRef.current = newMuted;
   }
 
   if (!debate.audio_room_url) {
@@ -580,7 +582,7 @@ export default function DebateSpace() {
   var [audiencePolls, setAudiencePolls] = useState([]);
   var [countdown, setCountdown] = useState(null);
   var [audioConnected, setAudioConnected] = useState(false);
-  var [isMuted, setIsMuted] = useState(true);
+  var [isMuted, setIsMuted] = useState(true);   var manualMuteRef = useRef(false);
   var callObjRef = useRef(null);
   var [transcriptSegments, setTranscriptSegments] = useState([]);
   var recognitionRef = useRef(null);
@@ -797,17 +799,22 @@ export default function DebateSpace() {
       });
       if (callObjRef.current && currentUser && (debate.creator_id === currentUser.id || debate.opponent_id === currentUser.id)) {
         var shouldBeUnmuted = debate.active_speaker_id === currentUser.id;
-        var localParticipant = callObjRef.current.participants().local;
-        if (localParticipant && localParticipant.audio !== shouldBeUnmuted) {
-          callObjRef.current.setLocalAudio(shouldBeUnmuted);
-          setIsMuted(!shouldBeUnmuted);
+        if (!shouldBeUnmuted) {
+          callObjRef.current.setLocalAudio(false);
+          setIsMuted(true);
+          manualMuteRef.current = false;
+        } else if (!manualMuteRef.current) {
+          var localParticipant = callObjRef.current.participants().local;
+          if (localParticipant && !localParticipant.audio) {
+            callObjRef.current.setLocalAudio(true);
+            setIsMuted(false);
+          }
         }
-      }
     }, 1000);
     return function() { clearInterval(timerRef.current); };
   }, [debate, currentUser]);
 
-  useEffect(function() { if (debate) { warningFired.current = false; analysisTriggered.current = false; } }, [debate && debate.active_speaker_id]);
+  useEffect(function() { if (debate) { warningFired.current = false; analysisTriggered.current = false; manualMuteRef.current = false; } }, [debate && debate.active_speaker_id]);
 
   useEffect(function() {
     if (!debate || debate.status !== 'live' || !currentUser) return;
