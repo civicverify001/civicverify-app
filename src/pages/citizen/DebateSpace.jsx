@@ -554,7 +554,7 @@ function TranscriptPanel({ debateId, transcriptSegments, isLive, isActiveSpeaker
 }
 
 export default function DebateSpace() {
-  var { id } = useParams();
+  var { debateId: id } = useParams();
   var navigate = useNavigate();
   var auth = useAuth();
   var currentUser = auth.user;
