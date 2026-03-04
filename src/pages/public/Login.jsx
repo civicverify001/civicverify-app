@@ -1,6 +1,6 @@
 import CanonicalUrl from '../../components/CanonicalUrl'
 
-// src/pages/public/Login.jsx — With Cloudflare Turnstile integration
+// src/pages/public/Login.jsx — With Cloudflare Turnstile (implicit rendering)
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -22,33 +22,52 @@ export default function Login() {
   var [captchaToken, setCaptchaToken] = useState('');
   var captchaRef = useRef(null);
   var widgetId = useRef(null);
+  var rendered = useRef(false);
 
   var justRegistered = searchParams.get('registered') === 'true';
 
-  // Load Turnstile script
+  // Load Turnstile script and render widget
   useEffect(function() {
-    if (document.getElementById('turnstile-script')) return;
-    var s = document.createElement('script');
-    s.id = 'turnstile-script';
-    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    s.async = true;
-    document.head.appendChild(s);
-  }, []);
+    function renderWidget() {
+      if (rendered.current || !window.turnstile || !captchaRef.current) return;
+      rendered.current = true;
+      widgetId.current = window.turnstile.render(captchaRef.current, {
+        sitekey: TURNSTILE_SITEKEY,
+        callback: function(token) { setCaptchaToken(token); },
+        'expired-callback': function() { setCaptchaToken(''); },
+        'error-callback': function() { setCaptchaToken(''); },
+        theme: 'light'
+      });
+    }
 
-  // Render Turnstile widget
-  useEffect(function() {
+    // If script already loaded
+    if (window.turnstile) {
+      renderWidget();
+      return;
+    }
+
+    // Load script
+    if (!document.getElementById('turnstile-script')) {
+      var s = document.createElement('script');
+      s.id = 'turnstile-script';
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit';
+      s.async = true;
+      document.head.appendChild(s);
+    }
+
+    // Global callback for when script loads
+    window.onTurnstileLoad = function() {
+      renderWidget();
+    };
+
+    // Fallback poll in case onload already fired
     var interval = setInterval(function() {
-      if (window.turnstile && captchaRef.current && widgetId.current === null) {
-        widgetId.current = window.turnstile.render(captchaRef.current, {
-          sitekey: TURNSTILE_SITEKEY,
-          callback: function(token) { setCaptchaToken(token); },
-          'expired-callback': function() { setCaptchaToken(''); },
-          theme: 'light',
-          appearance: 'always'
-        });
+      if (window.turnstile && !rendered.current) {
+        renderWidget();
         clearInterval(interval);
       }
-    }, 200);
+    }, 500);
+
     return function() { clearInterval(interval); };
   }, []);
 
@@ -63,7 +82,9 @@ export default function Login() {
     if (res.error) {
       setLoading(false);
       setCaptchaToken('');
-      if (window.turnstile && widgetId.current !== null) window.turnstile.reset(widgetId.current);
+      if (window.turnstile && widgetId.current !== null) {
+        try { window.turnstile.reset(widgetId.current); } catch(e) {}
+      }
       return setError(res.error.message);
     }
     // Fetch role and redirect
@@ -122,8 +143,8 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Turnstile — invisible for most users */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          {/* Turnstile widget */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, minHeight: 65 }}>
             <div ref={captchaRef}></div>
           </div>
 
