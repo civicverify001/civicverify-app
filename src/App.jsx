@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 import { usePageTracking } from './hooks/useAnalytics'
 import AdminCommunity from './pages/admin/Community'
 import AdminDebates from './pages/admin/Debates'
+import AdminReels from './pages/admin/AdminReels'
 import CookieConsent from './components/CookieConsent'
 import CivicReels from './pages/citizen/CivicReels'
 
@@ -152,6 +153,7 @@ export default function App() {
             <Route path="blog" element={<AdminBlog />} />
             <Route path="community" element={<AdminCommunity />} />
             <Route path="debates" element={<AdminDebates />} />
+            <Route path="reels" element={<AdminReels />} />
           </Route>
 
           {/* Org portal */}
