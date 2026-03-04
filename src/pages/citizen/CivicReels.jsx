@@ -229,7 +229,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
 
       {/* Author info — bottom left
           ▼ cv-reel-author class adds mobile safe-area offset via CSS */}
-      <div className="cv-reel-author" style={{ position: 'absolute', bottom: 16, left: 16, right: 72, zIndex: 10 }}>
+      <div className="cv-reel-author" style={{ position: 'absolute', bottom: 16, left: 16, right: 72, zIndex: 30 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.3)', fontSize: 16, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
             onClick={function (e) { e.stopPropagation(); }}>
@@ -267,7 +267,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
 
       {/* Right sidebar — engagement buttons
           ▼ cv-reel-sidebar class adds mobile safe-area offset via CSS */}
-      <div className="cv-reel-sidebar" style={{ position: 'absolute', right: 12, bottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 10 }}>
+      <div className="cv-reel-sidebar" style={{ position: 'absolute', right: 12, bottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 30 }}>
         {/* Creator avatar */}
         <div style={{ position: 'relative', marginBottom: 4 }}>
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff', fontSize: 18, fontWeight: 700, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
