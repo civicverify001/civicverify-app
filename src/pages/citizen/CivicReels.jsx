@@ -176,7 +176,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
             if (window.confirm('Delete this reel? This cannot be undone.')) onDelete(reel.id);
           }}
           style={{
-            position: 'absolute', top: 14, right: 14, zIndex: 15,
+            position: 'absolute', top: 100, right: 14, zIndex: 15,
             width: 38, height: 38, borderRadius: '50%',
             background: 'rgba(239,68,68,0.2)', backdropFilter: 'blur(8px)',
             border: '1px solid rgba(239,68,68,0.3)',
@@ -193,7 +193,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Stats banner for own reels */}
       {currentUser && reel.user_id === currentUser.id && (
         <div style={{
-          position: 'absolute', top: 14, left: 14, right: currentUser && reel.user_id === currentUser.id ? 60 : 14,
+          position: 'absolute', top: 100, left: 14, right: currentUser && reel.user_id === currentUser.id ? 60 : 14,
           zIndex: 12, display: 'flex', gap: 8, flexWrap: 'wrap',
         }}>
           <div style={{ display: 'flex', gap: 6, padding: '5px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
@@ -330,10 +330,12 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{formatCount(reel.comments_count)}</span>
         </button>
 
-        {/* Share */}
+        {/* Share — bent arrow */}
         <button onClick={function (e) { e.stopPropagation(); onShare(reel); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)' }}>
-            <span style={{ fontSize: 22 }}>🔗</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
+              <path d="M13.47 2.47a.75.75 0 011.06 0l6 6a.75.75 0 010 1.06l-6 6a.75.75 0 11-1.06-1.06l4.72-4.72H10a6.75 6.75 0 00-6.75 6.75v1.5a.75.75 0 01-1.5 0v-1.5A8.25 8.25 0 0110 8.25h8.19l-4.72-4.72a.75.75 0 010-1.06z" />
+            </svg>
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{formatCount(reel.shares_count)}</span>
         </button>
@@ -914,6 +916,7 @@ export default function CivicReels() {
           if (idx >= reels.length - 2 && hasMore) {
             if (feedMode === 'saved') loadSavedReels(reels.length);
             else if (feedMode === 'myreels') loadMyReels(reels.length);
+            else if (feedMode === 'following') loadFollowingReels(reels.length);
             else loadReels(reels.length);
           }
         }
@@ -1060,8 +1063,70 @@ export default function CivicReels() {
     setVisibleIndex(0);
     if (feedMode === 'saved') loadSavedReels(0);
     else if (feedMode === 'myreels') loadMyReels(0);
+    else if (feedMode === 'following') loadFollowingReels(0);
     else loadReels(0);
   }, [feedMode, loadReels, loadSavedReels]);
+
+  var loadFollowingReels = useCallback(async function (offset) {
+    if (!currentUser) return;
+    setLoading(true);
+    var from = offset || 0;
+
+    // Get who I follow
+    var { data: follows } = await supabase.from('user_follows').select('following_id').eq('follower_id', currentUser.id);
+    var followIds = (follows || []).map(function (f) { return f.following_id; });
+
+    if (followIds.length === 0) {
+      setReels([]);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+
+    var { data } = await supabase
+      .from('civic_reels')
+      .select('*, users:user_id(full_name, username, identity_verified, followers_count)')
+      .in('user_id', followIds)
+      .eq('status', 'ready')
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE - 1);
+
+    if (data) {
+      var enriched = data.map(function (r) {
+        return Object.assign({}, r, {
+          author_name: r.users ? r.users.full_name : null,
+          author_username: r.users ? r.users.username : null,
+          author_verified: r.users ? r.users.identity_verified : false,
+          author_followers_count: r.users ? r.users.followers_count || 0 : 0,
+          video_url: r.cloudflare_playback_url,
+          is_following: true,
+          user_saved: false,
+          user_liked: false,
+        });
+      });
+
+      var reelIds = enriched.map(function (r) { return r.id; });
+      if (reelIds.length > 0) {
+        var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
+        if (likes) {
+          var likeSet = {};
+          likes.forEach(function (l) { likeSet[l.reel_id] = true; });
+          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); });
+        }
+        var { data: saves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
+        if (saves) {
+          var saveSet = {};
+          saves.forEach(function (s) { saveSet[s.reel_id] = true; });
+          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); });
+        }
+      }
+
+      if (from === 0) setReels(enriched);
+      else setReels(function (prev) { return prev.concat(enriched); });
+      setHasMore(data.length === PAGE);
+    }
+    setLoading(false);
+  }, [currentUser]);
 
   var loadMyReels = useCallback(async function (offset) {
     if (!currentUser) return;
@@ -1124,17 +1189,17 @@ export default function CivicReels() {
     loadReels(0);
   }
 
-  if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
+  if (loading && reels.length === 0) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#000' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-        <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.5)', fontFamily: sans }}>Loading CivicReels...</p>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontFamily: sans }}>Loading CivicReels...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="cv-reels-container" style={{ width: '100%', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column', background: '#000' }}>
+    <div className="cv-reels-container" style={{ width: '100%', height: 'calc(100vh - 60px)', position: 'relative', background: '#000', overflow: 'hidden' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes heartBurst{0%{transform:scale(0);opacity:1}50%{transform:scale(1.2);opacity:0.8}100%{transform:scale(1);opacity:0}}
@@ -1160,56 +1225,67 @@ export default function CivicReels() {
         }
       `}</style>
 
-      {/* Top bar */}
+      {/* TikTok-style transparent top overlay */}
       <div style={{
-        display: 'flex', flexDirection: 'column',
-        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)',
-        position: 'relative', zIndex: 20,
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+        background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
+        paddingTop: 'env(safe-area-inset-top, 10px)',
+        pointerEvents: 'none',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 0' }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, fontFamily: serif }}>
-            Civic<span style={{ color: C.gold }}>Reels</span>
-          </h1>
-          {profile && profile.identity_verified && (
-            <button
-              onClick={function () { setShowUpload(true); }}
-              style={{
-                padding: '8px 18px', borderRadius: 20, border: 'none', fontSize: 13, fontWeight: 700,
-                background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
-                color: '#fff', cursor: 'pointer', fontFamily: sans,
-                boxShadow: '0 2px 12px rgba(197,150,12,0.4)',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
-              <span style={{ fontSize: 16 }}>+</span> Create
+        {/* Top row: search + create */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px 0', pointerEvents: 'auto' }}>
+          <div style={{ width: 36 }} />
+          {/* Center — nothing here, tabs are below */}
+          <div style={{ flex: 1 }} />
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {/* Search */}
+            <button onClick={function () { /* TODO: search modal */ }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
             </button>
-          )}
+            {/* Create */}
+            {profile && profile.identity_verified && (
+              <button
+                onClick={function () { setShowUpload(true); }}
+                style={{
+                  width: 36, height: 24, borderRadius: 6, border: 'none',
+                  background: '#fff', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative', overflow: 'hidden',
+                }}
+              >
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '35%', background: '#25F4EE', borderRadius: '6px 0 0 6px' }} />
+                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '35%', background: '#FE2C55', borderRadius: '0 6px 6px 0' }} />
+                <span style={{ position: 'relative', fontSize: 18, fontWeight: 700, color: '#000', lineHeight: 1, zIndex: 1 }}>+</span>
+              </button>
+            )}
+          </div>
         </div>
-        {/* Feed tabs */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 20, padding: '10px 0 0' }}>
-          {[{ key: 'foryou', label: 'For You' }, { key: 'myreels', label: 'My Reels' }, { key: 'saved', label: 'Saved' }].map(function (tab) {
+
+        {/* Feed tabs — centered, TikTok style */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, padding: '8px 0 6px', pointerEvents: 'auto' }}>
+          {[{ key: 'following', label: 'Following' }, { key: 'foryou', label: 'For You' }, { key: 'myreels', label: 'My Reels' }, { key: 'saved', label: 'Saved' }].map(function (tab) {
             var isActive = feedMode === tab.key;
             return (
               <button key={tab.key} onClick={function () { setFeedMode(tab.key); }}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
-                  fontSize: 13, fontWeight: isActive ? 700 : 500,
-                  paddingBottom: 8, fontFamily: sans,
-                  borderBottom: isActive ? '2px solid ' + C.gold : '2px solid transparent',
+                  color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                  fontSize: 15, fontWeight: isActive ? 800 : 500,
+                  padding: '4px 2px 8px', fontFamily: sans,
+                  position: 'relative',
                   transition: 'all 0.2s',
+                  textShadow: '0 1px 4px rgba(0,0,0,0.5)',
                 }}>
-                {tab.key === 'saved' && (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: -2, marginRight: 3 }}>
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-                  </svg>
-                )}
-                {tab.key === 'myreels' && (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: -2, marginRight: 3 }}>
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z" />
-                  </svg>
-                )}
                 {tab.label}
+                {isActive && (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+                    width: 24, height: 3, borderRadius: 2,
+                    background: '#fff',
+                  }} />
+                )}
               </button>
             );
           })}
@@ -1218,17 +1294,17 @@ export default function CivicReels() {
 
       {/* Feed */}
       {reels.length === 0 && !loading ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 24 }}>
-          <div style={{ width: 80, height: 80, borderRadius: 24, background: 'rgba(197,150,12,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 40 }}>{feedMode === 'saved' ? '🔖' : feedMode === 'myreels' ? '🎥' : '🎬'}</span>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 24, zIndex: 10 }}>
+          <div style={{ width: 80, height: 80, borderRadius: 24, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 40 }}>{feedMode === 'saved' ? '🔖' : feedMode === 'myreels' ? '🎥' : feedMode === 'following' ? '👥' : '🎬'}</span>
           </div>
           <p style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, textAlign: 'center', fontFamily: serif }}>
-            {feedMode === 'saved' ? 'No saved reels' : feedMode === 'myreels' ? 'No reels yet' : 'No reels yet'}
+            {feedMode === 'saved' ? 'No saved reels' : feedMode === 'myreels' ? 'No reels yet' : feedMode === 'following' ? 'No reels from people you follow' : 'No reels yet'}
           </p>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0, textAlign: 'center' }}>
-            {feedMode === 'saved' ? 'Tap the bookmark icon on any reel to save it here' : feedMode === 'myreels' ? 'Create your first CivicReel to see it here' : 'Be the first to share a CivicReel!'}
+            {feedMode === 'saved' ? 'Tap the bookmark icon on any reel to save it here' : feedMode === 'myreels' ? 'Create your first CivicReel to see it here' : feedMode === 'following' ? 'Follow creators from the For You feed to see their reels here' : 'Be the first to share a CivicReel!'}
           </p>
-          {feedMode === 'saved' ? (
+          {feedMode === 'saved' || feedMode === 'following' ? (
             <button onClick={function () { setFeedMode('foryou'); }} style={{
               padding: '12px 28px', borderRadius: 14, border: 'none', fontSize: 14, fontWeight: 700,
               background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
@@ -1256,7 +1332,8 @@ export default function CivicReels() {
           ref={feedRef}
           className="cv-reels-feed"
           style={{
-            flex: 1, overflowY: 'scroll', scrollSnapType: 'y mandatory',
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            overflowY: 'scroll', scrollSnapType: 'y mandatory',
             WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain',
             msOverflowStyle: 'none', scrollbarWidth: 'none',
           }}
