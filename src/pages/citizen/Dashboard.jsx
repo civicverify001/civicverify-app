@@ -213,9 +213,9 @@ create index if not exists idx_dc_survey
           <div key={survey.id} style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(11,37,69,0.07)', overflow: 'hidden', boxShadow: '0 2px 12px rgba(11,37,69,0.04)' }}>
 
             {/* Survey header */}
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(11,37,69,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="cv-poll-header" style={{ padding: '14px 20px', borderBottom: '1px solid rgba(11,37,69,0.05)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                   {isActive
                     ? <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 9px', borderRadius: 20, background: C.green + '15', color: C.green, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, display: 'inline-block', animation: 'pulse 2s infinite' }} />LIVE
@@ -225,28 +225,15 @@ create index if not exists idx_dc_survey
                   {!isActive && <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.35)', fontStyle: 'italic' }}>discussion still open</span>}
                   <span style={{ fontSize: 11, color: 'rgba(11,37,69,0.3)', marginLeft: 4 }}>&#128172; {comments.length}</span>
                 </div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: font }}>{survey.title}</h3>
+                <h3 className="cv-poll-title" style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: font }}>{survey.title}</h3>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <div className="cv-poll-header-btns" style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 {isActive && (
                   <button onClick={function() { navigate('/citizen/surveys/' + survey.id); }}
                     style={{ padding: '5px 13px', background: C.gold, color: '#fff', border: 'none', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(197,150,12,0.3)' }}>
                     Take Poll
                   </button>
                 )}
-                <button onClick={function() {
-                  var url = window.location.origin + '/citizen/surveys/' + survey.id;
-                  var text = survey.title + ' — CivicVerify';
-                  if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
-                    navigator.share({ title: text, url: url });
-                  } else {
-                    navigator.clipboard.writeText(url);
-                    alert('Link copied!');
-                  }
-                }}
-                  style={{ padding: '5px 11px', background: 'rgba(197,150,12,0.08)', color: '#C5960C', border: '1px solid rgba(197,150,12,0.25)', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-                  &#x1F517;
-                </button>
               </div>
             </div>
 
@@ -294,7 +281,7 @@ create index if not exists idx_dc_survey
             </div>
 
             {/* Comment input */}
-            <div style={{ padding: '8px 20px 16px', display: 'flex', gap: 9, alignItems: 'center' }}>
+            <div className="cv-comment-input" style={{ padding: '8px 20px 16px', display: 'flex', gap: 9, alignItems: 'center' }}>
               <Avatar name={currentProfile ? currentProfile.full_name : 'You'} size={28} />
               <input
                 value={inputText}
@@ -360,7 +347,25 @@ export default function CitizenDashboard() {
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', maxWidth: 980 }}>
-      <style>{'@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}'}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+        .cv-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+        .cv-main-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+        .cv-poll-title { white-space: nowrap; }
+        @media (max-width: 768px) {
+          .cv-stats-grid { grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 20px; }
+          .cv-stats-grid .cv-stat-card { padding: 14px 16px !important; }
+          .cv-stats-grid .cv-stat-val { font-size: 26px !important; }
+          .cv-main-grid { grid-template-columns: 1fr; gap: 20px; }
+          .cv-poll-title { white-space: normal !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .cv-poll-header { flex-wrap: wrap; gap: 8px !important; }
+          .cv-poll-header-btns { width: 100%; display: flex; gap: 8px; }
+          .cv-comment-input { padding: 8px 14px 14px !important; }
+          .cv-comment-input input { padding: 9px 12px !important; font-size: 12px !important; }
+          .cv-comment-input button { padding: 9px 14px !important; font-size: 11px !important; }
+        }
+      `}</style>
 
       <h1 style={{ fontSize: 27, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Welcome back{name ? ', ' + name : ''}</h1>
       <p style={{ fontSize: 14, color: 'rgba(11,37,69,0.4)', margin: '0 0 24px' }}>Your civic voice matters.</p>
@@ -368,7 +373,7 @@ export default function CitizenDashboard() {
       {/* Verify banner */}
       {profile && !profile.identity_verified && (
         <div style={{ background: 'linear-gradient(135deg,' + C.gold + '12,' + C.gold + '06)', border: '1px solid ' + C.gold + '30', borderRadius: 13, padding: '18px 22px', marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-          <div>
+          <div style={{ flex: 1, minWidth: 180 }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 3px', fontFamily: font }}>Verify your identity to take surveys</p>
             <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.45)', margin: 0 }}>Quick ID check — takes less than 2 minutes</p>
           </div>
@@ -377,27 +382,27 @@ export default function CitizenDashboard() {
       )}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
+      <div className="cv-stats-grid">
         {[
-          { label: 'Surveys Matched', val: stats.matched,   color: C.navy,   bg: 'rgba(11,37,69,0.04)',   icon: '\uD83D\uDCCB', onClick: function() { navigate('/citizen/surveys'); } },
-          { label: 'Available Now',   val: stats.available, color: C.gold,   bg: 'rgba(197,150,12,0.06)', icon: '\uD83D\uDCE9', onClick: function() { navigate('/citizen/surveys'); } },
-          { label: 'Completed',       val: stats.completed, color: C.green,  bg: 'rgba(26,122,60,0.06)',  icon: '\u2713', onClick: function() { navigate('/citizen/impact'); } },
-          { label: tier,              val: trust,           color: tierColor, bg: 'rgba(109,40,217,0.05)', icon: '\u2605', onClick: function() { navigate('/citizen/account'); } },
+          { label: 'Surveys Matched', val: stats.matched,   color: C.navy,   bg: 'rgba(11,37,69,0.04)',   icon: '\uD83D\uDCCB' },
+          { label: 'Available Now',   val: stats.available, color: C.gold,   bg: 'rgba(197,150,12,0.06)', icon: '\uD83D\uDCE9' },
+          { label: 'Completed',       val: stats.completed, color: C.green,  bg: 'rgba(26,122,60,0.06)',  icon: '\u2713' },
+          { label: tier,              val: trust,           color: tierColor, bg: 'rgba(109,40,217,0.05)', icon: '\u2605' },
         ].map(function(s, i) {
           return (
-            <div key={i} onClick={s.onClick} style={{ background: s.bg, borderRadius: 13, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.06)', cursor: 'pointer', transition: 'all 0.15s' }}>
+            <div key={i} className="cv-stat-card" style={{ background: s.bg, borderRadius: 13, padding: '18px 20px', border: '1px solid rgba(11,37,69,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <span style={{ fontSize: 15 }}>{s.icon}</span>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{s.label}</span>
               </div>
-              <p style={{ fontSize: 32, fontWeight: 800, color: s.color, margin: 0, fontFamily: font, lineHeight: 1 }}>{s.val}</p>
+              <p className="cv-stat-val" style={{ fontSize: 32, fontWeight: 800, color: s.color, margin: 0, fontFamily: font, lineHeight: 1 }}>{s.val}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Two-col layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+      {/* Two-col layout — stacks on mobile */}
+      <div className="cv-main-grid">
 
         {/* LEFT — Poll Discussions */}
         <div>
