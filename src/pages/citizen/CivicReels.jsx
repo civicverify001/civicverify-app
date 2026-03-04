@@ -912,11 +912,14 @@ export default function CivicReels() {
     setReels(function (prev) { return prev.map(function (r) { return r.id !== reel.id ? r : Object.assign({}, r, { shares_count: (r.shares_count || 0) + 1 }); }); });
   }
 
-  async function handleView(reelId) {
-    if (currentUser) {
-      await supabase.from('civic_reel_views').upsert({ reel_id: reelId, user_id: currentUser.id }, { onConflict: 'reel_id,user_id' });
-    }
-    supabase.rpc('increment_reel_views', { p_reel_id: reelId }).then(function () { });
+  function handleView(reelId) {
+    // Fire-and-forget — non-critical, should never block UI
+    try {
+      if (currentUser) {
+        supabase.from('civic_reel_views').upsert({ reel_id: reelId, user_id: currentUser.id }, { onConflict: 'reel_id,user_id' }).then(function () {});
+      }
+      supabase.from('civic_reels').update({ views_count: (reels.find(function (r) { return r.id === reelId; }) || {}).views_count + 1 || 1 }).eq('id', reelId).then(function () {});
+    } catch (e) { /* silent */ }
   }
 
   async function handleFollow(targetUserId, reelId) {
