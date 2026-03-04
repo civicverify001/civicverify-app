@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 
-var TURNSTILE_SITEKEY = '0x4AAAAAACmS3nBa0g7P2Rba';
+var TURNSTILE_SITEKEY = '0x4AAAAAACmS3nBa0g7PZRba';
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
 var font = 'Libre Baskerville, Georgia, serif';
 var inputStyle = { width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid rgba(11,37,69,0.1)', borderRadius: 10, outline: 'none', color: '#0B2545', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' };
