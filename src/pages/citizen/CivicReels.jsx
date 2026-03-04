@@ -619,7 +619,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
           padding: '20px',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 40px) + 40px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 160px)',
         }}>
           {/* Mode selection */}
           {!mode && !file && (
@@ -656,7 +656,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {/* Camera recording */}
           {mode === 'record' && !file && (
             <div>
-              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', aspectRatio: '9/16', maxHeight: 360 }}>
+              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', width: '100%', height: 380 }}>
                 <video ref={videoPreviewRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }} />
                 {recording && (
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, background: 'rgba(239,68,68,0.9)' }}>
@@ -1035,7 +1035,7 @@ export default function CivicReels() {
   function handleUploaded() { setShowUpload(false); loadReels(0); }
 
   if (loading && reels.length === 0) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', minHeight: '100vh', background: '#000' }}>
+    <div className="cv-reels-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#000' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontFamily: sans }}>Loading CivicReels...</p>
@@ -1044,7 +1044,7 @@ export default function CivicReels() {
   );
 
   return (
-    <div className="cv-reels-container" style={{ width: '100%', height: '100%', position: 'relative', background: '#000', overflow: 'hidden' }}>
+    <div className="cv-reels-container" style={{ width: '100%', position: 'relative', background: '#000', overflow: 'hidden' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes heartBurst { 0% { transform: scale(0); opacity: 1 } 50% { transform: scale(1.2); opacity: 0.8 } 100% { transform: scale(1); opacity: 0 } }
@@ -1056,23 +1056,30 @@ export default function CivicReels() {
         .cv-reels-feed::-webkit-scrollbar { display: none; }
         .cv-reel-card { scroll-snap-align: start; scroll-snap-stop: always; }
 
-        /* Desktop: sized relative to viewport with sidebar offset */
-        .cv-reels-container { height: calc(100vh - 40px); border-radius: 12px; }
+        /* ── DESKTOP: fixed, offset past sidebar ──────────────────────── */
+        /* Using position:fixed bypasses the height-inheritance chain entirely.
+           margin-left:240px in .cv-main means sidebar is always 240px wide. */
+        .cv-reels-container {
+          position: fixed !important;
+          top: 0; right: 0; bottom: 0;
+          left: 240px;
+          height: 100vh !important;
+          border-radius: 0;
+          z-index: 20;
+        }
 
-        /* ── MOBILE SAFE-AREA FIXES ─────────────────────────────────────── */
+        /* ── MOBILE: fills the fixed overlay set by CitizenLayout ────── */
         @media (max-width: 768px) {
-          /* Container fills the fixed overlay set by CitizenLayout */
           .cv-reels-container {
-            height: 100% !important;
-            border-radius: 0 !important;
+            left: 0 !important;
           }
 
-          /* Author info: clear the bottom tab bar (56px) + safe area */
+          /* Author info: clear tab bar (56px) + safe area */
           .cv-reel-author {
             bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
           }
 
-          /* Engagement sidebar: clear the bottom tab bar (56px) + safe area */
+          /* Engagement sidebar: clear tab bar + safe area */
           .cv-reel-sidebar {
             bottom: calc(116px + env(safe-area-inset-bottom, 0px)) !important;
           }
