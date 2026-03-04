@@ -2,13 +2,14 @@
 <html lang="en">
   <head>
     <!-- Google Analytics (GA4) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-0F5SGY8KJH"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-0F5SGY8KJH');
-</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0F5SGY8KJH"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-0F5SGY8KJH');
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
@@ -19,28 +20,17 @@
     <meta name="author" content="CivicVerify" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#0B2545" />
-    <meta name="description" content="CivicVerify connects identity-verified citizens with organizations seeking authentic public opinion. Take verified surveys, join discussions, and make your voice count." />
-    <meta property="og:title" content="CivicVerify: Identity-Verified Civic Polling | Real Citizen Impact" />
-    <meta property="og:description" content="One person, one verified voice. Take verified civic surveys, join community discussions, and make real impact on policy decisions." />
-    <meta property="og:image" content="https://civicverify.org/og-image.png" />
-    <meta property="og:url" content="https://civicverify.org" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="CivicVerify" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="CivicVerify: Identity-Verified Civic Polling" />
-    <meta name="twitter:description" content="Real citizens. Real opinions. Real impact. Join the verified civic engagement platform." />
-    <meta name="twitter:image" content="https://civicverify.org/og-image.png" />
 
     <!-- ═══ CANONICAL URL ══════════════════════════════════════════════════════ -->
-    <link rel="canonical" href="https://www.civicverify.org/" />
+    <link rel="canonical" href="https://civicverify.org/" />
 
     <!-- ═══ OPEN GRAPH (Facebook, LinkedIn, WhatsApp previews) ════════════════ -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="CivicVerify" />
     <meta property="og:title" content="CivicVerify — Your Voice, Verified" />
     <meta property="og:description" content="The civic polling platform where every response is identity-verified. Real citizens, real opinions, real impact on policy. Zero bots. Zero fake accounts." />
-    <meta property="og:url" content="https://www.civicverify.org/" />
-    <meta property="og:image" content="https://www.civicverify.org/og-image.png" />
+    <meta property="og:url" content="https://civicverify.org/" />
+    <meta property="og:image" content="https://civicverify.org/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="CivicVerify — Identity-Verified Civic Polling Platform" />
@@ -51,27 +41,32 @@
     <meta name="twitter:site" content="@civicverify" />
     <meta name="twitter:title" content="CivicVerify — Your Voice, Verified" />
     <meta name="twitter:description" content="The civic polling platform where every response is identity-verified. Real citizens, real opinions, zero bots." />
-    <meta name="twitter:image" content="https://www.civicverify.org/og-image.png" />
+    <meta name="twitter:image" content="https://civicverify.org/og-image.png" />
     <meta name="twitter:image:alt" content="CivicVerify — Identity-Verified Civic Polling" />
 
     <!-- ═══ FAVICON & ICONS ════════════════════════════════════════════════════ -->
     <link rel="icon" type="image/png" href="/civicverifyicon.png" />
     <link rel="apple-touch-icon" href="/civicverifyicon.png" />
 
-    <!-- ═══ JSON-LD SCHEMA MARKUP ══════════════════════════════════════════════
-         This makes Google show rich results — organization info, sitelinks, FAQ  -->
+    <!-- ═══ PWA ════════════════════════════════════════════════════════════════ -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CivicVerify" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ═══ JSON-LD SCHEMA MARKUP ══════════════════════════════════════════════ -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
         {
           "@type": "Organization",
-          "@id": "https://www.civicverify.org/#organization",
+          "@id": "https://civicverify.org/#organization",
           "name": "CivicVerify",
-          "url": "https://www.civicverify.org",
+          "url": "https://civicverify.org",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://www.civicverify.org/civicverifylogo.png",
+            "url": "https://civicverify.org/civicverifylogo.png",
             "width": 400,
             "height": 100
           },
@@ -87,30 +82,30 @@
           "contactPoint": {
             "@type": "ContactPoint",
             "contactType": "customer support",
-            "url": "https://www.civicverify.org/contact"
+            "url": "https://civicverify.org/contact"
           }
         },
         {
           "@type": "WebSite",
-          "@id": "https://www.civicverify.org/#website",
-          "url": "https://www.civicverify.org",
+          "@id": "https://civicverify.org/#website",
+          "url": "https://civicverify.org",
           "name": "CivicVerify",
           "description": "Identity-verified civic polling platform — Your Voice, Verified",
           "publisher": {
-            "@id": "https://www.civicverify.org/#organization"
+            "@id": "https://civicverify.org/#organization"
           }
         },
         {
           "@type": "WebPage",
-          "@id": "https://www.civicverify.org/#webpage",
-          "url": "https://www.civicverify.org",
+          "@id": "https://civicverify.org/#webpage",
+          "url": "https://civicverify.org",
           "name": "CivicVerify — Identity-Verified Civic Polling | Your Voice, Verified",
           "description": "CivicVerify is the civic polling platform where every response is identity-verified. Real citizens, real opinions, zero bots.",
           "isPartOf": {
-            "@id": "https://www.civicverify.org/#website"
+            "@id": "https://civicverify.org/#website"
           },
           "about": {
-            "@id": "https://www.civicverify.org/#organization"
+            "@id": "https://civicverify.org/#organization"
           },
           "breadcrumb": {
             "@type": "BreadcrumbList",
@@ -119,7 +114,7 @@
                 "@type": "ListItem",
                 "position": 1,
                 "name": "Home",
-                "item": "https://www.civicverify.org/"
+                "item": "https://civicverify.org/"
               }
             ]
           }
@@ -180,7 +175,7 @@
         {
           "@type": "SoftwareApplication",
           "name": "CivicVerify",
-          "url": "https://www.civicverify.org",
+          "url": "https://civicverify.org",
           "applicationCategory": "GovernmentApplication",
           "operatingSystem": "Web",
           "offers": {
@@ -190,7 +185,7 @@
           },
           "description": "Identity-verified civic engagement platform for polls, surveys, and community discussions.",
           "creator": {
-            "@id": "https://www.civicverify.org/#organization"
+            "@id": "https://civicverify.org/#organization"
           }
         }
       ]
