@@ -246,7 +246,7 @@ export default function CitizenLayout() {
     return location.pathname === link.to || location.pathname.startsWith(link.to + '/');
   }) || location.pathname.startsWith('/citizen/profile/');
 
-  // Hide bottom bar + top bar on reels for immersive experience
+  // Reels page: hide top header, dark transparent bottom tabs
   var isReelsPage = location.pathname === '/citizen/reels';
 
   return (
@@ -382,8 +382,10 @@ export default function CitizenLayout() {
         {/* ═══════════════ MOBILE BOTTOM TAB BAR ═══════════════ */}
         <nav className="cv-bottom-tabs" style={{
           display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
-          background: '#fff', borderTop: '1px solid rgba(11,37,69,0.08)',
+          background: isReelsPage ? 'rgba(11,37,69,0.85)' : '#fff',
+          borderTop: isReelsPage ? 'none' : '1px solid rgba(11,37,69,0.08)',
           paddingBottom: 'env(safe-area-inset-bottom, 0)',
+          backdropFilter: isReelsPage ? 'blur(12px)' : 'none',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: 56, maxWidth: 500, margin: '0 auto' }}>
             {tabItems.map(function (tab) {
@@ -394,7 +396,7 @@ export default function CitizenLayout() {
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
                       background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', minWidth: 56,
-                      color: active ? C.gold : 'rgba(11,37,69,0.35)', transition: 'color 0.2s',
+                      color: active ? C.gold : (isReelsPage ? 'rgba(255,255,255,0.5)' : 'rgba(11,37,69,0.35)'), transition: 'color 0.2s',
                     }}>
                     <Ico d={tab.icon} size={22} />
                     <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
@@ -408,7 +410,7 @@ export default function CitizenLayout() {
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
                     textDecoration: 'none', padding: '4px 0', minWidth: 56,
-                    color: tabActive ? C.gold : 'rgba(11,37,69,0.35)', transition: 'color 0.2s',
+                    color: tabActive ? C.gold : (isReelsPage ? 'rgba(255,255,255,0.5)' : 'rgba(11,37,69,0.35)'), transition: 'color 0.2s',
                   }}>
                   <Ico d={tab.icon} size={22} />
                   <span style={{ fontSize: 10, fontWeight: tabActive ? 700 : 500 }}>{tab.label}</span>
@@ -540,9 +542,9 @@ export default function CitizenLayout() {
           .cv-mobile-header { display: ' + (isReelsPage ? 'none' : 'flex') + ' !important; }\
           .cv-close-btn { display: flex !important; }\
           .cv-main { margin-left: 0 !important; }\
-          .cv-bottom-tabs { display: ' + (isReelsPage ? 'none' : 'block') + ' !important; }\
+          .cv-bottom-tabs { display: block !important; }\
           .cv-more-sheet { display: block !important; }\
-          .cv-content-inner { padding: ' + (isReelsPage ? '0' : '16px 14px 76px') + ' !important; }\
+          .cv-content-inner { padding: ' + (isReelsPage ? '0 !important; height: calc(100vh - 56px - env(safe-area-inset-bottom, 0px))' : '16px 14px 76px !important') + '; }\
         }\
       '}</style>
     </div>
