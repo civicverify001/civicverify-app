@@ -913,12 +913,10 @@ export default function CivicReels() {
   }
 
   function handleView(reelId) {
-    // Fire-and-forget — non-critical, should never block UI
+    // Silently increment view count — non-critical
     try {
-      if (currentUser) {
-        supabase.from('civic_reel_views').upsert({ reel_id: reelId, user_id: currentUser.id }, { onConflict: 'reel_id,user_id' }).then(function () {});
-      }
-      supabase.from('civic_reels').update({ views_count: (reels.find(function (r) { return r.id === reelId; }) || {}).views_count + 1 || 1 }).eq('id', reelId).then(function () {});
+      var current = (reels.find(function (r) { return r.id === reelId; }) || {}).views_count || 0;
+      supabase.from('civic_reels').update({ views_count: current + 1 }).eq('id', reelId).then(function () {});
     } catch (e) { /* silent */ }
   }
 
