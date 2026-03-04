@@ -35,7 +35,7 @@ function HeartBurst({ x, y, onDone }) {
 }
 
 // ─── Single Reel Card ─────────────────────────────────────────────────────
-function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, onView, onFollow, index }) {
+function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, onView, onFollow, onSave, index }) {
   var videoRef = useRef(null);
   var [paused, setPaused] = useState(false);
   var [hearts, setHearts] = useState([]);
@@ -294,6 +294,20 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{formatCount(reel.views_count)}</span>
         </div>
+
+        {/* Save/Bookmark */}
+        <button onClick={function (e) { e.stopPropagation(); onSave(reel.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: reel.user_saved ? 'rgba(197,150,12,0.3)' : 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
+            transition: 'all 0.2s',
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill={reel.user_saved ? C.gold : 'none'} stroke={reel.user_saved ? C.gold : '#fff'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+            </svg>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: reel.user_saved ? C.gold : '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{reel.user_saved ? 'Saved' : 'Save'}</span>
+        </button>
       </div>
 
       {/* Comments bottom sheet */}
@@ -733,8 +747,16 @@ export default function CivicReels() {
       var { data, error } = await supabase.rpc('get_reels_feed', { p_user_id: currentUser.id, p_limit: PAGE, p_offset: from });
       if (data && !error) {
         var enriched = data.map(function (r) {
-          return Object.assign({}, r, { video_url: r.cloudflare_playback_url });
+          return Object.assign({}, r, { video_url: r.cloudflare_playback_url, user_saved: false });
         });
+        // Check saves
+        var rpcReelIds = enriched.map(function (r) { return r.id; });
+        var { data: rpcSaves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', rpcReelIds);
+        if (rpcSaves) {
+          var rpcSaveSet = {};
+          rpcSaves.forEach(function (s) { rpcSaveSet[s.reel_id] = true; });
+          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!rpcSaveSet[r.id] }); });
+        }
         if (from === 0) setReels(enriched);
         else setReels(function (prev) { return prev.concat(enriched); });
         setHasMore(data.length === PAGE);
@@ -782,6 +804,14 @@ export default function CivicReels() {
           var followSet = {};
           follows.forEach(function (f) { followSet[f.following_id] = true; });
           enriched = enriched.map(function (r) { return Object.assign({}, r, { is_following: !!followSet[r.user_id] }); });
+        }
+
+        // Check saves
+        var { data: saves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
+        if (saves) {
+          var saveSet = {};
+          saves.forEach(function (s) { saveSet[s.reel_id] = true; });
+          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); });
         }
       }
 
@@ -878,6 +908,24 @@ export default function CivicReels() {
     });
   }
 
+  async function handleSave(reelId) {
+    if (!currentUser) return;
+    var reel = reels.find(function (r) { return r.id === reelId; });
+    var isSaved = reel && reel.user_saved;
+    // Optimistic update
+    setReels(function (prev) {
+      return prev.map(function (r) {
+        if (r.id !== reelId) return r;
+        return Object.assign({}, r, { user_saved: !isSaved });
+      });
+    });
+    if (isSaved) {
+      await supabase.from('civic_reel_saves').delete().eq('reel_id', reelId).eq('user_id', currentUser.id);
+    } else {
+      await supabase.from('civic_reel_saves').upsert({ reel_id: reelId, user_id: currentUser.id }, { onConflict: 'reel_id,user_id' });
+    }
+  }
+
   function handleUploaded() {
     setShowUpload(false);
     loadReels(0);
@@ -901,7 +949,21 @@ export default function CivicReels() {
         @keyframes liveDot{0%,100%{opacity:1}50%{opacity:0.3}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         @media (max-width: 768px) {
-          .cv-reels-container { height: 100vh !important; padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important; }
+          .cv-reels-container {
+            height: 100vh !important;
+            height: 100dvh !important;
+            padding-bottom: calc(64px + env(safe-area-inset-bottom, 8px)) !important;
+          }
+          .cv-reels-feed {
+            scroll-snap-type: y mandatory !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior-y: contain !important;
+          }
+          .cv-reels-feed::-webkit-scrollbar { display: none; }
+          .cv-reel-card {
+            scroll-snap-align: start !important;
+            scroll-snap-stop: always !important;
+          }
         }
       `}</style>
 
@@ -955,14 +1017,16 @@ export default function CivicReels() {
       ) : (
         <div
           ref={feedRef}
+          className="cv-reels-feed"
           style={{
             flex: 1, overflowY: 'scroll', scrollSnapType: 'y mandatory',
-            WebkitOverflowScrolling: 'touch',
+            WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain',
+            msOverflowStyle: 'none', scrollbarWidth: 'none',
           }}
         >
           {reels.map(function (reel, i) {
             return (
-              <div key={reel.id} data-index={i} style={{ height: '100%', scrollSnapAlign: 'start' }}>
+              <div key={reel.id} data-index={i} className="cv-reel-card" style={{ height: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
                 <ReelCard
                   reel={reel}
                   isVisible={i === visibleIndex}
@@ -972,6 +1036,7 @@ export default function CivicReels() {
                   onShare={handleShare}
                   onView={handleView}
                   onFollow={handleFollow}
+                  onSave={handleSave}
                   index={i}
                 />
               </div>
