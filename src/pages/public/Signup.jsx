@@ -1,10 +1,10 @@
 import CanonicalUrl from '../../components/CanonicalUrl'
-// src/pages/public/Signup.jsx — Full demographics + hCaptcha + 3-step signup + ICDPA consent + Username
+// src/pages/public/Signup.jsx — Full demographics + Cloudflare Turnstile + 3-step signup + ICDPA consent + Username
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 
-var HCAPTCHA_SITEKEY = 'a5ce465a-2468-4390-a696-c932b792aff6';
+var TURNSTILE_SITEKEY = '0x4AAAAAACmS3nBa0g7P2Rba';
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
 var font = 'Libre Baskerville, Georgia, serif';
 
@@ -39,18 +39,27 @@ export default function Signup() {
   var [usernameStatus, setUsernameStatus] = useState(null);
   var [checkingUsername, setCheckingUsername] = useState(false);
   var captchaRef = useRef(null);
+  var turnstileWidgetId = useRef(null);
 
+  // Load Turnstile script
   useEffect(function() {
-    if (document.getElementById('hcaptcha-script')) return;
-    var s = document.createElement('script'); s.id = 'hcaptcha-script'; s.src = 'https://js.hcaptcha.com/1/api.js?render=explicit'; s.async = true; document.head.appendChild(s);
+    if (document.getElementById('turnstile-script')) return;
+    var s = document.createElement('script'); s.id = 'turnstile-script'; s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; s.async = true; document.head.appendChild(s);
   }, []);
 
+  // Render Turnstile widget when step 3 is reached
   useEffect(function() {
     if (step !== 3 || !captchaRef.current) return;
+    turnstileWidgetId.current = null;
     var interval = setInterval(function() {
-      if (window.hcaptcha && captchaRef.current && !captchaRef.current.dataset.rendered) {
-        captchaRef.current.dataset.rendered = 'true';
-        window.hcaptcha.render(captchaRef.current, { sitekey: HCAPTCHA_SITEKEY, callback: function(t){setCaptchaToken(t)}, 'expired-callback': function(){setCaptchaToken('')} });
+      if (window.turnstile && captchaRef.current && turnstileWidgetId.current === null) {
+        turnstileWidgetId.current = window.turnstile.render(captchaRef.current, {
+          sitekey: TURNSTILE_SITEKEY,
+          callback: function(t) { setCaptchaToken(t); },
+          'expired-callback': function() { setCaptchaToken(''); },
+          theme: 'light',
+          appearance: 'interaction-only'
+        });
         clearInterval(interval);
       }
     }, 200);
@@ -105,10 +114,15 @@ export default function Signup() {
     if (!form.agreeAge) return setError('You must confirm you are at least 18 years old');
     if (!form.agreeTerms) return setError('You must agree to the Privacy Policy and Terms of Service');
     if (!form.agreeData) return setError('You must consent to demographic data processing');
-    if (!captchaToken) return setError('Please complete the captcha');
+    if (!captchaToken) return setError('Please wait for security check to complete');
     setLoading(true);
     var res = await supabase.auth.signUp({ email: form.email.trim().toLowerCase(), password: form.password, options: { data: { full_name: form.fullName.trim() }, captchaToken: captchaToken } });
-    if (res.error) { setLoading(false); return setError(res.error.message); }
+    if (res.error) {
+      setLoading(false);
+      setCaptchaToken('');
+      if (window.turnstile && turnstileWidgetId.current !== null) window.turnstile.reset(turnstileWidgetId.current);
+      return setError(res.error.message);
+    }
     if (res.data.user) {
       var now = new Date().toISOString();
       var p = { id: res.data.user.id, email: form.email.trim().toLowerCase(), full_name: form.fullName.trim(), username: form.username || null, phone: form.phone.replace(/\D/g,''), role: form.role, state: form.state, county: form.county.trim(), city: form.city.trim(), zip: form.zip.replace(/\D/g,'').slice(0,5), race: form.race||null, sex: form.sex||null, date_of_birth: form.dob||null, education: form.education||null, employment: form.employment||null, income: form.income||null, marital_status: form.marital_status||null, party: form.party||null, voter_registered: form.voter_registered, veteran: form.veteran, housing: form.housing||null, is_verified: false, identity_verified: false, consent_privacy_terms: true, consent_age_verified: true, consent_data_processing: true, consent_timestamp: now };
@@ -169,9 +183,10 @@ export default function Signup() {
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}><div><label style={labelStyle}>Marital Status</label><Sel value={form.marital_status} field="marital_status" opts={MARITAL_OPTIONS}/></div><div><label style={labelStyle}>Party</label><Sel value={form.party} field="party" opts={PARTY_OPTIONS}/></div></div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}><div><label style={labelStyle}>Housing</label><Sel value={form.housing} field="housing" opts={HOUSING_OPTIONS}/></div><div style={{display:'flex',flexDirection:'column',gap:10,paddingTop:20}}><label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,color:'rgba(11,37,69,0.5)'}}><input type="checkbox" checked={form.voter_registered} onChange={function(e){update('voter_registered',e.target.checked)}} style={{accentColor:C.gold,width:16,height:16}}/> Registered Voter</label><label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,color:'rgba(11,37,69,0.5)'}}><input type="checkbox" checked={form.veteran} onChange={function(e){update('veteran',e.target.checked)}} style={{accentColor:C.gold,width:16,height:16}}/> Veteran</label></div></div>
 
+            {/* Turnstile — invisible for most users */}
             <div style={{display:'flex',justifyContent:'center',marginBottom:16}}><div ref={captchaRef}></div></div>
 
-            {/* ── Legal Consent Section (ICDPA Compliance) ── */}
+            {/* Legal Consent Section (ICDPA Compliance) */}
             <div style={{background:'rgba(11,37,69,0.02)',border:'1px solid rgba(11,37,69,0.08)',borderRadius:12,padding:'16px 16px 12px',marginBottom:16}}>
               <p style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,color:'rgba(11,37,69,0.3)',margin:'0 0 12px'}}>Required Consent</p>
 
