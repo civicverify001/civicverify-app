@@ -893,13 +893,16 @@ export default function CivicReels() {
   );
 
   return (
-    <div style={{ width: '100%', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column', background: '#000' }}>
+    <div className="cv-reels-container" style={{ width: '100%', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column', background: '#000' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes heartBurst{0%{transform:scale(0);opacity:1}50%{transform:scale(1.2);opacity:0.8}100%{transform:scale(1);opacity:0}}
         @keyframes slideSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
         @keyframes liveDot{0%,100%{opacity:1}50%{opacity:0.3}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @media (max-width: 768px) {
+          .cv-reels-container { height: 100vh !important; padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important; }
+        }
       `}</style>
 
       {/* Top bar */}
