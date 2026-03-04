@@ -35,7 +35,7 @@ function HeartBurst({ x, y, onDone }) {
 }
 
 // ─── Single Reel Card ─────────────────────────────────────────────────────
-function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, onView, index }) {
+function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, onView, onFollow, index }) {
   var videoRef = useRef(null);
   var [paused, setPaused] = useState(false);
   var [hearts, setHearts] = useState([]);
@@ -188,6 +188,22 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: 0, textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>@{reel.author_username}</p>
             )}
           </div>
+          {/* Follow button */}
+          {currentUser && reel.user_id !== currentUser.id && (
+            <button
+              onClick={function (e) { e.stopPropagation(); onFollow(reel.user_id, reel.id); }}
+              style={{
+                padding: '5px 14px', borderRadius: 20, border: reel.is_following ? '1.5px solid rgba(255,255,255,0.4)' : 'none',
+                background: reel.is_following ? 'transparent' : C.gold,
+                color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                fontFamily: sans, marginLeft: 4,
+                textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                transition: 'all 0.2s',
+              }}
+            >
+              {reel.is_following ? 'Following' : 'Follow'}
+            </button>
+          )}
         </div>
         {reel.caption && (
           <p style={{ fontSize: 13, color: '#fff', margin: '0 0 6px', lineHeight: 1.4, textShadow: '0 1px 4px rgba(0,0,0,0.5)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -204,7 +220,45 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       </div>
 
       {/* Right sidebar — engagement buttons */}
-      <div style={{ position: 'absolute', right: 12, bottom: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 10 }}>
+      <div style={{ position: 'absolute', right: 12, bottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 10 }}>
+        {/* Creator avatar + follow badge */}
+        <div style={{ position: 'relative', marginBottom: 4 }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: '50%',
+            background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '2px solid #fff', fontSize: 18, fontWeight: 700, color: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}>
+            {(reel.author_name || '?').charAt(0).toUpperCase()}
+          </div>
+          {currentUser && reel.user_id !== currentUser.id && !reel.is_following && (
+            <button
+              onClick={function (e) { e.stopPropagation(); onFollow(reel.user_id, reel.id); }}
+              style={{
+                position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
+                width: 22, height: 22, borderRadius: '50%', border: '2px solid #fff',
+                background: C.gold, color: '#fff', fontSize: 14, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', lineHeight: 1, padding: 0,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+              }}
+            >
+              +
+            </button>
+          )}
+          {reel.is_following && (
+            <div style={{
+              position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
+              width: 22, height: 22, borderRadius: '50%', border: '2px solid #fff',
+              background: C.green, color: '#fff', fontSize: 10, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+            }}>
+              ✓
+            </div>
+          )}
+        </div>
         {/* Like */}
         <button onClick={function (e) { e.stopPropagation(); onLike(reel.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
           <div style={{
@@ -673,32 +727,61 @@ export default function CivicReels() {
 
   var loadReels = useCallback(async function (offset) {
     var from = offset || 0;
+
+    if (currentUser) {
+      // Use algorithm-based feed for logged-in users
+      var { data, error } = await supabase.rpc('get_reels_feed', { p_user_id: currentUser.id, p_limit: PAGE, p_offset: from });
+      if (data && !error) {
+        var enriched = data.map(function (r) {
+          return Object.assign({}, r, { video_url: r.cloudflare_playback_url });
+        });
+        if (from === 0) setReels(enriched);
+        else setReels(function (prev) { return prev.concat(enriched); });
+        setHasMore(data.length === PAGE);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Fallback: chronological for non-logged-in or if RPC fails
     var { data } = await supabase
       .from('civic_reels')
-      .select('*, users:user_id(full_name, username, identity_verified)')
+      .select('*, users:user_id(full_name, username, identity_verified, followers_count)')
       .eq('status', 'ready')
       .order('created_at', { ascending: false })
       .range(from, from + PAGE - 1);
 
     if (data) {
-      // Check if user has liked each reel
       var enriched = data.map(function (r) {
         return Object.assign({}, r, {
           author_name: r.users ? r.users.full_name : null,
           author_username: r.users ? r.users.username : null,
           author_verified: r.users ? r.users.identity_verified : false,
+          author_followers_count: r.users ? r.users.followers_count || 0 : 0,
           video_url: r.cloudflare_playback_url,
           user_liked: false,
+          is_following: false,
         });
       });
 
       if (currentUser) {
         var reelIds = enriched.map(function (r) { return r.id; });
+        var creatorIds = Array.from(new Set(enriched.map(function (r) { return r.user_id; })));
+
+        // Check likes
         var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
         if (likes) {
           var likedSet = {};
           likes.forEach(function (l) { likedSet[l.reel_id] = true; });
           enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likedSet[r.id] }); });
+        }
+
+        // Check follows
+        var { data: follows } = await supabase.from('user_follows').select('following_id').eq('follower_id', currentUser.id).in('following_id', creatorIds);
+        if (follows) {
+          var followSet = {};
+          follows.forEach(function (f) { followSet[f.following_id] = true; });
+          enriched = enriched.map(function (r) { return Object.assign({}, r, { is_following: !!followSet[r.user_id] }); });
         }
       }
 
@@ -776,6 +859,23 @@ export default function CivicReels() {
       await supabase.from('civic_reel_views').upsert({ reel_id: reelId, user_id: currentUser.id }, { onConflict: 'reel_id,user_id' });
     }
     supabase.rpc('increment_reel_views', { p_reel_id: reelId }).then(function () { });
+  }
+
+  async function handleFollow(targetUserId, reelId) {
+    if (!currentUser || targetUserId === currentUser.id) return;
+    var { data: isNowFollowing } = await supabase.rpc('toggle_follow', { p_follower: currentUser.id, p_following: targetUserId });
+    // Update all reels from this creator
+    setReels(function (prev) {
+      return prev.map(function (r) {
+        if (r.user_id !== targetUserId) return r;
+        return Object.assign({}, r, {
+          is_following: isNowFollowing,
+          author_followers_count: isNowFollowing
+            ? (r.author_followers_count || 0) + 1
+            : Math.max(0, (r.author_followers_count || 0) - 1)
+        });
+      });
+    });
   }
 
   function handleUploaded() {
@@ -868,6 +968,7 @@ export default function CivicReels() {
                   onComment={handleComment}
                   onShare={handleShare}
                   onView={handleView}
+                  onFollow={handleFollow}
                   index={i}
                 />
               </div>
