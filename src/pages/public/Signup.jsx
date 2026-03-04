@@ -40,29 +40,49 @@ export default function Signup() {
   var [checkingUsername, setCheckingUsername] = useState(false);
   var captchaRef = useRef(null);
   var turnstileWidgetId = useRef(null);
+  var rendered = useRef(false);
 
   // Load Turnstile script
   useEffect(function() {
     if (document.getElementById('turnstile-script')) return;
-    var s = document.createElement('script'); s.id = 'turnstile-script'; s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; s.async = true; document.head.appendChild(s);
+    var s = document.createElement('script'); s.id = 'turnstile-script'; s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit'; s.async = true; document.head.appendChild(s);
   }, []);
 
   // Render Turnstile widget when step 3 is reached
   useEffect(function() {
     if (step !== 3 || !captchaRef.current) return;
+    rendered.current = false;
     turnstileWidgetId.current = null;
+
+    function renderWidget() {
+      if (rendered.current || !window.turnstile || !captchaRef.current) return;
+      rendered.current = true;
+      turnstileWidgetId.current = window.turnstile.render(captchaRef.current, {
+        sitekey: TURNSTILE_SITEKEY,
+        callback: function(t) { setCaptchaToken(t); },
+        'expired-callback': function() { setCaptchaToken(''); },
+        'error-callback': function() { setCaptchaToken(''); },
+        theme: 'light'
+      });
+    }
+
+    // If script already loaded
+    if (window.turnstile) {
+      renderWidget();
+      return;
+    }
+
+    // Global callback for when script loads
+    window.onTurnstileLoad = function() { renderWidget(); };
+
+    // Fallback poll
     var interval = setInterval(function() {
-      if (window.turnstile && captchaRef.current && turnstileWidgetId.current === null) {
-        turnstileWidgetId.current = window.turnstile.render(captchaRef.current, {
-          sitekey: TURNSTILE_SITEKEY,
-          callback: function(t) { setCaptchaToken(t); },
-          'expired-callback': function() { setCaptchaToken(''); },
-          theme: 'light',
-          appearance: 'always'
-        });
+      if (window.turnstile && !rendered.current) {
+        renderWidget();
         clearInterval(interval);
       }
-    }, 200);
+    }, 500);
+
     return function() { clearInterval(interval); };
   }, [step]);
 
@@ -120,7 +140,9 @@ export default function Signup() {
     if (res.error) {
       setLoading(false);
       setCaptchaToken('');
-      if (window.turnstile && turnstileWidgetId.current !== null) window.turnstile.reset(turnstileWidgetId.current);
+      if (window.turnstile && turnstileWidgetId.current !== null) {
+        try { window.turnstile.reset(turnstileWidgetId.current); } catch(e) {}
+      }
       return setError(res.error.message);
     }
     if (res.data.user) {
@@ -183,8 +205,8 @@ export default function Signup() {
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}><div><label style={labelStyle}>Marital Status</label><Sel value={form.marital_status} field="marital_status" opts={MARITAL_OPTIONS}/></div><div><label style={labelStyle}>Party</label><Sel value={form.party} field="party" opts={PARTY_OPTIONS}/></div></div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}><div><label style={labelStyle}>Housing</label><Sel value={form.housing} field="housing" opts={HOUSING_OPTIONS}/></div><div style={{display:'flex',flexDirection:'column',gap:10,paddingTop:20}}><label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,color:'rgba(11,37,69,0.5)'}}><input type="checkbox" checked={form.voter_registered} onChange={function(e){update('voter_registered',e.target.checked)}} style={{accentColor:C.gold,width:16,height:16}}/> Registered Voter</label><label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,color:'rgba(11,37,69,0.5)'}}><input type="checkbox" checked={form.veteran} onChange={function(e){update('veteran',e.target.checked)}} style={{accentColor:C.gold,width:16,height:16}}/> Veteran</label></div></div>
 
-            {/* Turnstile — invisible for most users */}
-            <div style={{display:'flex',justifyContent:'center',marginBottom:16}}><div ref={captchaRef}></div></div>
+            {/* Turnstile widget */}
+            <div style={{display:'flex',justifyContent:'center',marginBottom:16,minHeight:65}}><div ref={captchaRef}></div></div>
 
             {/* Legal Consent Section (ICDPA Compliance) */}
             <div style={{background:'rgba(11,37,69,0.02)',border:'1px solid rgba(11,37,69,0.08)',borderRadius:12,padding:'16px 16px 12px',marginBottom:16}}>
