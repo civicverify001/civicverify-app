@@ -384,21 +384,21 @@ export default function CitizenLayout() {
           display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
           background: isReelsPage ? 'rgba(11,37,69,0.85)' : '#fff',
           borderTop: isReelsPage ? 'none' : '1px solid rgba(11,37,69,0.08)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0)',
+          paddingBottom: 'env(safe-area-inset-bottom, 8px)',
           backdropFilter: isReelsPage ? 'blur(12px)' : 'none',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: 56, maxWidth: 500, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: 64, maxWidth: 500, margin: '0 auto' }}>
             {tabItems.map(function (tab) {
               if (tab.to === 'MORE') {
                 var active = moreActive || showMore;
                 return (
                   <button key="more" onClick={function () { setShowMore(!showMore); }}
                     style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-                      background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', minWidth: 56,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                      background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', minWidth: 60,
                       color: active ? C.gold : (isReelsPage ? 'rgba(255,255,255,0.5)' : 'rgba(11,37,69,0.35)'), transition: 'color 0.2s',
                     }}>
-                    <Ico d={tab.icon} size={22} />
+                    <Ico d={tab.icon} size={24} />
                     <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
                   </button>
                 );
@@ -408,11 +408,11 @@ export default function CitizenLayout() {
                 <NavLink key={tab.to} to={tab.to} end={tab.end || false}
                   onClick={function () { setShowMore(false); }}
                   style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-                    textDecoration: 'none', padding: '4px 0', minWidth: 56,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                    textDecoration: 'none', padding: '6px 0', minWidth: 60,
                     color: tabActive ? C.gold : (isReelsPage ? 'rgba(255,255,255,0.5)' : 'rgba(11,37,69,0.35)'), transition: 'color 0.2s',
                   }}>
-                  <Ico d={tab.icon} size={22} />
+                  <Ico d={tab.icon} size={24} />
                   <span style={{ fontSize: 10, fontWeight: tabActive ? 700 : 500 }}>{tab.label}</span>
                 </NavLink>
               );
@@ -426,7 +426,7 @@ export default function CitizenLayout() {
             {/* Backdrop */}
             <div onClick={function () { setShowMore(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 45 }} />
             <div style={{
-              position: 'fixed', bottom: 56, left: 0, right: 0, zIndex: 46,
+              position: 'fixed', bottom: 64, left: 0, right: 0, zIndex: 46,
               background: '#fff', borderRadius: '20px 20px 0 0',
               paddingBottom: 'env(safe-area-inset-bottom, 8px)',
               boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
@@ -544,7 +544,7 @@ export default function CitizenLayout() {
           .cv-main { margin-left: 0 !important; }\
           .cv-bottom-tabs { display: block !important; }\
           .cv-more-sheet { display: block !important; }\
-          .cv-content-inner { padding: ' + (isReelsPage ? '0 !important; height: calc(100vh - 56px - env(safe-area-inset-bottom, 0px))' : '16px 14px 76px !important') + '; }\
+          .cv-content-inner { padding: ' + (isReelsPage ? '0 !important; height: calc(100vh - 64px - env(safe-area-inset-bottom, 8px))' : '16px 14px 86px !important') + '; }\
         }\
       '}</style>
     </div>
