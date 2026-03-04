@@ -44,7 +44,7 @@ export default function Login() {
           callback: function(token) { setCaptchaToken(token); },
           'expired-callback': function() { setCaptchaToken(''); },
           theme: 'light',
-          appearance: 'interaction-only'
+          appearance: 'always'
         });
         clearInterval(interval);
       }
