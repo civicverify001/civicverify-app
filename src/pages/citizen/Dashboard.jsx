@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
+import { InstallAppCard } from '../../components/PWAInstall';
 
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#C0392B', green: '#1A7A3C', purple: '#6D28D9' };
 var font = 'Libre Baskerville, Georgia, serif';
