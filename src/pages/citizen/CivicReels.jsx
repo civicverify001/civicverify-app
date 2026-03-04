@@ -538,7 +538,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
         await supabase.from('community_posts').insert({
           user_id: currentUser.id,
           content: (caption.trim() || 'Shared a CivicReel') + (parsedTags.length > 0 ? ' ' + parsedTags.map(function (t) { return '#' + t; }).join(' ') : ''),
-          image_url: videoUrl,
+          video_url: videoUrl,
         });
       }
 
