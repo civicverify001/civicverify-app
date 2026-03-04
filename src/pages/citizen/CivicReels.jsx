@@ -197,7 +197,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
         <button
           className="cv-reel-delete-btn"
           onClick={function (e) { e.stopPropagation(); if (window.confirm('Delete this reel? This cannot be undone.')) onDelete(reel.id); }}
-          style={{ position: 'absolute', top: 100, right: 14, zIndex: 15, width: 38, height: 38, borderRadius: '50%', background: 'rgba(239,68,68,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', transition: 'all 0.2s' }}>
+          style={{ position: 'absolute', top: 150, right: 14, zIndex: 25, width: 38, height: 38, borderRadius: '50%', background: 'rgba(239,68,68,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', transition: 'all 0.2s' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
           </svg>
@@ -206,7 +206,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
 
       {/* Stats banner for own reels */}
       {currentUser && reel.user_id === currentUser.id && (
-        <div className="cv-reel-stats" style={{ position: 'absolute', top: 100, left: 14, right: 60, zIndex: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="cv-reel-stats" style={{ position: 'absolute', top: 150, left: 14, right: 60, zIndex: 25, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 6, padding: '5px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>❤️ {formatCount(reel.likes_count)}</span>
             <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
@@ -1057,13 +1057,12 @@ export default function CivicReels() {
         .cv-reel-card { scroll-snap-align: start; scroll-snap-stop: always; }
 
         /* ── DESKTOP: fixed, offset past sidebar ──────────────────────── */
-        /* Using position:fixed bypasses the height-inheritance chain entirely.
-           margin-left:240px in .cv-main means sidebar is always 240px wide. */
         .cv-reels-container {
           position: fixed !important;
           top: 0; right: 0; bottom: 0;
           left: 240px;
           height: 100vh !important;
+          height: 100svh !important;
           border-radius: 0;
           z-index: 20;
         }
@@ -1072,6 +1071,9 @@ export default function CivicReels() {
         @media (max-width: 768px) {
           .cv-reels-container {
             left: 0 !important;
+            /* svh = small viewport = visible area when Safari toolbar IS shown */
+            height: 100vh !important;
+            height: 100svh !important;
           }
 
           /* Author info: clear tab bar (56px) + safe area */
@@ -1084,16 +1086,16 @@ export default function CivicReels() {
             bottom: calc(116px + env(safe-area-inset-bottom, 0px)) !important;
           }
 
-          /* Top overlay: clear notch / Dynamic Island */
+          /* Top overlay: safe-area handled inline via calc() */
           .cv-reel-top-overlay {
-            padding-top: env(safe-area-inset-top, 0px) !important;
+            padding-top: 0 !important;
           }
         }
       `}</style>
 
       {/* Top overlay — tabs + search + upload button */}
       <div className="cv-reel-top-overlay" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, background: 'linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 70%, transparent 100%)', pointerEvents: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 0', pointerEvents: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'calc(env(safe-area-inset-top, 0px) + 14px) 16px 0', pointerEvents: 'auto' }}>
           <div style={{ width: 36 }} />
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -1176,7 +1178,7 @@ export default function CivicReels() {
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'scroll', scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
           {reels.map(function (reel, i) {
             return (
-              <div key={reel.id} data-index={i} className="cv-reel-card" style={{ height: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
+              <div key={reel.id} data-index={i} className="cv-reel-card" style={{ height: '100svh', minHeight: '100vh', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
                 <ReelCard reel={reel} isVisible={i === visibleIndex} currentUser={currentUser}
                   onLike={handleLike} onComment={handleComment} onShare={handleShare} onView={handleView}
                   onFollow={handleFollow} onSave={handleSave} onDelete={handleDelete} index={i} />
