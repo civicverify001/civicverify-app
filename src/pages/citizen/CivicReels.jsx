@@ -1027,7 +1027,7 @@ export default function CivicReels() {
   function handleUploaded() { setShowUpload(false); loadReels(0); }
 
   if (loading && reels.length === 0) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#000' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', background: '#000' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontFamily: sans }}>Loading CivicReels...</p>
@@ -1036,24 +1036,21 @@ export default function CivicReels() {
   );
 
   return (
-    <div className="cv-reels-container" style={{ width: '100%', height: 'calc(100vh - 60px)', position: 'relative', background: '#000', overflow: 'hidden' }}>
+    <div className="cv-reels-container" style={{ width: '100%', height: '100%', position: 'relative', background: '#000', overflow: 'hidden' }}>
       <style>{'\
         @keyframes spin{to{transform:rotate(360deg)}}\
         @keyframes heartBurst{0%{transform:scale(0);opacity:1}50%{transform:scale(1.2);opacity:0.8}100%{transform:scale(1);opacity:0}}\
         @keyframes slideSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}\
         @keyframes liveDot{0%,100%{opacity:1}50%{opacity:0.3}}\
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}\
-        @media (max-width: 768px) {\
-          .cv-reels-container { height: 100vh !important; height: 100dvh !important; padding-bottom: calc(64px + env(safe-area-inset-bottom, 8px)) !important; }\
-          .cv-reels-feed { scroll-snap-type: y mandatory !important; -webkit-overflow-scrolling: touch !important; overscroll-behavior-y: contain !important; }\
-          .cv-reels-feed::-webkit-scrollbar { display: none; }\
-          .cv-reel-card { scroll-snap-align: start !important; scroll-snap-stop: always !important; }\
-        }\
+        .cv-reels-feed { scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }\
+        .cv-reels-feed::-webkit-scrollbar { display: none; }\
+        .cv-reel-card { scroll-snap-align: start; scroll-snap-stop: always; }\
       '}</style>
 
-      {/* TikTok-style transparent top overlay */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)', paddingTop: 'env(safe-area-inset-top, 10px)', pointerEvents: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px 0', pointerEvents: 'auto' }}>
+      {/* Top overlay — search + tabs */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 70%, transparent 100%)', pointerEvents: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 0', pointerEvents: 'auto' }}>
           <div style={{ width: 36 }} />
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -1093,21 +1090,21 @@ export default function CivicReels() {
             );
           })}
         </div>
-      </div>
 
-      {/* V2: Trending hashtags bar */}
-      {visibleIndex === 0 && !searchTag && feedMode === 'foryou' && (
-        <div style={{ position: 'absolute', top: 90, left: 0, right: 0, zIndex: 15, padding: '0 16px', display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch', pointerEvents: 'auto' }}>
-          {TRENDING_TAGS.map(function (tag) {
-            return (
-              <button key={tag} onClick={function () { setSearchTag(tag); }}
-                style={{ flexShrink: 0, padding: '5px 14px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: sans, whiteSpace: 'nowrap' }}>
-                #{tag}
-              </button>
-            );
-          })}
-        </div>
-      )}
+        {/* Trending hashtags — inside overlay, below tabs */}
+        {!searchTag && feedMode === 'foryou' && (
+          <div style={{ padding: '2px 16px 6px', display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch', pointerEvents: 'auto' }}>
+            {TRENDING_TAGS.map(function (tag) {
+              return (
+                <button key={tag} onClick={function () { setSearchTag(tag); }}
+                  style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: sans, whiteSpace: 'nowrap' }}>
+                  #{tag}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Feed */}
       {reels.length === 0 && !loading ? (
