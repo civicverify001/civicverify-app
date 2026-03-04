@@ -1,14 +1,11 @@
-
 import CanonicalUrl from '../../components/CanonicalUrl'
 
-// Inside return(), first line:
-<CanonicalUrl />
-// src/pages/public/Login.jsx — With hCaptcha integration
+// src/pages/public/Login.jsx — With Cloudflare Turnstile integration
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 
-var HCAPTCHA_SITEKEY = 'a5ce465a-2468-4390-a696-c932b792aff6';
+var TURNSTILE_SITEKEY = '0x4AAAAAACmS3nBa0g7P2Rba';
 var C = { navy: '#0B2545', gold: '#C5960C', cream: '#F5F1EC', red: '#B8352E', green: '#22863A' };
 var font = 'Libre Baskerville, Georgia, serif';
 var inputStyle = { width: '100%', padding: '12px 16px', fontSize: 14, border: '1px solid rgba(11,37,69,0.1)', borderRadius: 10, outline: 'none', color: '#0B2545', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' };
@@ -28,22 +25,26 @@ export default function Login() {
 
   var justRegistered = searchParams.get('registered') === 'true';
 
+  // Load Turnstile script
   useEffect(function() {
-    if (document.getElementById('hcaptcha-script')) return;
+    if (document.getElementById('turnstile-script')) return;
     var s = document.createElement('script');
-    s.id = 'hcaptcha-script';
-    s.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
+    s.id = 'turnstile-script';
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     s.async = true;
     document.head.appendChild(s);
   }, []);
 
+  // Render Turnstile widget
   useEffect(function() {
     var interval = setInterval(function() {
-      if (window.hcaptcha && captchaRef.current && widgetId.current === null) {
-        widgetId.current = window.hcaptcha.render(captchaRef.current, {
-          sitekey: HCAPTCHA_SITEKEY,
+      if (window.turnstile && captchaRef.current && widgetId.current === null) {
+        widgetId.current = window.turnstile.render(captchaRef.current, {
+          sitekey: TURNSTILE_SITEKEY,
           callback: function(token) { setCaptchaToken(token); },
-          'expired-callback': function() { setCaptchaToken(''); }
+          'expired-callback': function() { setCaptchaToken(''); },
+          theme: 'light',
+          appearance: 'interaction-only'
         });
         clearInterval(interval);
       }
@@ -55,14 +56,14 @@ export default function Login() {
     if (e) e.preventDefault();
     if (!email.trim()) return setError('Email is required');
     if (!password) return setError('Password is required');
-    if (!captchaToken) return setError('Please complete the captcha');
+    if (!captchaToken) return setError('Please wait for security check to complete');
     setLoading(true);
     setError('');
     var res = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: password, options: { captchaToken: captchaToken } });
     if (res.error) {
       setLoading(false);
       setCaptchaToken('');
-      if (window.hcaptcha && widgetId.current !== null) window.hcaptcha.reset(widgetId.current);
+      if (window.turnstile && widgetId.current !== null) window.turnstile.reset(widgetId.current);
       return setError(res.error.message);
     }
     // Fetch role and redirect
@@ -76,6 +77,7 @@ export default function Login() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, ' + C.cream + ' 0%, #fff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', fontFamily: 'DM Sans, -apple-system, sans-serif' }}>
+      <CanonicalUrl />
       <div style={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -120,7 +122,7 @@ export default function Login() {
             </div>
           </div>
 
-          {/* hCaptcha */}
+          {/* Turnstile — invisible for most users */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
             <div ref={captchaRef}></div>
           </div>
