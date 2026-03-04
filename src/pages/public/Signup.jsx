@@ -58,7 +58,7 @@ export default function Signup() {
           callback: function(t) { setCaptchaToken(t); },
           'expired-callback': function() { setCaptchaToken(''); },
           theme: 'light',
-          appearance: 'interaction-only'
+          appearance: 'always'
         });
         clearInterval(interval);
       }
