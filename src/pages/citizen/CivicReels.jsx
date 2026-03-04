@@ -834,27 +834,7 @@ export default function CivicReels() {
       return;
     }
 
-    if (currentUser) {
-      var { data, error } = await supabase.rpc('get_reels_feed', { p_user_id: currentUser.id, p_limit: PAGE, p_offset: from });
-      if (data && !error) {
-        var enriched = data.map(function (r) {
-          return Object.assign({}, r, { video_url: r.cloudflare_playback_url, user_saved: false });
-        });
-        var rpcReelIds = enriched.map(function (r) { return r.id; });
-        var { data: rpcSaves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', rpcReelIds);
-        if (rpcSaves) {
-          var rpcSaveSet = {};
-          rpcSaves.forEach(function (s) { rpcSaveSet[s.reel_id] = true; });
-          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!rpcSaveSet[r.id] }); });
-        }
-        if (from === 0) setReels(enriched); else setReels(function (prev) { return prev.concat(enriched); });
-        setHasMore(data.length === PAGE);
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Fallback: chronological
+    // Direct query — For You feed sorted by most recent
     var { data } = await supabase
       .from('civic_reels')
       .select('*, users:user_id(full_name, username, identity_verified, followers_count)')
