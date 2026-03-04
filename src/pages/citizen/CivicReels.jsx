@@ -1008,7 +1008,7 @@ export default function CivicReels() {
   function handleUploaded() { setShowUpload(false); loadReels(0); }
 
   if (loading && reels.length === 0) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', background: '#000' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 120px)', background: '#000', borderRadius: 12 }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, border: '3px solid ' + C.gold, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontFamily: sans }}>Loading CivicReels...</p>
@@ -1017,7 +1017,7 @@ export default function CivicReels() {
   );
 
   return (
-    <div className="cv-reels-container" style={{ width: '100%', height: '100%', position: 'relative', background: '#000', overflow: 'hidden' }}>
+    <div className="cv-reels-container" style={{ width: '100%', height: 'calc(100vh - 120px)', position: 'relative', background: '#000', overflow: 'hidden', borderRadius: 12 }}>
       <style>{'\
         @keyframes spin{to{transform:rotate(360deg)}}\
         @keyframes heartBurst{0%{transform:scale(0);opacity:1}50%{transform:scale(1.2);opacity:0.8}100%{transform:scale(1);opacity:0}}\
@@ -1027,6 +1027,9 @@ export default function CivicReels() {
         .cv-reels-feed { scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }\
         .cv-reels-feed::-webkit-scrollbar { display: none; }\
         .cv-reel-card { scroll-snap-align: start; scroll-snap-stop: always; }\
+        @media (max-width: 768px) {\
+          .cv-reels-container { height: calc(100vh - 64px - env(safe-area-inset-bottom, 8px)) !important; border-radius: 0 !important; }\
+        }\
       '}</style>
 
       {/* Top overlay — search + tabs */}
