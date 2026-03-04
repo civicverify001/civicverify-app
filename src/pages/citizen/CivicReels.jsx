@@ -736,6 +736,7 @@ export default function CivicReels() {
   var [visibleIndex, setVisibleIndex] = useState(0);
   var [showUpload, setShowUpload] = useState(false);
   var [hasMore, setHasMore] = useState(true);
+  var [feedMode, setFeedMode] = useState('foryou'); // 'foryou' or 'saved'
   var feedRef = useRef(null);
   var observerRef = useRef(null);
 
@@ -822,8 +823,6 @@ export default function CivicReels() {
     setLoading(false);
   }, [currentUser]);
 
-  useEffect(function () { loadReels(0); }, [loadReels]);
-
   // Intersection observer for autoplay
   useEffect(function () {
     if (!feedRef.current) return;
@@ -835,7 +834,8 @@ export default function CivicReels() {
           setVisibleIndex(idx);
           // Load more when near end
           if (idx >= reels.length - 2 && hasMore) {
-            loadReels(reels.length);
+            if (feedMode === 'saved') loadSavedReels(reels.length);
+            else loadReels(reels.length);
           }
         }
       });
@@ -844,7 +844,7 @@ export default function CivicReels() {
     var cards = feedRef.current.querySelectorAll('[data-index]');
     cards.forEach(function (card) { observer.observe(card); });
     return function () { observer.disconnect(); };
-  }, [reels.length, hasMore]);
+  }, [reels.length, hasMore, feedMode]);
 
   async function handleLike(reelId) {
     if (!currentUser) return;
@@ -913,18 +913,75 @@ export default function CivicReels() {
     var reel = reels.find(function (r) { return r.id === reelId; });
     var isSaved = reel && reel.user_saved;
     // Optimistic update
-    setReels(function (prev) {
-      return prev.map(function (r) {
-        if (r.id !== reelId) return r;
-        return Object.assign({}, r, { user_saved: !isSaved });
+    if (isSaved && feedMode === 'saved') {
+      // Remove from saved feed
+      setReels(function (prev) { return prev.filter(function (r) { return r.id !== reelId; }); });
+    } else {
+      setReels(function (prev) {
+        return prev.map(function (r) {
+          if (r.id !== reelId) return r;
+          return Object.assign({}, r, { user_saved: !isSaved });
+        });
       });
-    });
+    }
     if (isSaved) {
       await supabase.from('civic_reel_saves').delete().eq('reel_id', reelId).eq('user_id', currentUser.id);
     } else {
       await supabase.from('civic_reel_saves').upsert({ reel_id: reelId, user_id: currentUser.id }, { onConflict: 'reel_id,user_id' });
     }
   }
+
+  var loadSavedReels = useCallback(async function (offset) {
+    if (!currentUser) return;
+    setLoading(true);
+    var from = offset || 0;
+    var { data } = await supabase
+      .from('civic_reel_saves')
+      .select('reel_id, civic_reels:reel_id(*, users:user_id(full_name, username, identity_verified, followers_count))')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE - 1);
+
+    if (data) {
+      var enriched = data
+        .filter(function (s) { return s.civic_reels; })
+        .map(function (s) {
+          var r = s.civic_reels;
+          return Object.assign({}, r, {
+            author_name: r.users ? r.users.full_name : null,
+            author_username: r.users ? r.users.username : null,
+            author_verified: r.users ? r.users.identity_verified : false,
+            author_followers_count: r.users ? r.users.followers_count || 0 : 0,
+            video_url: r.cloudflare_playback_url,
+            user_saved: true,
+          });
+        });
+
+      // Check likes
+      var reelIds = enriched.map(function (r) { return r.id; });
+      if (reelIds.length > 0) {
+        var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
+        if (likes) {
+          var likeSet = {};
+          likes.forEach(function (l) { likeSet[l.reel_id] = true; });
+          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); });
+        }
+      }
+
+      if (from === 0) setReels(enriched);
+      else setReels(function (prev) { return prev.concat(enriched); });
+      setHasMore(data.length === PAGE);
+    }
+    setLoading(false);
+  }, [currentUser]);
+
+  // Switch feed when mode changes
+  useEffect(function () {
+    setReels([]);
+    setVisibleIndex(0);
+    if (feedMode === 'saved') loadSavedReels(0);
+    else loadReels(0);
+  }, [feedMode, loadReels, loadSavedReels]);
 
   function handleUploaded() {
     setShowUpload(false);
@@ -969,38 +1026,77 @@ export default function CivicReels() {
 
       {/* Top bar */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)',
+        display: 'flex', flexDirection: 'column',
+        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)',
         position: 'relative', zIndex: 20,
       }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, fontFamily: serif }}>
-          Civic<span style={{ color: C.gold }}>Reels</span>
-        </h1>
-        {profile && profile.identity_verified && (
-          <button
-            onClick={function () { setShowUpload(true); }}
-            style={{
-              padding: '8px 18px', borderRadius: 20, border: 'none', fontSize: 13, fontWeight: 700,
-              background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
-              color: '#fff', cursor: 'pointer', fontFamily: sans,
-              boxShadow: '0 2px 12px rgba(197,150,12,0.4)',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
-          >
-            <span style={{ fontSize: 16 }}>+</span> Create
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 0' }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, fontFamily: serif }}>
+            Civic<span style={{ color: C.gold }}>Reels</span>
+          </h1>
+          {profile && profile.identity_verified && (
+            <button
+              onClick={function () { setShowUpload(true); }}
+              style={{
+                padding: '8px 18px', borderRadius: 20, border: 'none', fontSize: 13, fontWeight: 700,
+                background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
+                color: '#fff', cursor: 'pointer', fontFamily: sans,
+                boxShadow: '0 2px 12px rgba(197,150,12,0.4)',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span style={{ fontSize: 16 }}>+</span> Create
+            </button>
+          )}
+        </div>
+        {/* Feed tabs */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, padding: '10px 0 0' }}>
+          {[{ key: 'foryou', label: 'For You' }, { key: 'saved', label: 'Saved' }].map(function (tab) {
+            var isActive = feedMode === tab.key;
+            return (
+              <button key={tab.key} onClick={function () { setFeedMode(tab.key); }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
+                  fontSize: 14, fontWeight: isActive ? 700 : 500,
+                  paddingBottom: 8, fontFamily: sans,
+                  borderBottom: isActive ? '2px solid ' + C.gold : '2px solid transparent',
+                  transition: 'all 0.2s',
+                }}>
+                {tab.key === 'saved' && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: -2, marginRight: 4 }}>
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                  </svg>
+                )}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Feed */}
-      {reels.length === 0 ? (
+      {reels.length === 0 && !loading ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 24 }}>
           <div style={{ width: 80, height: 80, borderRadius: 24, background: 'rgba(197,150,12,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 40 }}>🎬</span>
+            <span style={{ fontSize: 40 }}>{feedMode === 'saved' ? '🔖' : '🎬'}</span>
           </div>
-          <p style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, textAlign: 'center', fontFamily: serif }}>No reels yet</p>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0, textAlign: 'center' }}>Be the first to share a CivicReel!</p>
-          {profile && profile.identity_verified && (
+          <p style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, textAlign: 'center', fontFamily: serif }}>
+            {feedMode === 'saved' ? 'No saved reels' : 'No reels yet'}
+          </p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0, textAlign: 'center' }}>
+            {feedMode === 'saved' ? 'Tap the bookmark icon on any reel to save it here' : 'Be the first to share a CivicReel!'}
+          </p>
+          {feedMode === 'saved' ? (
+            <button onClick={function () { setFeedMode('foryou'); }} style={{
+              padding: '12px 28px', borderRadius: 14, border: 'none', fontSize: 14, fontWeight: 700,
+              background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')',
+              color: '#fff', cursor: 'pointer', fontFamily: sans,
+              boxShadow: '0 4px 20px rgba(197,150,12,0.4)',
+            }}>
+              Browse Reels
+            </button>
+          ) : profile && profile.identity_verified && (
             <button
               onClick={function () { setShowUpload(true); }}
               style={{
