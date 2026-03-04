@@ -1,6 +1,6 @@
-// src/pages/citizen/CitizenLayout.jsx
+// src/pages/citizen/CitizenLayout.jsx — Native app feel with bottom tab bar
 import { useState, useEffect, useRef } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
 import PushPrompt from '../../components/PushPrompt';
@@ -20,6 +20,15 @@ var links = [
   { to: '/citizen/impact', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', label: 'My Impact' },
   { to: '/citizen/my-data', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', label: 'My Data' },
   { to: '/citizen/account', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', label: 'Account' },
+];
+
+// Bottom tab bar items (5 most important — mobile only)
+var tabItems = [
+  { to: '/citizen', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4', label: 'Home', end: true },
+  { to: '/citizen/surveys', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', label: 'Polls' },
+  { to: '/citizen/reels', icon: 'M23 7l-7 5 7 5V7zM1 4.5h14v15H1z', label: 'Reels' },
+  { to: '/citizen/community', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', label: 'Community' },
+  { to: 'MORE', icon: 'M4 6h16M4 12h16M4 18h16', label: 'More' },
 ];
 
 function Ico({ d, size }) {
@@ -117,7 +126,6 @@ function NotificationBell({ userId, inSidebar }) {
     return Math.floor(s / 86400) + 'd';
   }
 
-  // Dropdown position: in sidebar → float to the right; in mobile header → drop down
   var dropdownStyle = inSidebar
     ? { position: 'fixed', top: 60, left: 250, width: 320, zIndex: 1000 }
     : { position: 'absolute', top: 46, right: 0, width: 320, zIndex: 100 };
@@ -191,7 +199,9 @@ function NotificationBell({ userId, inSidebar }) {
 
 export default function CitizenLayout() {
   var [open, setOpen] = useState(false);
+  var [showMore, setShowMore] = useState(false);
   var navigate = useNavigate();
+  var location = useLocation();
   var auth = useAuth();
   var profile = auth.profile;
   var user = auth.user;
@@ -200,6 +210,9 @@ export default function CitizenLayout() {
   useEffect(function() {
     if (user) fetchUnreadDMs();
   }, [user]);
+
+  // Close more sheet on navigation
+  useEffect(function () { setShowMore(false); setOpen(false); }, [location.pathname]);
 
   async function fetchUnreadDMs() {
     var { count } = await supabase.from('direct_messages')
@@ -216,12 +229,32 @@ export default function CitizenLayout() {
   var activeStyle = { background: 'rgba(197,150,12,0.12)', color: C.gold, fontWeight: 700 };
   var normalStyle = { color: 'rgba(255,255,255,0.45)' };
 
+  // Check if current path matches a tab
+  function isTabActive(to) {
+    if (to === '/citizen') return location.pathname === '/citizen';
+    return location.pathname.startsWith(to);
+  }
+
+  // More sheet items = links NOT in the bottom tab bar
+  var moreLinks = links.filter(function (link) {
+    return !tabItems.some(function (t) { return t.to === link.to; });
+  });
+
+  // Is the "More" section active?
+  var moreActive = moreLinks.some(function (link) {
+    if (link.end) return location.pathname === link.to;
+    return location.pathname === link.to || location.pathname.startsWith(link.to + '/');
+  }) || location.pathname.startsWith('/citizen/profile/');
+
+  // Hide bottom bar + top bar on reels for immersive experience
+  var isReelsPage = location.pathname === '/citizen/reels';
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: sans }}>
       {/* Mobile overlay */}
       {open && <div onClick={function(){setOpen(false)}} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />}
 
-      {/* Sidebar */}
+      {/* ═══════════════ DESKTOP SIDEBAR (preserved exactly) ═══════════════ */}
       <aside style={{
         width: 240, background: 'linear-gradient(180deg, #0B2545 0%, #0d2e55 100%)',
         position: 'fixed', top: 0, bottom: 0, left: open ? 0 : -260, zIndex: 50,
@@ -320,19 +353,15 @@ export default function CitizenLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
-      <div style={{ flex: 1, marginLeft: 0, minWidth: 0 }} className="cv-main">
-        {/* Mobile header */}
+      {/* ═══════════════ MAIN CONTENT ═══════════════ */}
+      <div style={{ flex: 1, marginLeft: 0, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: '100vh' }} className="cv-main">
+        {/* Mobile top bar — clean, no hamburger (bottom tabs handle nav) */}
         <header className="cv-mobile-header" style={{
           display: 'none', position: 'sticky', top: 0, zIndex: 30,
-          background: C.navy, padding: '10px 14px', alignItems: 'center', justifyContent: 'space-between',
+          background: C.navy, padding: '0 14px', height: 52,
+          alignItems: 'center', justifyContent: 'space-between',
           boxShadow: '0 2px 8px rgba(11,37,69,0.15)',
         }}>
-          <button onClick={function(){setOpen(true)}} style={{
-            width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,0.08)',
-            border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>☰</button>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>
             Civic<span style={{ color: C.gold }}>Verify</span>
           </span>
@@ -342,22 +371,178 @@ export default function CitizenLayout() {
           </div>
         </header>
 
-        <div style={{ padding: '28px 32px' }}>
-          <PushPrompt userId={user?.id} />
-          <Outlet />
+        {/* Page content */}
+        <div style={{ flex: 1 }} className="cv-page-content">
+          <div className="cv-content-inner" style={{ padding: '28px 32px' }}>
+            <PushPrompt userId={user?.id} />
+            <Outlet />
+          </div>
         </div>
+
+        {/* ═══════════════ MOBILE BOTTOM TAB BAR ═══════════════ */}
+        <nav className="cv-bottom-tabs" style={{
+          display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
+          background: '#fff', borderTop: '1px solid rgba(11,37,69,0.08)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: 56, maxWidth: 500, margin: '0 auto' }}>
+            {tabItems.map(function (tab) {
+              if (tab.to === 'MORE') {
+                var active = moreActive || showMore;
+                return (
+                  <button key="more" onClick={function () { setShowMore(!showMore); }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                      background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', minWidth: 56,
+                      color: active ? C.gold : 'rgba(11,37,69,0.35)', transition: 'color 0.2s',
+                    }}>
+                    <Ico d={tab.icon} size={22} />
+                    <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
+                  </button>
+                );
+              }
+              var tabActive = isTabActive(tab.to);
+              return (
+                <NavLink key={tab.to} to={tab.to} end={tab.end || false}
+                  onClick={function () { setShowMore(false); }}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                    textDecoration: 'none', padding: '4px 0', minWidth: 56,
+                    color: tabActive ? C.gold : 'rgba(11,37,69,0.35)', transition: 'color 0.2s',
+                  }}>
+                  <Ico d={tab.icon} size={22} />
+                  <span style={{ fontSize: 10, fontWeight: tabActive ? 700 : 500 }}>{tab.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* ═══════════════ "MORE" BOTTOM SHEET ═══════════════ */}
+        {showMore && (
+          <div className="cv-more-sheet" style={{ display: 'none' }}>
+            {/* Backdrop */}
+            <div onClick={function () { setShowMore(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 45 }} />
+            <div style={{
+              position: 'fixed', bottom: 56, left: 0, right: 0, zIndex: 46,
+              background: '#fff', borderRadius: '20px 20px 0 0',
+              paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+              boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+              animation: 'cvSlideUp 0.25s ease',
+              maxHeight: '65vh', overflowY: 'auto',
+            }}>
+              {/* Handle bar */}
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(11,37,69,0.12)' }} />
+              </div>
+
+              {/* User card — tappable to profile */}
+              <div onClick={function () { if (user) { navigate('/citizen/profile/' + user.id); setShowMore(false); } }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px 16px', borderBottom: '1px solid rgba(11,37,69,0.06)', cursor: 'pointer' }}>
+                <Avatar name={profile?.full_name} url={profile?.avatar_url} size={44} verified={profile?.identity_verified || profile?.is_verified} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: 0 }}>{profile ? profile.full_name : '...'}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {profile && profile.username && <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.4)' }}>@{profile.username}</span>}
+                    <span style={{ fontSize: 10, fontWeight: 700, color: (profile && (profile.identity_verified || profile.is_verified)) ? '#16a34a' : '#f59e0b', textTransform: 'uppercase' }}>
+                      {(profile && (profile.identity_verified || profile.is_verified)) ? '✓ Verified' : 'Unverified'}
+                    </span>
+                  </div>
+                </div>
+                <span style={{ color: 'rgba(11,37,69,0.2)', fontSize: 18 }}>›</span>
+              </div>
+
+              {/* Links grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: '12px 12px' }}>
+                {moreLinks.map(function (link) {
+                  var active = link.end ? location.pathname === link.to : location.pathname.startsWith(link.to);
+                  var isMessages = link.label === 'Messages';
+                  return (
+                    <NavLink key={link.to} to={link.to} end={link.end || false}
+                      onClick={function () { setShowMore(false); }}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        textDecoration: 'none', padding: '16px 8px', borderRadius: 16,
+                        background: active ? 'rgba(197,150,12,0.08)' : 'rgba(11,37,69,0.02)',
+                        color: active ? C.gold : 'rgba(11,37,69,0.6)',
+                        transition: 'all 0.2s', position: 'relative',
+                      }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 14, position: 'relative',
+                        background: active ? 'rgba(197,150,12,0.12)' : 'rgba(11,37,69,0.04)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: active ? C.gold : 'rgba(11,37,69,0.45)',
+                      }}>
+                        <Ico d={link.icon} size={20} />
+                        {isMessages && unreadDMs > 0 && (
+                          <span style={{
+                            position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
+                            borderRadius: 8, background: '#ef4444', color: '#fff',
+                            fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', padding: '0 4px',
+                          }}>{unreadDMs}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, textAlign: 'center' }}>{link.label}</span>
+                    </NavLink>
+                  );
+                })}
+                {/* My Profile in grid */}
+                {user && (
+                  <NavLink to={'/citizen/profile/' + user.id}
+                    onClick={function () { setShowMore(false); }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      textDecoration: 'none', padding: '16px 8px', borderRadius: 16,
+                      background: location.pathname.startsWith('/citizen/profile/') ? 'rgba(197,150,12,0.08)' : 'rgba(11,37,69,0.02)',
+                      color: location.pathname.startsWith('/citizen/profile/') ? C.gold : 'rgba(11,37,69,0.6)',
+                      transition: 'all 0.2s',
+                    }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 14,
+                      background: location.pathname.startsWith('/citizen/profile/') ? 'rgba(197,150,12,0.12)' : 'rgba(11,37,69,0.04)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: location.pathname.startsWith('/citizen/profile/') ? C.gold : 'rgba(11,37,69,0.45)',
+                    }}>
+                      <Ico d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" size={20} />
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: location.pathname.startsWith('/citizen/profile/') ? 700 : 500, textAlign: 'center' }}>My Profile</span>
+                  </NavLink>
+                )}
+              </div>
+
+              {/* Sign out */}
+              <div style={{ padding: '8px 16px 16px' }}>
+                <button onClick={logout} style={{
+                  width: '100%', padding: '13px', borderRadius: 14, border: 'none',
+                  background: 'rgba(239,68,68,0.06)', color: '#ef4444',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans,
+                }}>
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* ═══════════════ RESPONSIVE STYLES ═══════════════ */}
       <style>{'\
+        @keyframes cvSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}\
         @media (min-width: 769px) {\
           .cv-sidebar { left: 0 !important; }\
           .cv-main { margin-left: 240px !important; }\
           .cv-mobile-header { display: none !important; }\
+          .cv-bottom-tabs { display: none !important; }\
+          .cv-more-sheet { display: none !important; }\
         }\
         @media (max-width: 768px) {\
-          .cv-mobile-header { display: flex !important; }\
+          .cv-mobile-header { display: ' + (isReelsPage ? 'none' : 'flex') + ' !important; }\
           .cv-close-btn { display: flex !important; }\
           .cv-main { margin-left: 0 !important; }\
+          .cv-bottom-tabs { display: ' + (isReelsPage ? 'none' : 'block') + ' !important; }\
+          .cv-more-sheet { display: block !important; }\
+          .cv-content-inner { padding: ' + (isReelsPage ? '0' : '16px 14px 76px') + ' !important; }\
         }\
       '}</style>
     </div>
