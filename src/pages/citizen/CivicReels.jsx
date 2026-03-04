@@ -158,7 +158,7 @@ export default function CivicReels() {
 
     // Track view
     if (reels[activeIndex]) {
-      supabase.rpc('increment_reel_views', { p_reel_id: reels[activeIndex].id }).catch(function () {});
+      supabase.rpc('increment_reel_views', { p_reel_id: reels[activeIndex].id }).then(function () {});
     }
   }, [activeIndex, reels]);
 
@@ -176,7 +176,7 @@ export default function CivicReels() {
       setReels(function (prev) { return prev.map(function (r) { return r.id === reelId ? Object.assign({}, r, { likes_count: (r.likes_count || 0) + 1 }) : r; }); });
       await supabase.from('civic_reel_likes').insert({ reel_id: reelId, user_id: currentUser.id });
     }
-    supabase.rpc('sync_reel_like_count', { p_reel_id: reelId }).catch(function () {});
+    supabase.rpc('sync_reel_like_count', { p_reel_id: reelId }).then(function () {});
   }
 
   // ─── DOUBLE TAP TO LIKE ────────────────────────────────
@@ -206,7 +206,7 @@ export default function CivicReels() {
       setSavedReels(function (prev) { return Object.assign({}, prev, (function () { var o = {}; o[reelId] = true; return o; })()); });
       await supabase.from('civic_reel_saves').insert({ reel_id: reelId, user_id: currentUser.id });
     }
-    supabase.rpc('sync_reel_save_count', { p_reel_id: reelId }).catch(function () {});
+    supabase.rpc('sync_reel_save_count', { p_reel_id: reelId }).then(function () {});
   }
 
   // ─── SHARE ─────────────────────────────────────────────
@@ -550,7 +550,7 @@ function CommentsDrawer(props) {
       user_id: currentUser.id,
       content: text.trim(),
     });
-    supabase.rpc('sync_reel_comment_count', { p_reel_id: reelId }).catch(function () {});
+    supabase.rpc('sync_reel_comment_count', { p_reel_id: reelId }).then(function () {});
     setText('');
     setSending(false);
     setTimeout(function () { if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, 200);
