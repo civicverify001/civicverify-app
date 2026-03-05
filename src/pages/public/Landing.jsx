@@ -98,6 +98,15 @@ export default function Landing() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
 
+        /* ── PWA STANDALONE (home screen bookmark) ───────────────── */
+        /* In standalone mode Safari chrome disappears but status bar
+           stays — env(safe-area-inset-top) gives us the exact height  */
+        @supports (padding-top: env(safe-area-inset-top)) {
+          nav {
+            padding-top: calc(env(safe-area-inset-top) + 18px) !important;
+          }
+        }
+
         /* ── RESET ──────────────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
@@ -235,11 +244,12 @@ export default function Landing() {
       {/* ═══════════ NAV ═══════════ */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999,
-        padding: navSolid ? '10px 0' : '18px 0',
-        background: navSolid ? 'rgba(8,28,53,0.96)' : 'transparent',
-        backdropFilter: navSolid ? 'blur(16px)' : 'none',
+        paddingTop: `calc(env(safe-area-inset-top, 0px) + ${navSolid ? '10px' : '18px'})`,
+        paddingBottom: navSolid ? '10px' : '18px',
+        background: navSolid ? 'rgba(8,28,53,0.96)' : 'rgba(8,28,53,0.55)',
+        backdropFilter: 'blur(16px)',
         borderBottom: navSolid ? '1px solid rgba(197,150,12,0.12)' : 'none',
-        transition: 'all .3s ease',
+        transition: 'padding .3s ease, background .3s ease',
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
@@ -314,7 +324,8 @@ export default function Landing() {
       <section style={{
         position: 'relative', minHeight: '100vh', overflow: 'hidden',
         background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 45%,${C.navyMid} 100%)`,
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 80,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 80px)',
         width: '100%',
       }}>
         {/* Background dot grid */}
