@@ -438,6 +438,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   var mediaRecorderRef = useRef(null);
   var chunksRef = useRef([]);
   var timerRef = useRef(null);
+  var [posterFrame, setPosterFrame] = useState(null); // canvas snapshot shown instead of blob video
 
   async function startCamera(facing) {
     try {
@@ -470,18 +471,36 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     var resolvedType = mimeType || 'video/mp4';
     var ext = resolvedType.includes('webm') ? 'webm' : 'mp4';
     var mr = new MediaRecorder(stream, mrOptions);
+    // Capture a still frame from the live stream just before recording ends
+    // iOS Safari cannot play back MediaRecorder mp4 blobs as inline video — use canvas snapshot instead
+    function captureFrame() {
+      try {
+        var vid = videoPreviewRef.current;
+        if (!vid) return null;
+        var canvas = document.createElement('canvas');
+        canvas.width = vid.videoWidth || 1080;
+        canvas.height = vid.videoHeight || 1920;
+        var ctx = canvas.getContext('2d');
+        // Mirror front camera
+        if (facingMode === 'user') {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+        }
+        ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.85);
+      } catch (e) { return null; }
+    }
+
     mr.ondataavailable = function (e) { if (e.data.size > 0) chunksRef.current.push(e.data); };
     mr.onstop = function () {
       var blob = new Blob(chunksRef.current, { type: resolvedType });
       var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
-      var blobUrl = URL.createObjectURL(blob);
-      // We requested 9:16 portrait — mark as portrait regardless of raw pixel order
       setVideoIsPortrait(true);
       setFile(f);
-      // iOS Safari needs a small tick before the blob URL is ready to play
-      setTimeout(function () {
-        setPreview(blobUrl);
-      }, 100);
+      // Show canvas snapshot as preview — avoids iOS black screen bug with mp4 blob URLs
+      var frame = captureFrame();
+      if (frame) setPosterFrame(frame);
+      setPreview(URL.createObjectURL(blob)); // keep for upload, not for display on iOS
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
     mr.start(1000); mediaRecorderRef.current = mr; setRecording(true); setRecordTime(0);
@@ -608,7 +627,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   }
 
   function resetUpload() {
-    setFile(null); setPreview(null); setError(null); setProgress(0); setTextOverlays([]);
+    setFile(null); setPreview(null); setPosterFrame(null); setError(null); setProgress(0); setTextOverlays([]);
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null); }
   }
 
@@ -738,23 +757,35 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: videoIsPortrait ? '9/16' : '16/9', maxHeight: '50vh' }}>
-                <video
-                  ref={previewVideoRef}
-                  src={preview}
-                  controls
-                  playsInline
-                  preload="auto"
-                  onLoadedMetadata={function(e) {
-                    // iOS Safari sometimes needs explicit play trigger after src set
-                    e.target.load();
-                  }}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    display: 'block',
-                    filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
-                  }} />
+                {posterFrame ? (
+                  /* iOS recorded video — show canvas snapshot (blob playback broken on iOS) */
+                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <img src={posterFrame} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} alt="Video preview" />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                          <span style={{ fontSize: 24, marginLeft: 4 }}>▶</span>
+                        </div>
+                        <span style={{ fontSize: 12, color: '#fff', fontWeight: 600, background: 'rgba(0,0,0,0.5)', padding: '4px 10px', borderRadius: 10 }}>Video ready to post</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Gallery upload — blob video playback works fine */
+                  <video
+                    ref={previewVideoRef}
+                    src={preview}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      display: 'block',
+                      filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
+                    }} />
+                )}
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
