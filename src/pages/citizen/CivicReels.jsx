@@ -150,8 +150,6 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
   function openComments() { setShowComments(true); loadComments(); }
 
   var videoUrl = reel.cloudflare_playback_url || reel.video_url;
-  // iOS Safari won't show first frame of video without a time fragment hint
-  var iosVideoUrl = videoUrl ? videoUrl + '#t=0.001' : videoUrl;
 
   var overlays = [];
   try { overlays = reel.text_overlays ? (typeof reel.text_overlays === 'string' ? JSON.parse(reel.text_overlays) : reel.text_overlays) : []; } catch (e) { }
@@ -163,26 +161,8 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
     }}>
       {/* Video */}
       <video
-        ref={videoRef}
-        src={iosVideoUrl}
-        preload="auto"
-        onCanPlay={function(e) {
-          // Force iOS to seek to first frame and paint it
-          if (e.target.currentTime === 0) {
-            e.target.currentTime = 0.001;
-          }
-        }}
-        playsInline
-        webkit-playsinline="true"
-        style={{
-          width: '100%',
-          height: '100%',
-          // Portrait = cover (fills frame nicely)
-          // Landscape / unknown = contain (shows full wide frame, no cropping)
-          objectFit: (reel.is_portrait === true) ? 'cover' : 'contain',
-          background: '#000',
-          filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none'
-        }}
+        ref={videoRef} src={videoUrl}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
         loop muted={false} playsInline onClick={handleTap}
       />
 
@@ -437,30 +417,20 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   var [newTextColor, setNewTextColor] = useState('#FFFFFF');
   var [newTextSize, setNewTextSize] = useState(24);
   var overlayContainerRef = useRef(null);
-  var previewVideoRef = useRef(null);
 
   var [recording, setRecording] = useState(false);
   var [recordTime, setRecordTime] = useState(0);
   var [stream, setStream] = useState(null);
   var [facingMode, setFacingMode] = useState('user');
   var videoPreviewRef = useRef(null);
-  var [videoIsPortrait, setVideoIsPortrait] = useState(true);
   var mediaRecorderRef = useRef(null);
   var chunksRef = useRef([]);
   var timerRef = useRef(null);
 
-
   async function startCamera(facing) {
     try {
       if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
-      var s = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: facing,
-          aspectRatio: { ideal: 9/16 },   // Force portrait 9:16 like TikTok
-          frameRate: { ideal: 30 },
-        },
-        audio: true
-      });
+      var s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: true });
       setStream(s);
       if (videoPreviewRef.current) { videoPreviewRef.current.srcObject = s; videoPreviewRef.current.play(); }
     } catch (e) { setError('Camera access denied. Please allow camera and microphone permissions.'); }
@@ -469,32 +439,18 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   function startRecording() {
     if (!stream) return;
     chunksRef.current = [];
-    // iOS Safari only supports mp4 — detect best mimeType at runtime
-    var mimeType = '';
-    var candidates = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4;codecs=avc1', 'video/mp4'];
-    for (var i = 0; i < candidates.length; i++) {
-      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidates[i])) {
-        mimeType = candidates[i]; break;
-      }
-    }
-    var mrOptions = mimeType ? { mimeType: mimeType } : {};
-    var resolvedType = mimeType || 'video/mp4';
-    var ext = resolvedType.includes('webm') ? 'webm' : 'mp4';
-    var mr = new MediaRecorder(stream, mrOptions);
+    var mr = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8,opus' });
     mr.ondataavailable = function (e) { if (e.data.size > 0) chunksRef.current.push(e.data); };
     mr.onstop = function () {
-      var blob = new Blob(chunksRef.current, { type: resolvedType });
-      var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
-      setVideoIsPortrait(true);
-      setFile(f);
-      setPreview(URL.createObjectURL(blob));
+      var blob = new Blob(chunksRef.current, { type: 'video/webm' });
+      var f = new File([blob], 'reel-' + Date.now() + '.webm', { type: 'video/webm' });
+      setFile(f); setPreview(URL.createObjectURL(blob));
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
     mr.start(1000); mediaRecorderRef.current = mr; setRecording(true); setRecordTime(0);
     timerRef.current = setInterval(function () {
       setRecordTime(function (t) { if (t >= 119) { stopRecording(); return 120; } return t + 1; });
     }, 1000);
-
   }
 
   function stopRecording() {
@@ -521,10 +477,6 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     v.preload = 'metadata';
     v.onloadedmetadata = function () {
       if (v.duration > MAX_DURATION_SEC) { setError('Video must be under 2 minutes. Yours is ' + Math.round(v.duration) + 's.'); URL.revokeObjectURL(v.src); return; }
-      // Detect if video needs rotation correction (landscape video that should be portrait)
-      // iOS videos from Camera Roll are often 1920x1080 with a 90deg rotation tag
-      var isPortraitFile = v.videoHeight > v.videoWidth;
-      setVideoIsPortrait(isPortraitFile);
       setFile(f); setPreview(URL.createObjectURL(f));
     };
     v.src = URL.createObjectURL(f);
@@ -591,7 +543,6 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
         caption: caption.trim() || null,
         tags: parsedTags.length > 0 ? parsedTags : null,
         duration_seconds: duration,
-        is_portrait: videoIsPortrait,
         status: 'ready',
         is_community_post: postToCommunity,
         filter: selectedFilter !== 'none' ? selectedFilter : null,
@@ -625,8 +576,6 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [stream]);
-
-
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -707,7 +656,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {/* Camera recording */}
           {mode === 'record' && !file && (
             <div>
-              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', width: '100%', aspectRatio: '9/16', maxHeight: '55vh' }}>
+              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', width: '100%', height: 380 }}>
                 <video ref={videoPreviewRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }} />
                 {recording && (
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, background: 'rgba(239,68,68,0.9)' }}>
@@ -739,19 +688,8 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {/* Preview + details */}
           {file && preview && (
             <div>
-              <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: videoIsPortrait ? '9/16' : '16/9', maxHeight: '50vh' }}>
-                <video
-                  src={preview}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    display: 'block',
-                    filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
-                  }} />
+              <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16 }}>
+                <video src={preview} controls style={{ width: '100%', maxHeight: 280, objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
@@ -1254,4 +1192,3 @@ export default function CivicReels() {
     </div>
   );
 }
-
