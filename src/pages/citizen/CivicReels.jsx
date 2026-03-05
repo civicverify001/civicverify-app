@@ -427,6 +427,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   var [newTextColor, setNewTextColor] = useState('#FFFFFF');
   var [newTextSize, setNewTextSize] = useState(24);
   var overlayContainerRef = useRef(null);
+  var previewVideoRef = useRef(null);
 
   var [recording, setRecording] = useState(false);
   var [recordTime, setRecordTime] = useState(0);
@@ -475,9 +476,12 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
       var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
       var blobUrl = URL.createObjectURL(blob);
       // We requested 9:16 portrait — mark as portrait regardless of raw pixel order
-      // (iOS may store landscape pixels with rotation metadata; treat as portrait)
       setVideoIsPortrait(true);
-      setFile(f); setPreview(blobUrl);
+      setFile(f);
+      // iOS Safari needs a small tick before the blob URL is ready to play
+      setTimeout(function () {
+        setPreview(blobUrl);
+      }, 100);
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
     mr.start(1000); mediaRecorderRef.current = mr; setRecording(true); setRecordTime(0);
@@ -615,6 +619,13 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     };
   }, [stream]);
 
+  // iOS Safari black screen fix: explicitly call .load() when preview src is set
+  useEffect(function () {
+    if (preview && previewVideoRef.current) {
+      previewVideoRef.current.load();
+    }
+  }, [preview]);
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       {/* Backdrop */}
@@ -727,14 +738,23 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: videoIsPortrait ? '9/16' : '16/9', maxHeight: '50vh' }}>
-                <video src={preview} controls playsInline
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  display: 'block',
-                  filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
-                }} />
+                <video
+                  ref={previewVideoRef}
+                  src={preview}
+                  controls
+                  playsInline
+                  preload="auto"
+                  onLoadedMetadata={function(e) {
+                    // iOS Safari sometimes needs explicit play trigger after src set
+                    e.target.load();
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                    filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
+                  }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
