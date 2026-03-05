@@ -150,6 +150,8 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
   function openComments() { setShowComments(true); loadComments(); }
 
   var videoUrl = reel.cloudflare_playback_url || reel.video_url;
+  // iOS Safari won't show first frame of video without a time fragment hint
+  var iosVideoUrl = videoUrl ? videoUrl + '#t=0.001' : videoUrl;
 
   var overlays = [];
   try { overlays = reel.text_overlays ? (typeof reel.text_overlays === 'string' ? JSON.parse(reel.text_overlays) : reel.text_overlays) : []; } catch (e) { }
@@ -161,7 +163,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
     }}>
       {/* Video */}
       <video
-        ref={videoRef} src={videoUrl}
+        ref={videoRef} src={iosVideoUrl}
         playsInline
         webkit-playsinline="true"
         style={{
@@ -471,36 +473,13 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     var resolvedType = mimeType || 'video/mp4';
     var ext = resolvedType.includes('webm') ? 'webm' : 'mp4';
     var mr = new MediaRecorder(stream, mrOptions);
-    // Capture a still frame from the live stream just before recording ends
-    // iOS Safari cannot play back MediaRecorder mp4 blobs as inline video — use canvas snapshot instead
-    function captureFrame() {
-      try {
-        var vid = videoPreviewRef.current;
-        if (!vid) return null;
-        var canvas = document.createElement('canvas');
-        canvas.width = vid.videoWidth || 1080;
-        canvas.height = vid.videoHeight || 1920;
-        var ctx = canvas.getContext('2d');
-        // Mirror front camera
-        if (facingMode === 'user') {
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-        }
-        ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL('image/jpeg', 0.85);
-      } catch (e) { return null; }
-    }
-
     mr.ondataavailable = function (e) { if (e.data.size > 0) chunksRef.current.push(e.data); };
     mr.onstop = function () {
       var blob = new Blob(chunksRef.current, { type: resolvedType });
       var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
       setVideoIsPortrait(true);
       setFile(f);
-      // Show canvas snapshot as preview — avoids iOS black screen bug with mp4 blob URLs
-      var frame = captureFrame();
-      if (frame) setPosterFrame(frame);
-      setPreview(URL.createObjectURL(blob)); // keep for upload, not for display on iOS
+      setPreview(URL.createObjectURL(blob)); // used for upload only, not displayed on iOS
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
     mr.start(1000); mediaRecorderRef.current = mr; setRecording(true); setRecordTime(0);
@@ -510,6 +489,19 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   }
 
   function stopRecording() {
+    // Capture frame NOW while stream is still live — onstop fires too late
+    try {
+      var vid = videoPreviewRef.current;
+      if (vid && vid.videoWidth) {
+        var canvas = document.createElement('canvas');
+        canvas.width = vid.videoWidth;
+        canvas.height = vid.videoHeight;
+        var ctx = canvas.getContext('2d');
+        if (facingMode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+        ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+        setPosterFrame(canvas.toDataURL('image/jpeg', 0.85));
+      }
+    } catch (e) {}
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
     setRecording(false);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
