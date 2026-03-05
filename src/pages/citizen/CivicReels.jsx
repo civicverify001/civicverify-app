@@ -167,7 +167,9 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
         style={{
           width: '100%',
           height: '100%',
-          objectFit: reel.is_portrait === false ? 'contain' : 'cover',
+          // Portrait = cover (fills frame nicely)
+          // Landscape / unknown = contain (shows full wide frame, no cropping)
+          objectFit: (reel.is_portrait === true) ? 'cover' : 'contain',
           background: '#000',
           filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none'
         }}
@@ -464,7 +466,16 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     mr.onstop = function () {
       var blob = new Blob(chunksRef.current, { type: resolvedType });
       var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
-      setFile(f); setPreview(URL.createObjectURL(blob));
+      var blobUrl = URL.createObjectURL(blob);
+      // Detect orientation from actual recorded video dimensions
+      var vCheck = document.createElement('video');
+      vCheck.preload = 'metadata';
+      vCheck.onloadedmetadata = function () {
+        setVideoIsPortrait(vCheck.videoHeight >= vCheck.videoWidth);
+        URL.revokeObjectURL(vCheck.src);
+      };
+      vCheck.src = blobUrl;
+      setFile(f); setPreview(blobUrl);
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
     mr.start(1000); mediaRecorderRef.current = mr; setRecording(true); setRecordTime(0);
