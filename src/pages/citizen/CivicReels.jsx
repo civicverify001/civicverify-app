@@ -162,7 +162,15 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Video */}
       <video
         ref={videoRef} src={videoUrl}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
+        playsInline
+        webkit-playsinline="true"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: reel.is_portrait === false ? 'contain' : 'cover',
+          background: '#000',
+          filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none'
+        }}
         loop muted={false} playsInline onClick={handleTap}
       />
 
@@ -423,6 +431,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   var [stream, setStream] = useState(null);
   var [facingMode, setFacingMode] = useState('user');
   var videoPreviewRef = useRef(null);
+  var [videoIsPortrait, setVideoIsPortrait] = useState(true);
   var mediaRecorderRef = useRef(null);
   var chunksRef = useRef([]);
   var timerRef = useRef(null);
@@ -439,11 +448,22 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   function startRecording() {
     if (!stream) return;
     chunksRef.current = [];
-    var mr = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8,opus' });
+    // iOS Safari only supports mp4 — detect best mimeType at runtime
+    var mimeType = '';
+    var candidates = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    for (var i = 0; i < candidates.length; i++) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidates[i])) {
+        mimeType = candidates[i]; break;
+      }
+    }
+    var mrOptions = mimeType ? { mimeType: mimeType } : {};
+    var resolvedType = mimeType || 'video/mp4';
+    var ext = resolvedType.includes('webm') ? 'webm' : 'mp4';
+    var mr = new MediaRecorder(stream, mrOptions);
     mr.ondataavailable = function (e) { if (e.data.size > 0) chunksRef.current.push(e.data); };
     mr.onstop = function () {
-      var blob = new Blob(chunksRef.current, { type: 'video/webm' });
-      var f = new File([blob], 'reel-' + Date.now() + '.webm', { type: 'video/webm' });
+      var blob = new Blob(chunksRef.current, { type: resolvedType });
+      var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
       setFile(f); setPreview(URL.createObjectURL(blob));
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
@@ -477,6 +497,10 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     v.preload = 'metadata';
     v.onloadedmetadata = function () {
       if (v.duration > MAX_DURATION_SEC) { setError('Video must be under 2 minutes. Yours is ' + Math.round(v.duration) + 's.'); URL.revokeObjectURL(v.src); return; }
+      // Detect if video needs rotation correction (landscape video that should be portrait)
+      // iOS videos from Camera Roll are often 1920x1080 with a 90deg rotation tag
+      var isPortraitFile = v.videoHeight > v.videoWidth;
+      setVideoIsPortrait(isPortraitFile);
       setFile(f); setPreview(URL.createObjectURL(f));
     };
     v.src = URL.createObjectURL(f);
@@ -543,6 +567,8 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
         caption: caption.trim() || null,
         tags: parsedTags.length > 0 ? parsedTags : null,
         duration_seconds: duration,
+        video_width: null,   // browser doesn't expose this before upload; playback relies on objectFit
+        is_portrait: videoIsPortrait,
         status: 'ready',
         is_community_post: postToCommunity,
         filter: selectedFilter !== 'none' ? selectedFilter : null,
@@ -689,7 +715,17 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16 }}>
-                <video src={preview} controls style={{ width: '100%', maxHeight: 280, objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} />
+                <video src={preview} controls playsInline
+                style={{
+                  width: videoIsPortrait ? '100%' : 'auto',
+                  maxHeight: 280,
+                  height: videoIsPortrait ? 'auto' : 280,
+                  maxWidth: '100%',
+                  objectFit: 'contain',
+                  display: 'block',
+                  margin: '0 auto',
+                  filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
+                }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
