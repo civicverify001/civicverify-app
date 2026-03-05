@@ -13,6 +13,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
+    <!-- ═══ CRITICAL: PREVENT HORIZONTAL OVERFLOW ON MOBILE ══════════════════ -->
+    <style>
+      html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+    </style>
+
     <!-- ═══ PRIMARY SEO ═══════════════════════════════════════════════════════ -->
     <title>CivicVerify — Identity-Verified Civic Polling | Your Voice, Verified</title>
     <meta name="description" content="CivicVerify is the civic polling platform where every response is identity-verified. Real citizens, real opinions, zero bots. Make your voice count on the issues that matter." />
