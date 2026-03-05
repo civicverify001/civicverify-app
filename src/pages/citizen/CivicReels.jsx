@@ -448,9 +448,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   var mediaRecorderRef = useRef(null);
   var chunksRef = useRef([]);
   var timerRef = useRef(null);
-  var [posterFrame, setPosterFrame] = useState(null);
-  var lastFrameRef = useRef(null); // continuously updated canvas frame during recording
-  var frameCaptureRef = useRef(null); // interval for continuous frame capture
+
 
   async function startCamera(facing) {
     try {
@@ -489,34 +487,17 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
       var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
       setVideoIsPortrait(true);
       setFile(f);
-      setPreview(URL.createObjectURL(blob)); // used for upload only, not displayed on iOS
+      setPreview(URL.createObjectURL(blob));
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
     mr.start(1000); mediaRecorderRef.current = mr; setRecording(true); setRecordTime(0);
     timerRef.current = setInterval(function () {
       setRecordTime(function (t) { if (t >= 119) { stopRecording(); return 120; } return t + 1; });
     }, 1000);
-    // Continuously grab frames every 500ms — ensures we always have a valid frame at stop time
-    frameCaptureRef.current = setInterval(function () {
-      try {
-        var vid = videoPreviewRef.current;
-        if (!vid || !vid.videoWidth || vid.videoWidth === 0) return;
-        var canvas = document.createElement('canvas');
-        canvas.width = vid.videoWidth;
-        canvas.height = vid.videoHeight;
-        var ctx = canvas.getContext('2d');
-        if (facingMode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
-        ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-        lastFrameRef.current = canvas.toDataURL('image/jpeg', 0.8);
-      } catch (e) {}
-    }, 500);
+
   }
 
   function stopRecording() {
-    // Stop continuous frame capture and use last captured frame
-    if (frameCaptureRef.current) { clearInterval(frameCaptureRef.current); frameCaptureRef.current = null; }
-    // Use the last frame captured during recording (captured every 500ms so always valid)
-    if (lastFrameRef.current) { setPosterFrame(lastFrameRef.current); }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
     setRecording(false);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -634,7 +615,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   }
 
   function resetUpload() {
-    setFile(null); setPreview(null); setPosterFrame(null); setError(null); setProgress(0); setTextOverlays([]); lastFrameRef.current = null;
+    setFile(null); setPreview(null); setError(null); setProgress(0); setTextOverlays([]);
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null); }
   }
 
@@ -642,16 +623,10 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     return function () {
       if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
       if (timerRef.current) clearInterval(timerRef.current);
-      if (frameCaptureRef.current) clearInterval(frameCaptureRef.current);
     };
   }, [stream]);
 
-  // iOS Safari black screen fix: explicitly call .load() when preview src is set
-  useEffect(function () {
-    if (preview && previewVideoRef.current) {
-      previewVideoRef.current.load();
-    }
-  }, [preview]);
+
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -765,35 +740,18 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: videoIsPortrait ? '9/16' : '16/9', maxHeight: '50vh' }}>
-                {posterFrame ? (
-                  /* iOS recorded video — show canvas snapshot (blob playback broken on iOS) */
-                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    <img src={posterFrame} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} alt="Video preview" />
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)' }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
-                          <span style={{ fontSize: 24, marginLeft: 4 }}>▶</span>
-                        </div>
-                        <span style={{ fontSize: 12, color: '#fff', fontWeight: 600, background: 'rgba(0,0,0,0.5)', padding: '4px 10px', borderRadius: 10 }}>Video ready to post</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Gallery upload — blob video playback works fine */
-                  <video
-                    ref={previewVideoRef}
-                    src={preview}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      display: 'block',
-                      filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
-                    }} />
-                )}
+                <video
+                  src={preview}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                    filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
+                  }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
