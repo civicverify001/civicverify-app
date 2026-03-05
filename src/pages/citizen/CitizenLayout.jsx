@@ -316,7 +316,7 @@ export default function CitizenLayout() {
 
         {/* Mobile top bar — hidden on reels page */}
         {!isReelsPage && (
-          <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '0 14px', height: 52, alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(11,37,69,0.15)' }}>
+          <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '0 14px', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(52px + env(safe-area-inset-top, 0px))', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(11,37,69,0.15)' }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <NotificationBell userId={user?.id} inSidebar={false} />
@@ -446,7 +446,7 @@ export default function CitizenLayout() {
           .cv-mobile-header { display: none !important; }
           .cv-bottom-tabs { display: none !important; }
           .cv-more-sheet { display: none !important; }
-          .cv-content-reels { width: 100%; height: 100vh; overflow: hidden; }
+          .cv-content-reels { width: 100%; min-height: 1px; /* CivicReels uses position:fixed, this is just a mount point */ }
           .cv-content-inner { padding: 28px 32px !important; }
         }
 
@@ -462,7 +462,7 @@ export default function CitizenLayout() {
 
           /* Normal pages: pad bottom so content clears tab bar + safe area */
           .cv-content-inner {
-            padding: 16px 14px calc(72px + env(safe-area-inset-bottom, 8px)) !important;
+            padding: calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(72px + env(safe-area-inset-bottom, 8px)) !important;
             max-width: 100vw !important;
             overflow-x: hidden !important;
             word-break: break-word !important;
