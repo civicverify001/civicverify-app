@@ -1,12 +1,4 @@
-// src/pages/citizen/CivicReels.jsx — V2 TikTok-style Civic Video Feed (iPhone black-screen fix)
-// Fixes:
-// 1) iOS MediaRecorder: remove timeslice mr.start(1000) -> mr.start()
-// 2) iOS Blob/File types: avoid "video/mp4;codecs=..." -> force "video/mp4"
-// 3) Autoplay on iPhone: MUST be muted (you can add “Tap to unmute” later)
-// 4) Remove forced .load() calls that can reset decoder to black
-// 5) Don’t reset currentTime=0 on every un-visibility (causes iOS flicker/black)
-// 6) Add poster to avoid “black frame” while loading
-
+// src/pages/citizen/CivicReels.jsx — V2 TikTok-style Civic Video Feed (Safe-Area Fixed)
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
@@ -47,10 +39,7 @@ function formatCount(n) {
 }
 
 function HeartBurst({ x, y, onDone }) {
-  useEffect(function () {
-    var t = setTimeout(onDone, 900);
-    return function () { clearTimeout(t); };
-  }, []);
+  useEffect(function () { var t = setTimeout(onDone, 900); return function () { clearTimeout(t); }; }, []);
   return (
     <div style={{ position: 'absolute', left: x - 40, top: y - 40, pointerEvents: 'none', zIndex: 50 }}>
       <span style={{ fontSize: 80, animation: 'heartBurst 0.8s ease-out forwards', display: 'block' }}>❤️</span>
@@ -85,13 +74,9 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
 
   useEffect(function () {
     if (!videoRef.current) return;
-
     if (isVisible) {
-      // iPhone autoplay requires muted = true (we set muted on the <video>)
-      var p = videoRef.current.play();
-      if (p && typeof p.catch === 'function') p.catch(function () { });
+      videoRef.current.play().catch(function () { });
       setPaused(false);
-
       if (!viewCounted.current) {
         var timer = setTimeout(function () {
           if (!viewCounted.current) { viewCounted.current = true; onView(reel.id); }
@@ -100,14 +85,13 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       }
     } else {
       videoRef.current.pause();
-      // IMPORTANT: don’t slam currentTime=0 every time (can cause iOS black flicker)
-      // videoRef.current.currentTime = 0;
+      videoRef.current.currentTime = 0;
     }
   }, [isVisible]);
 
   function togglePlay() {
     if (!videoRef.current) return;
-    if (videoRef.current.paused) { videoRef.current.play().catch(function () { }); setPaused(false); }
+    if (videoRef.current.paused) { videoRef.current.play(); setPaused(false); }
     else { videoRef.current.pause(); setPaused(true); }
   }
 
@@ -166,6 +150,8 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
   function openComments() { setShowComments(true); loadComments(); }
 
   var videoUrl = reel.cloudflare_playback_url || reel.video_url;
+  // iOS Safari won't show first frame of video without a time fragment hint
+  var iosVideoUrl = videoUrl ? videoUrl + '#t=0.001' : videoUrl;
 
   var overlays = [];
   try { overlays = reel.text_overlays ? (typeof reel.text_overlays === 'string' ? JSON.parse(reel.text_overlays) : reel.text_overlays) : []; } catch (e) { }
@@ -178,21 +164,26 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Video */}
       <video
         ref={videoRef}
-        src={videoUrl}
-        poster={reel.cloudflare_thumbnail_url || reel.thumbnail_url || reel.cloudflare_playback_url || undefined}
+        src={iosVideoUrl}
+        preload="auto"
+        onCanPlay={function(e) {
+          // Force iOS to seek to first frame and paint it
+          if (e.target.currentTime === 0) {
+            e.target.currentTime = 0.001;
+          }
+        }}
         playsInline
-        // iPhone autoplay requires muted. If you want sound, add a user “Tap to unmute” toggle later.
-        muted={true}
-        preload="metadata"
+        webkit-playsinline="true"
         style={{
           width: '100%',
           height: '100%',
+          // Portrait = cover (fills frame nicely)
+          // Landscape / unknown = contain (shows full wide frame, no cropping)
           objectFit: (reel.is_portrait === true) ? 'cover' : 'contain',
           background: '#000',
           filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none'
         }}
-        loop
-        onClick={handleTap}
+        loop muted={false} playsInline onClick={handleTap}
       />
 
       {/* Text overlays */}
@@ -256,7 +247,8 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Bottom gradient */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(transparent, rgba(0,0,0,0.75))', pointerEvents: 'none' }} />
 
-      {/* Author info */}
+      {/* Author info — bottom left
+          ▼ cv-reel-author class adds mobile safe-area offset via CSS */}
       <div className="cv-reel-author" style={{ position: 'absolute', bottom: 16, left: 16, right: 72, zIndex: 30 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.3)', fontSize: 16, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
@@ -293,8 +285,10 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
         )}
       </div>
 
-      {/* Right sidebar */}
+      {/* Right sidebar — engagement buttons
+          ▼ cv-reel-sidebar class adds mobile safe-area offset via CSS */}
       <div className="cv-reel-sidebar" style={{ position: 'absolute', right: 12, bottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 30 }}>
+        {/* Creator avatar */}
         <div style={{ position: 'relative', marginBottom: 4 }}>
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff', fontSize: 18, fontWeight: 700, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
             {(reel.author_name || '?').charAt(0).toUpperCase()}
@@ -312,6 +306,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
           )}
         </div>
 
+        {/* Like */}
         <button onClick={function (e) { e.stopPropagation(); onLike(reel.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', transition: 'transform 0.2s' }}>
             <span style={{ fontSize: 22 }}>{reel.user_liked ? '❤️' : '🤍'}</span>
@@ -319,6 +314,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{formatCount(reel.likes_count)}</span>
         </button>
 
+        {/* Comment */}
         <button onClick={function (e) { e.stopPropagation(); openComments(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)' }}>
             <span style={{ fontSize: 22 }}>💬</span>
@@ -326,6 +322,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{formatCount(reel.comments_count)}</span>
         </button>
 
+        {/* Share */}
         <button onClick={function (e) { e.stopPropagation(); onShare(reel); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
@@ -335,6 +332,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{formatCount(reel.shares_count)}</span>
         </button>
 
+        {/* Views */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)' }}>
             <span style={{ fontSize: 22 }}>👁</span>
@@ -342,6 +340,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{formatCount(reel.views_count)}</span>
         </div>
 
+        {/* Save */}
         <button onClick={function (e) { e.stopPropagation(); onSave(reel.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: reel.user_saved ? 'rgba(197,150,12,0.3)' : 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', transition: 'all 0.2s' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill={reel.user_saved ? C.gold : 'none'} stroke={reel.user_saved ? C.gold : '#fff'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -394,6 +393,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
                 padding: '12px 20px',
                 borderTop: '1px solid rgba(11,37,69,0.06)',
                 display: 'flex', gap: 8,
+                // ▼ KEY FIX: clear Safari toolbar in comment sheet
                 paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
               }}>
                 <input value={commentInput} onChange={function (e) { setCommentInput(e.target.value); }}
@@ -448,10 +448,9 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   var mediaRecorderRef = useRef(null);
   var chunksRef = useRef([]);
   var timerRef = useRef(null);
-
-  function isIOS() {
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }
+  var [posterFrame, setPosterFrame] = useState(null);
+  var lastFrameRef = useRef(null); // continuously updated canvas frame during recording
+  var frameCaptureRef = useRef(null); // interval for continuous frame capture
 
   async function startCamera(facing) {
     try {
@@ -459,82 +458,65 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
       var s = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: facing,
-          aspectRatio: { ideal: 9 / 16 },
+          aspectRatio: { ideal: 9/16 },   // Force portrait 9:16 like TikTok
           frameRate: { ideal: 30 },
         },
         audio: true
       });
       setStream(s);
-      if (videoPreviewRef.current) { videoPreviewRef.current.srcObject = s; videoPreviewRef.current.play().catch(function () { }); }
+      if (videoPreviewRef.current) { videoPreviewRef.current.srcObject = s; videoPreviewRef.current.play(); }
     } catch (e) { setError('Camera access denied. Please allow camera and microphone permissions.'); }
   }
 
-  // ✅ iPhone FIXED recorder
   function startRecording() {
     if (!stream) return;
     chunksRef.current = [];
-
-    var ios = isIOS();
+    // iOS Safari only supports mp4 — detect best mimeType at runtime
     var mimeType = '';
-
-    if (ios) {
-      // iOS: keep it simple (no codecs string)
-      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('video/mp4')) {
-        mimeType = 'video/mp4';
-      } else {
-        mimeType = ''; // let browser decide
-      }
-    } else {
-      // non-iOS prefers webm
-      var candidates = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
-      for (var i = 0; i < candidates.length; i++) {
-        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidates[i])) {
-          mimeType = candidates[i]; break;
-        }
+    var candidates = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    for (var i = 0; i < candidates.length; i++) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidates[i])) {
+        mimeType = candidates[i]; break;
       }
     }
-
     var mrOptions = mimeType ? { mimeType: mimeType } : {};
+    var resolvedType = mimeType || 'video/mp4';
+    var ext = resolvedType.includes('webm') ? 'webm' : 'mp4';
     var mr = new MediaRecorder(stream, mrOptions);
-
-    mr.ondataavailable = function (e) {
-      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
-    };
-
+    mr.ondataavailable = function (e) { if (e.data.size > 0) chunksRef.current.push(e.data); };
     mr.onstop = function () {
-      // Force iOS-friendly type
-      var finalType = ios ? 'video/mp4' : (mr.mimeType || mimeType || 'video/webm');
-      var blob = new Blob(chunksRef.current, { type: finalType });
-
-      var ext = finalType.includes('webm') ? 'webm' : 'mp4';
-      var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: finalType });
-
-      var blobUrl = URL.createObjectURL(blob);
-
+      var blob = new Blob(chunksRef.current, { type: resolvedType });
+      var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
       setVideoIsPortrait(true);
       setFile(f);
-      setPreview(blobUrl);
-
-      stream.getTracks().forEach(function (t) { t.stop(); });
-      setStream(null);
+      setPreview(URL.createObjectURL(blob)); // used for upload only, not displayed on iOS
+      stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
-
-    // ✅ iOS FIX: DO NOT pass timeslice (mr.start(1000) breaks video on some iPhones)
-    mr.start();
-    mediaRecorderRef.current = mr;
-
-    setRecording(true);
-    setRecordTime(0);
-
+    mr.start(1000); mediaRecorderRef.current = mr; setRecording(true); setRecordTime(0);
     timerRef.current = setInterval(function () {
-      setRecordTime(function (t) {
-        if (t >= 119) { stopRecording(); return 120; }
-        return t + 1;
-      });
+      setRecordTime(function (t) { if (t >= 119) { stopRecording(); return 120; } return t + 1; });
     }, 1000);
+    // Continuously grab frames every 500ms — ensures we always have a valid frame at stop time
+    frameCaptureRef.current = setInterval(function () {
+      try {
+        var vid = videoPreviewRef.current;
+        if (!vid || !vid.videoWidth || vid.videoWidth === 0) return;
+        var canvas = document.createElement('canvas');
+        canvas.width = vid.videoWidth;
+        canvas.height = vid.videoHeight;
+        var ctx = canvas.getContext('2d');
+        if (facingMode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+        ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+        lastFrameRef.current = canvas.toDataURL('image/jpeg', 0.8);
+      } catch (e) {}
+    }, 500);
   }
 
   function stopRecording() {
+    // Stop continuous frame capture and use last captured frame
+    if (frameCaptureRef.current) { clearInterval(frameCaptureRef.current); frameCaptureRef.current = null; }
+    // Use the last frame captured during recording (captured every 500ms so always valid)
+    if (lastFrameRef.current) { setPosterFrame(lastFrameRef.current); }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
     setRecording(false);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -558,6 +540,8 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     v.preload = 'metadata';
     v.onloadedmetadata = function () {
       if (v.duration > MAX_DURATION_SEC) { setError('Video must be under 2 minutes. Yours is ' + Math.round(v.duration) + 's.'); URL.revokeObjectURL(v.src); return; }
+      // Detect if video needs rotation correction (landscape video that should be portrait)
+      // iOS videos from Camera Roll are often 1920x1080 with a 90deg rotation tag
       var isPortraitFile = v.videoHeight > v.videoWidth;
       setVideoIsPortrait(isPortraitFile);
       setFile(f); setPreview(URL.createObjectURL(f));
@@ -605,23 +589,19 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
       var ext = file.name.split('.').pop();
       var fileName = currentUser.id + '/' + Date.now() + '.' + ext;
       setProgress(20);
-      var { error: uploadError } = await supabase.storage.from('civic-reels').upload(fileName, file, { cacheControl: '3600', upsert: false });
+      var { data: uploadData, error: uploadError } = await supabase.storage.from('civic-reels').upload(fileName, file, { cacheControl: '3600', upsert: false });
       if (uploadError) throw uploadError;
-
       setProgress(75);
       var { data: urlData } = supabase.storage.from('civic-reels').getPublicUrl(fileName);
       var videoUrl = urlData.publicUrl;
-
       var duration = await new Promise(function (resolve) {
         var v = document.createElement('video'); v.preload = 'metadata';
         v.onloadedmetadata = function () { resolve(Math.round(v.duration)); URL.revokeObjectURL(v.src); };
         v.onerror = function () { resolve(0); };
         v.src = URL.createObjectURL(file);
       });
-
       setProgress(85);
       var parsedTags = tags.split(/[\s,#]+/).filter(function (t) { return t.trim(); }).map(function (t) { return t.trim().toLowerCase(); });
-
       var { data: reel, error: reelError } = await supabase.from('civic_reels').insert({
         user_id: currentUser.id,
         cloudflare_video_id: 'local-' + Date.now(),
@@ -638,7 +618,6 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
         file_size_bytes: file.size,
       }).select().single();
       if (reelError) throw reelError;
-
       if (postToCommunity) {
         await supabase.from('community_posts').insert({
           user_id: currentUser.id,
@@ -646,7 +625,6 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           video_url: videoUrl,
         });
       }
-
       setProgress(100);
       setTimeout(function () { onUploaded(); }, 500);
     } catch (err) {
@@ -656,7 +634,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   }
 
   function resetUpload() {
-    setFile(null); setPreview(null); setError(null); setProgress(0); setTextOverlays([]);
+    setFile(null); setPreview(null); setPosterFrame(null); setError(null); setProgress(0); setTextOverlays([]); lastFrameRef.current = null;
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null); }
   }
 
@@ -664,20 +642,32 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     return function () {
       if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
       if (timerRef.current) clearInterval(timerRef.current);
+      if (frameCaptureRef.current) clearInterval(frameCaptureRef.current);
     };
   }, [stream]);
 
-  // IMPORTANT: remove preview .load() hacks (they can cause iOS black screens)
-  // useEffect(() => { if (preview && previewVideoRef.current) previewVideoRef.current.load(); }, [preview]);
+  // iOS Safari black screen fix: explicitly call .load() when preview src is set
+  useEffect(function () {
+    if (preview && previewVideoRef.current) {
+      previewVideoRef.current.load();
+    }
+  }, [preview]);
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      {/* Backdrop */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
 
+      {/*
+        ▼ KEY FIX: Modal sits at bottom of screen, rounded top only.
+          paddingBottom pushes content above Safari's browser chrome.
+          On desktop it centers normally; on mobile it's bottom-sheet style.
+      */}
       <div style={{
         position: 'relative',
         width: '100%',
         maxWidth: 480,
+        // ▼ Full height on mobile so users can scroll to the Post button
         maxHeight: 'calc(100vh - env(safe-area-inset-top, 44px) - 8px)',
         background: '#fff',
         borderRadius: '24px 24px 0 0',
@@ -686,7 +676,9 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
         flexDirection: 'column',
         boxShadow: '0 -8px 40px rgba(0,0,0,0.3)',
       }}>
+        {/* Header */}
         <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid rgba(11,37,69,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          {/* Drag handle */}
           <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', width: 36, height: 4, borderRadius: 2, background: 'rgba(11,37,69,0.12)' }} />
           <p style={{ fontSize: 17, fontWeight: 700, color: C.navy, margin: 0, fontFamily: serif }}>
             {file ? 'Post Your Reel' : mode === 'record' ? 'Record' : 'Create CivicReel'}
@@ -694,6 +686,10 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: 'rgba(11,37,69,0.4)', cursor: 'pointer', padding: 4 }}>✕</button>
         </div>
 
+        {/* Scrollable content
+            ▼ KEY FIX: paddingBottom clears Safari's browser chrome + tab bar
+            Without viewport-fit=cover, env() returns 0, so we use a safe fallback of 40px.
+            With viewport-fit=cover in index.html, this becomes precise. */}
         <div style={{
           flex: 1,
           overflowY: 'auto',
@@ -701,6 +697,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           padding: '20px',
           paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 160px)',
         }}>
+          {/* Mode selection */}
           {!mode && !file && (
             <div style={{ display: 'grid', gap: 12 }}>
               <button onClick={function () { setMode('gallery'); }}
@@ -718,6 +715,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
             </div>
           )}
 
+          {/* Gallery file picker */}
           {mode === 'gallery' && !file && (
             <div>
               <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 20px', borderRadius: 16, border: '2px dashed rgba(197,150,12,0.3)', background: 'rgba(197,150,12,0.04)', cursor: 'pointer', textAlign: 'center' }}>
@@ -731,6 +729,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
             </div>
           )}
 
+          {/* Camera recording */}
           {mode === 'record' && !file && (
             <div>
               <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', width: '100%', aspectRatio: '9/16', maxHeight: '55vh' }}>
@@ -762,23 +761,39 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
             </div>
           )}
 
+          {/* Preview + details */}
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: videoIsPortrait ? '9/16' : '16/9', maxHeight: '50vh' }}>
-                <video
-                  ref={previewVideoRef}
-                  src={preview}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    display: 'block',
-                    filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
-                  }}
-                />
+                {posterFrame ? (
+                  /* iOS recorded video — show canvas snapshot (blob playback broken on iOS) */
+                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <img src={posterFrame} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} alt="Video preview" />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                          <span style={{ fontSize: 24, marginLeft: 4 }}>▶</span>
+                        </div>
+                        <span style={{ fontSize: 12, color: '#fff', fontWeight: 600, background: 'rgba(0,0,0,0.5)', padding: '4px 10px', borderRadius: 10 }}>Video ready to post</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Gallery upload — blob video playback works fine */
+                  <video
+                    ref={previewVideoRef}
+                    src={preview}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      display: 'block',
+                      filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
+                    }} />
+                )}
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
@@ -807,6 +822,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
                 <button onClick={resetUpload} style={{ position: 'absolute', top: 8, right: 8, width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', fontSize: 14, cursor: 'pointer' }}>✕</button>
               </div>
 
+              {/* Filter picker */}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'rgba(11,37,69,0.35)', marginBottom: 8, display: 'block' }}>Filter</label>
                 <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
@@ -822,6 +838,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
                 </div>
               </div>
 
+              {/* Text overlay panel */}
               <div style={{ marginBottom: 14 }}>
                 <button onClick={function () { setShowTextPanel(!showTextPanel); }}
                   style={{ width: '100%', padding: '10px', borderRadius: 10, border: '1.5px dashed rgba(11,37,69,0.15)', background: showTextPanel ? 'rgba(197,150,12,0.05)' : 'transparent', color: showTextPanel ? C.gold : C.navy, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: sans }}>
@@ -865,6 +882,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
                 )}
               </div>
 
+              {/* Caption */}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'rgba(11,37,69,0.35)', marginBottom: 6, display: 'block' }}>Caption</label>
                 <textarea value={caption} onChange={function (e) { setCaption(e.target.value); }}
@@ -873,6 +891,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
                 <p style={{ fontSize: 10, color: 'rgba(11,37,69,0.3)', margin: '4px 0 0', textAlign: 'right' }}>{caption.length}/300</p>
               </div>
 
+              {/* Hashtags */}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'rgba(11,37,69,0.35)', marginBottom: 6, display: 'block' }}>Hashtags</label>
                 <input value={tags} onChange={function (e) { setTags(e.target.value); }}
@@ -880,6 +899,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
                   style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1px solid rgba(11,37,69,0.08)', fontSize: 13, outline: 'none', color: C.navy, fontFamily: sans, boxSizing: 'border-box' }} />
               </div>
 
+              {/* Post to community */}
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: 'rgba(11,37,69,0.03)', cursor: 'pointer', marginBottom: 16 }}>
                 <input type="checkbox" checked={postToCommunity} onChange={function (e) { setPostToCommunity(e.target.checked); }} style={{ width: 18, height: 18, accentColor: C.gold }} />
                 <div>
@@ -899,6 +919,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
 
               {error && <p style={{ fontSize: 12, color: C.red, margin: '0 0 12px', padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.06)' }}>⚠ {error}</p>}
 
+              {/* ▼ Post button — always reachable since parent div has safe-area padding */}
               <button onClick={handleUpload} disabled={uploading}
                 style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none', fontSize: 15, fontWeight: 700, background: uploading ? 'rgba(11,37,69,0.08)' : 'linear-gradient(135deg, ' + C.gold + ', ' + C.darkGold + ')', color: uploading ? 'rgba(11,37,69,0.3)' : '#fff', cursor: uploading ? 'default' : 'pointer', fontFamily: sans, boxShadow: uploading ? 'none' : '0 4px 16px rgba(197,150,12,0.3)' }}>
                 {uploading ? 'Posting...' : '🎬 Post CivicReel'}
@@ -940,16 +961,7 @@ export default function CivicReels() {
         .range(from, from + PAGE - 1);
       if (data) {
         var enriched = data.map(function (r) {
-          return Object.assign({}, r, {
-            author_name: r.users ? r.users.full_name : null,
-            author_username: r.users ? r.users.username : null,
-            author_verified: r.users ? r.users.identity_verified : false,
-            author_followers_count: r.users ? r.users.followers_count || 0 : 0,
-            video_url: r.cloudflare_playback_url,
-            user_liked: false,
-            is_following: false,
-            user_saved: false
-          });
+          return Object.assign({}, r, { author_name: r.users ? r.users.full_name : null, author_username: r.users ? r.users.username : null, author_verified: r.users ? r.users.identity_verified : false, author_followers_count: r.users ? r.users.followers_count || 0 : 0, video_url: r.cloudflare_playback_url, user_liked: false, is_following: false, user_saved: false });
         });
         if (from === 0) setReels(enriched); else setReels(function (prev) { return prev.concat(enriched); });
         setHasMore(data.length === PAGE);
@@ -967,41 +979,19 @@ export default function CivicReels() {
 
     if (data) {
       var enriched = data.map(function (r) {
-        return Object.assign({}, r, {
-          author_name: r.users ? r.users.full_name : null,
-          author_username: r.users ? r.users.username : null,
-          author_verified: r.users ? r.users.identity_verified : false,
-          author_followers_count: r.users ? r.users.followers_count || 0 : 0,
-          video_url: r.cloudflare_playback_url,
-          user_liked: false,
-          is_following: false,
-          user_saved: false
-        });
+        return Object.assign({}, r, { author_name: r.users ? r.users.full_name : null, author_username: r.users ? r.users.username : null, author_verified: r.users ? r.users.identity_verified : false, author_followers_count: r.users ? r.users.followers_count || 0 : 0, video_url: r.cloudflare_playback_url, user_liked: false, is_following: false, user_saved: false });
       });
 
       if (currentUser) {
         var reelIds = enriched.map(function (r) { return r.id; });
         var creatorIds = Array.from(new Set(enriched.map(function (r) { return r.user_id; })));
-
         var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
-        if (likes) {
-          var likedSet = {}; likes.forEach(function (l) { likedSet[l.reel_id] = true; });
-          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likedSet[r.id] }); });
-        }
-
+        if (likes) { var likedSet = {}; likes.forEach(function (l) { likedSet[l.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likedSet[r.id] }); }); }
         var { data: follows } = await supabase.from('user_follows').select('following_id').eq('follower_id', currentUser.id).in('following_id', creatorIds);
-        if (follows) {
-          var followSet = {}; follows.forEach(function (f) { followSet[f.following_id] = true; });
-          enriched = enriched.map(function (r) { return Object.assign({}, r, { is_following: !!followSet[r.user_id] }); });
-        }
-
+        if (follows) { var followSet = {}; follows.forEach(function (f) { followSet[f.following_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { is_following: !!followSet[r.user_id] }); }); }
         var { data: saves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
-        if (saves) {
-          var saveSet = {}; saves.forEach(function (s) { saveSet[s.reel_id] = true; });
-          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); });
-        }
+        if (saves) { var saveSet = {}; saves.forEach(function (s) { saveSet[s.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); }); }
       }
-
       if (from === 0) setReels(enriched); else setReels(function (prev) { return prev.concat(enriched); });
       setHasMore(data.length === PAGE);
     }
@@ -1088,22 +1078,12 @@ export default function CivicReels() {
     if (!currentUser) return; setLoading(true); var from = offset || 0;
     var { data } = await supabase.from('civic_reel_saves').select('reel_id, civic_reels:reel_id(*, users:user_id(full_name, username, identity_verified, followers_count))').eq('user_id', currentUser.id).order('created_at', { ascending: false }).range(from, from + PAGE - 1);
     if (data) {
-      var enriched = data.filter(function (s) { return s.civic_reels; }).map(function (s) {
-        var r = s.civic_reels;
-        return Object.assign({}, r, { author_name: r.users ? r.users.full_name : null, author_username: r.users ? r.users.username : null, author_verified: r.users ? r.users.identity_verified : false, author_followers_count: r.users ? r.users.followers_count || 0 : 0, video_url: r.cloudflare_playback_url, user_saved: true });
-      });
+      var enriched = data.filter(function (s) { return s.civic_reels; }).map(function (s) { var r = s.civic_reels; return Object.assign({}, r, { author_name: r.users ? r.users.full_name : null, author_username: r.users ? r.users.username : null, author_verified: r.users ? r.users.identity_verified : false, author_followers_count: r.users ? r.users.followers_count || 0 : 0, video_url: r.cloudflare_playback_url, user_saved: true }); });
       var reelIds = enriched.map(function (r) { return r.id; });
-      if (reelIds.length > 0) {
-        var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
-        if (likes) {
-          var likeSet = {}; likes.forEach(function (l) { likeSet[l.reel_id] = true; });
-          enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); });
-        }
-      }
+      if (reelIds.length > 0) { var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds); if (likes) { var likeSet = {}; likes.forEach(function (l) { likeSet[l.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); }); } }
       if (from === 0) setReels(enriched); else setReels(function (prev) { return prev.concat(enriched); });
       setHasMore(data.length === PAGE);
-    }
-    setLoading(false);
+    } setLoading(false);
   }, [currentUser]);
 
   var loadFollowingReels = useCallback(async function (offset) {
@@ -1116,15 +1096,12 @@ export default function CivicReels() {
       var enriched = data.map(function (r) { return Object.assign({}, r, { author_name: r.users ? r.users.full_name : null, author_username: r.users ? r.users.username : null, author_verified: r.users ? r.users.identity_verified : false, author_followers_count: r.users ? r.users.followers_count || 0 : 0, video_url: r.cloudflare_playback_url, is_following: true, user_saved: false, user_liked: false }); });
       var reelIds = enriched.map(function (r) { return r.id; });
       if (reelIds.length > 0) {
-        var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
-        if (likes) { var likeSet = {}; likes.forEach(function (l) { likeSet[l.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); }); }
-        var { data: saves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
-        if (saves) { var saveSet = {}; saves.forEach(function (s) { saveSet[s.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); }); }
+        var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds); if (likes) { var likeSet = {}; likes.forEach(function (l) { likeSet[l.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); }); }
+        var { data: saves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds); if (saves) { var saveSet = {}; saves.forEach(function (s) { saveSet[s.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); }); }
       }
       if (from === 0) setReels(enriched); else setReels(function (prev) { return prev.concat(enriched); });
       setHasMore(data.length === PAGE);
-    }
-    setLoading(false);
+    } setLoading(false);
   }, [currentUser]);
 
   var loadMyReels = useCallback(async function (offset) {
@@ -1134,15 +1111,12 @@ export default function CivicReels() {
       var enriched = data.map(function (r) { return Object.assign({}, r, { author_name: r.users ? r.users.full_name : null, author_username: r.users ? r.users.username : null, author_verified: r.users ? r.users.identity_verified : false, author_followers_count: r.users ? r.users.followers_count || 0 : 0, video_url: r.cloudflare_playback_url, user_saved: false, user_liked: false }); });
       var reelIds = enriched.map(function (r) { return r.id; });
       if (reelIds.length > 0) {
-        var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
-        if (likes) { var likeSet = {}; likes.forEach(function (l) { likeSet[l.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); }); }
-        var { data: saves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds);
-        if (saves) { var saveSet = {}; saves.forEach(function (s) { saveSet[s.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); }); }
+        var { data: likes } = await supabase.from('civic_reel_likes').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds); if (likes) { var likeSet = {}; likes.forEach(function (l) { likeSet[l.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_liked: !!likeSet[r.id] }); }); }
+        var { data: saves } = await supabase.from('civic_reel_saves').select('reel_id').eq('user_id', currentUser.id).in('reel_id', reelIds); if (saves) { var saveSet = {}; saves.forEach(function (s) { saveSet[s.reel_id] = true; }); enriched = enriched.map(function (r) { return Object.assign({}, r, { user_saved: !!saveSet[r.id] }); }); }
       }
       if (from === 0) setReels(enriched); else setReels(function (prev) { return prev.concat(enriched); });
       setHasMore(data.length === PAGE);
-    }
-    setLoading(false);
+    } setLoading(false);
   }, [currentUser]);
 
   useEffect(function () {
@@ -1186,6 +1160,7 @@ export default function CivicReels() {
         .cv-reels-feed::-webkit-scrollbar { display: none; }
         .cv-reel-card { scroll-snap-align: start; scroll-snap-stop: always; }
 
+        /* ── DESKTOP: fixed, offset past sidebar ──────────────────────── */
         .cv-reels-container {
           position: fixed !important;
           top: 0; right: 0; bottom: 0;
@@ -1196,27 +1171,33 @@ export default function CivicReels() {
           z-index: 20;
         }
 
+        /* ── MOBILE: fills the fixed overlay set by CitizenLayout ────── */
         @media (max-width: 768px) {
           .cv-reels-container {
             left: 0 !important;
+            /* svh = small viewport = visible area when Safari toolbar IS shown */
             height: 100vh !important;
             height: 100svh !important;
           }
 
+          /* Author info: clear tab bar (56px) + safe area */
           .cv-reel-author {
             bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
           }
 
+          /* Engagement sidebar: clear tab bar + safe area */
           .cv-reel-sidebar {
             bottom: calc(116px + env(safe-area-inset-bottom, 0px)) !important;
           }
 
+          /* Top overlay: safe-area handled inline via calc() */
           .cv-reel-top-overlay {
             padding-top: 0 !important;
           }
         }
       `}</style>
 
+      {/* Top overlay — tabs + search + upload button */}
       <div className="cv-reel-top-overlay" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, background: 'linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 70%, transparent 100%)', pointerEvents: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'calc(env(safe-area-inset-top, 0px) + 14px) 16px 0', pointerEvents: 'auto' }}>
           <div style={{ width: 36 }} />
@@ -1244,6 +1225,7 @@ export default function CivicReels() {
           </div>
         </div>
 
+        {/* Feed tabs */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, padding: '8px 0 6px', pointerEvents: 'auto' }}>
           {[{ key: 'following', label: 'Following' }, { key: 'foryou', label: 'For You' }, { key: 'myreels', label: 'My Reels' }, { key: 'saved', label: 'Saved' }].map(function (tab) {
             var isActive = feedMode === tab.key;
@@ -1257,6 +1239,7 @@ export default function CivicReels() {
           })}
         </div>
 
+        {/* Trending hashtags */}
         {!searchTag && feedMode === 'foryou' && (
           <div style={{ padding: '2px 16px 6px', display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch', pointerEvents: 'auto' }}>
             {TRENDING_TAGS.map(function (tag) {
@@ -1271,6 +1254,7 @@ export default function CivicReels() {
         )}
       </div>
 
+      {/* Empty state */}
       {reels.length === 0 && !loading ? (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 24, zIndex: 10 }}>
           <div style={{ width: 80, height: 80, borderRadius: 24, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1299,19 +1283,9 @@ export default function CivicReels() {
           {reels.map(function (reel, i) {
             return (
               <div key={reel.id} data-index={i} className="cv-reel-card" style={{ height: '100svh', minHeight: '100vh', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
-                <ReelCard
-                  reel={reel}
-                  isVisible={i === visibleIndex}
-                  currentUser={currentUser}
-                  onLike={handleLike}
-                  onComment={handleComment}
-                  onShare={handleShare}
-                  onView={handleView}
-                  onFollow={handleFollow}
-                  onSave={handleSave}
-                  onDelete={handleDelete}
-                  index={i}
-                />
+                <ReelCard reel={reel} isVisible={i === visibleIndex} currentUser={currentUser}
+                  onLike={handleLike} onComment={handleComment} onShare={handleShare} onView={handleView}
+                  onFollow={handleFollow} onSave={handleSave} onDelete={handleDelete} index={i} />
               </div>
             );
           })}
