@@ -1,7 +1,4 @@
 import CanonicalUrl from '../../components/CanonicalUrl'
-
-// Inside return(), first line:
-<CanonicalUrl />
 import BackToTop from '../../components/BackToTop'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
@@ -20,7 +17,6 @@ const C = {
 const font = "'Libre Baskerville', Georgia, serif"
 const sans = "'DM Sans', system-ui, sans-serif"
 
-/* ── Helpers ─────────────────────────────────────── */
 function useOnScreen(ref, threshold = 0.12) {
   const [vis, setVis] = useState(false)
   useEffect(() => {
@@ -68,8 +64,6 @@ const timeAgo = ts => {
 }
 const initials = n => (n || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
-/* ── Main Component ──────────────────────────────── */
-
 export default function Landing() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -91,28 +85,33 @@ export default function Landing() {
     setPosts(data || [])
   }
 
-  /* Section refs */
-  const whyRef = useRef(null);   const whyVis  = useOnScreen(whyRef)
-  const howRef = useRef(null);   const howVis  = useOnScreen(howRef)
-  const trustRef = useRef(null); const trustVis = useOnScreen(trustRef)
-  const orgRef = useRef(null);   const orgVis  = useOnScreen(orgRef)
-  const comRef = useRef(null);   const comVis  = useOnScreen(comRef)
-  const ctaRef = useRef(null);   const ctaVis  = useOnScreen(ctaRef)
+  const whyRef  = useRef(null); const whyVis   = useOnScreen(whyRef)
+  const howRef  = useRef(null); const howVis   = useOnScreen(howRef)
+  const trustRef= useRef(null); const trustVis = useOnScreen(trustRef)
+  const orgRef  = useRef(null); const orgVis   = useOnScreen(orgRef)
+  const comRef  = useRef(null); const comVis   = useOnScreen(comRef)
+  const ctaRef  = useRef(null); const ctaVis   = useOnScreen(ctaRef)
 
   return (
-    <div style={{ fontFamily: sans, color: C.ink, background: C.warmWhite, overflowX: 'hidden' }}>
+    <div style={{ fontFamily: sans, color: C.ink, background: C.warmWhite, overflowX: 'hidden', width: '100%', maxWidth: '100vw' }}>
+      <CanonicalUrl />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { overflow-x: hidden; scroll-behavior: smooth; }
 
+        /* ── RESET ──────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+          overflow-x: hidden !important;
+          max-width: 100vw !important;
+          scroll-behavior: smooth;
+        }
+
+        /* ── ANIMATIONS ──────────────────────────────────────────── */
         @keyframes float    { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-10px)} }
         @keyframes floatB   { 0%,100%{transform:translateY(-5px)} 50%{transform:translateY(5px)} }
         @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes fadeUp   { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:none} }
-        @keyframes spin     { to{transform:rotate(360deg)} }
         @keyframes shimmer  { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        @keyframes ring     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes tickerScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
         .hero-badge { animation: fadeUp .7s ease .2s both }
@@ -122,24 +121,82 @@ export default function Landing() {
         .hero-trust { animation: fadeUp .7s ease .8s both }
         .hero-card  { animation: fadeUp .8s ease .5s both }
 
-        .btn-gold { transition: all .22s; }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(197,150,12,.38) !important; filter: brightness(1.06); }
+        /* ── INTERACTIONS ────────────────────────────────────────── */
+        .btn-gold  { transition: all .22s; }
+        .btn-gold:hover  { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(197,150,12,.38) !important; filter: brightness(1.06); }
         .btn-ghost { transition: all .22s; }
         .btn-ghost:hover { background: rgba(255,255,255,.1) !important; transform: translateY(-1px); }
         .card-lift { transition: transform .25s ease, box-shadow .25s ease; }
         .card-lift:hover { transform: translateY(-5px); box-shadow: 0 20px 48px rgba(11,37,69,.12) !important; }
-        .nav-a:hover { color: ${C.goldL} !important; }
+        .nav-a:hover { color: #F0B429 !important; }
         .ticker-inner { display: flex; animation: tickerScroll 22s linear infinite; }
         .ticker-inner:hover { animation-play-state: paused; }
-        .org-feature:hover .org-icon { background: ${C.gold}22 !important; }
-        .step-card:hover .step-num { color: ${C.gold} !important; }
+        .org-feature:hover .org-icon { background: rgba(197,150,12,.13) !important; }
+        .step-card:hover .step-num { color: #C5960C !important; }
         .trust-badge-card { transition: transform .22s ease, box-shadow .22s ease; }
         .trust-badge-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(11,37,69,.08) !important; }
 
-        @media(max-width:900px) {
+        /* ── RESPONSIVE GRIDS ────────────────────────────────────── */
+        /* KEY FIX: gridTemplateColumns defined here (not inline)
+           so media queries can actually override them on mobile     */
+
+        .hero-layout {
+          display: grid;
+          grid-template-columns: 1fr 440px;
+          gap: 64px;
+          align-items: center;
+        }
+        .why-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+        .org-layout {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 64px;
+          align-items: center;
+        }
+        .steps-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        .pledge-cards {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          margin-bottom: 48px;
+        }
+        .commitments-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 14px;
+        }
+        .trust-badges {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 36px;
+        }
+        .trust-promises {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-bottom: 32px;
+        }
+        .footer-cols {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr 1fr;
+          gap: 40px;
+          margin-bottom: 48px;
+        }
+
+        /* ── TABLET (≤900px) ─────────────────────────────────────── */
+        @media (max-width: 900px) {
           .hero-layout      { grid-template-columns: 1fr !important; }
           .why-grid         { grid-template-columns: 1fr !important; }
-          .org-layout       { grid-template-columns: 1fr !important; }
+          .org-layout       { grid-template-columns: 1fr !important; gap: 40px !important; }
           .footer-cols      { grid-template-columns: 1fr 1fr !important; }
           .steps-grid       { grid-template-columns: 1fr !important; }
           .pledge-cards     { grid-template-columns: 1fr !important; }
@@ -148,28 +205,30 @@ export default function Landing() {
           .trust-promises   { grid-template-columns: 1fr !important; }
           .hero-h1          { font-size: 38px !important; }
           .section-title    { font-size: 30px !important; }
+          .hero-card        { display: none; } /* hide dashboard card on tablet/mobile - saves space */
+          .mobile-hide      { display: none !important; }
         }
-        @media(max-width:600px) {
-          .hero-h1       { font-size: 30px !important; }
-          .hero-btns-row { flex-direction: column !important; }
-          .hero-btns-row button { width: 100%; }
-          .footer-cols   { grid-template-columns: 1fr !important; }
-          .trust-row     { flex-wrap: wrap; gap: 16px !important; }
-          .trust-badges  { grid-template-columns: 1fr !important; }
-          .trust-promises { grid-template-columns: 1fr !important; }
-          .section-title { font-size: 26px !important; }
-          .stats-ticker  { font-size: 12px !important; }
-          .pledge-cards     { grid-template-columns: 1fr !important; }
-          .commitments-grid { grid-template-columns: 1fr !important; }
+
+        /* ── MOBILE (≤600px) ─────────────────────────────────────── */
+        @media (max-width: 600px) {
+          .hero-h1        { font-size: 30px !important; }
+          .hero-btns-row  { flex-direction: column !important; }
+          .hero-btns-row button { width: 100% !important; }
+          .footer-cols    { grid-template-columns: 1fr !important; }
+          .trust-row      { flex-wrap: wrap; gap: 16px !important; }
+          .trust-badges   { grid-template-columns: 1fr !important; }
+          .section-title  { font-size: 26px !important; }
+          .stats-ticker   { font-size: 12px !important; }
+          section         { padding-top: 60px !important; padding-bottom: 60px !important; }
+
+          /* Constrain section padding on small screens */
+          .section-inner  { padding-left: 18px !important; padding-right: 18px !important; }
         }
-        @media(max-width:600px) {
-          section { padding-top: 60px !important; padding-bottom: 60px !important; }
-        }
-        @media(min-width:901px) {
+
+        /* ── DESKTOP only ────────────────────────────────────────── */
+        @media (min-width: 901px) {
           .mobile-hide { display: flex !important; }
-        }
-        @media(max-width:900px) {
-          .mobile-hide { display: none !important; }
+          .hero-card   { display: block !important; }
         }
       `}</style>
 
@@ -182,10 +241,10 @@ export default function Landing() {
         borderBottom: navSolid ? '1px solid rgba(197,150,12,0.12)' : 'none',
         transition: 'all .3s ease',
       }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10,
-              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDim})`,
+              background: `linear-gradient(135deg,${C.gold},${C.goldDim})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: font, fontWeight: 700, fontSize: 13, color: '#fff',
               boxShadow: '0 2px 12px rgba(197,150,12,.3)' }}>CV</div>
@@ -217,7 +276,7 @@ export default function Landing() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
             {user ? (
               <button className="btn-gold" onClick={() => navigate('/citizen')}
                 style={{ padding: '9px 22px', borderRadius: 10, border: 'none',
@@ -233,7 +292,7 @@ export default function Landing() {
                     background: 'transparent', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   Sign In
                 </button>
-                <button className="btn-gold mobile-hide" onClick={() => navigate('/org-signup')}
+                <button className="mobile-hide btn-ghost" onClick={() => navigate('/org-signup')}
                   style={{ display: 'none', padding: '9px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,.18)',
                     background: 'transparent', color: 'rgba(255,255,255,.8)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   For Orgs
@@ -254,172 +313,178 @@ export default function Landing() {
       {/* ═══════════ HERO ═══════════ */}
       <section style={{
         position: 'relative', minHeight: '100vh', overflow: 'hidden',
-        background: `linear-gradient(155deg, ${C.navyDeep} 0%, ${C.navy} 45%, ${C.navyMid} 100%)`,
+        background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 45%,${C.navyMid} 100%)`,
         display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 80,
+        width: '100%',
       }}>
+        {/* Background dot grid */}
         <div style={{ position: 'absolute', inset: 0, opacity: .025,
           backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,.6) 1px, transparent 0)',
           backgroundSize: '36px 36px', pointerEvents: 'none' }} />
 
-        <div style={{ position: 'absolute', top: '8%', right: '8%', width: 480, height: 480, borderRadius: '50%',
-          background: `radial-gradient(circle, rgba(197,150,12,.1) 0%, transparent 70%)`,
+        {/* Glowing blobs — clipped by section overflow:hidden */}
+        <div style={{ position: 'absolute', top: '8%', right: '5%', width: 400, height: 400, borderRadius: '50%',
+          background: `radial-gradient(circle,rgba(197,150,12,.1) 0%,transparent 70%)`,
           filter: 'blur(60px)', animation: 'float 9s ease-in-out infinite', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '12%', left: '-5%', width: 360, height: 360, borderRadius: '50%',
-          background: `radial-gradient(circle, rgba(96,165,250,.07) 0%, transparent 70%)`,
+        <div style={{ position: 'absolute', bottom: '12%', left: '-5%', width: 320, height: 320, borderRadius: '50%',
+          background: `radial-gradient(circle,rgba(96,165,250,.07) 0%,transparent 70%)`,
           filter: 'blur(50px)', animation: 'floatB 12s ease-in-out infinite', pointerEvents: 'none' }} />
 
-        <div style={{ position: 'absolute', top: -80, right: -80, pointerEvents: 'none', opacity: .12 }}>
-          <svg width="480" height="480" viewBox="0 0 480 480">
+        {/* Decorative rings — contained by overflow:hidden on section */}
+        <div style={{ position: 'absolute', top: -60, right: -60, pointerEvents: 'none', opacity: .1 }}>
+          <svg width="400" height="400" viewBox="0 0 480 480">
             {[60,100,140,180,220,260].map((r, i) => (
               <circle key={i} cx="240" cy="240" r={r} fill="none"
                 stroke={i % 2 === 0 ? C.gold : '#60a5fa'} strokeWidth=".8"
-                style={{ opacity: 1 - i * .12, animation: `pulse ${3 + i * .6}s ease-in-out infinite`, animationDelay: i * .3 + 's' }} />
+                style={{ opacity: 1 - i * .12, animation: `pulse ${3+i*.6}s ease-in-out infinite`, animationDelay: i*.3+'s' }} />
             ))}
           </svg>
         </div>
 
+        {/* Floating dots */}
         {[
-          { x: '8%',  y: '20%', c: C.goldL,   s: 4 },
-          { x: '18%', y: '75%', c: '#60a5fa',  s: 3 },
-          { x: '45%', y: '10%', c: C.gold,     s: 5 },
-          { x: '62%', y: '80%', c: '#34d399',  s: 3 },
-          { x: '88%', y: '30%', c: '#f472b6',  s: 4 },
-          { x: '75%', y: '65%', c: C.goldL,    s: 2 },
+          { x:'8%',  y:'20%', c:C.goldL,  s:4 },
+          { x:'18%', y:'75%', c:'#60a5fa', s:3 },
+          { x:'45%', y:'10%', c:C.gold,    s:5 },
+          { x:'62%', y:'80%', c:'#34d399', s:3 },
+          { x:'88%', y:'30%', c:'#f472b6', s:4 },
+          { x:'75%', y:'65%', c:C.goldL,   s:2 },
         ].map((p, i) => (
           <div key={i} style={{ position: 'absolute', left: p.x, top: p.y,
             width: p.s, height: p.s, borderRadius: '50%', background: p.c, opacity: .55,
-            animation: `float ${2.5 + i * .4}s ease-in-out infinite`, animationDelay: i * .18 + 's',
+            animation: `float ${2.5+i*.4}s ease-in-out infinite`, animationDelay: i*.18+'s',
             pointerEvents: 'none' }} />
         ))}
 
-        <div className="hero-layout" style={{
-          maxWidth: 1280, margin: '0 auto', padding: '60px 28px 80px',
-          position: 'relative', zIndex: 2,
-          display: 'grid', gridTemplateColumns: '1fr 440px', gap: 64, alignItems: 'center',
-        }}>
-          <div>
-            <div className="hero-badge" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28,
-              padding: '6px 16px', borderRadius: 30,
-              background: 'rgba(197,150,12,.12)', border: '1px solid rgba(197,150,12,.28)',
-            }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, animation: 'pulse 2s infinite' }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: C.goldL, letterSpacing: '.04em' }}>
-                🔒 Identity-verified · Zero bots · Your data never sold
-              </span>
-            </div>
-
-            <h1 className="hero-h1" style={{
-              fontFamily: font, fontWeight: 700, fontSize: 58, lineHeight: 1.12,
-              color: '#fff', marginBottom: 22, letterSpacing: '-.025em',
-            }}>
-              Your Voice,{' '}
-              <span style={{ color: C.goldL, fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
-                Verified
-                <svg viewBox="0 0 220 14" style={{ position: 'absolute', bottom: -4, left: 0, width: '100%', height: 14, overflow: 'visible' }}>
-                  <path d="M2 9 Q55 2 110 7 Q165 12 218 5" fill="none" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" opacity=".55" />
-                </svg>
-              </span>
-            </h1>
-
-            <p className="hero-sub" style={{
-              fontSize: 17.5, lineHeight: 1.72, color: 'rgba(255,255,255,.58)',
-              maxWidth: 520, marginBottom: 38, fontWeight: 400,
-            }}>
-              The civic polling platform where every response is identity-verified. Real citizens, real opinions, real impact on policy.
-            </p>
-
-            <div className="hero-btns hero-btns-row" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 40 }}>
-              <button className="btn-gold" onClick={() => navigate('/signup')}
-                style={{ padding: '15px 34px', borderRadius: 12, border: 'none',
-                  background: `linear-gradient(135deg,${C.gold},${C.goldDim})`,
-                  color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
-                  boxShadow: '0 4px 22px rgba(197,150,12,.32)',
-                  display: 'flex', alignItems: 'center', gap: 8 }}>
-                Get Started Free <span style={{ fontSize: 18 }}>→</span>
-              </button>
-              <button className="btn-ghost" onClick={() => document.getElementById('live-polls')?.scrollIntoView({ behavior: 'smooth' })}
-                style={{ padding: '15px 28px', borderRadius: 12, border: '1px solid rgba(255,255,255,.15)',
-                  background: 'rgba(255,255,255,.04)', color: 'rgba(255,255,255,.85)',
-                  fontSize: 15, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)',
-                  display: 'flex', alignItems: 'center', gap: 8 }}>
-                View Live Polls <span>↓</span>
-              </button>
-            </div>
-
-            <div className="trust-row" style={{ display: 'flex', gap: 28 }}>
-              {[
-                { icon: '🛡️', text: 'Identity Verified' },
-                { icon: '👤', text: 'Real Citizens Only' },
-                { icon: '🔒', text: 'End-to-End Encrypted' },
-              ].map(t => (
-                <div key={t.text} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <span style={{ fontSize: 16, opacity: .75 }}>{t.icon}</span>
-                  <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.38)', fontWeight: 500 }}>{t.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="hero-card" style={{
-            background: 'rgba(255,255,255,.05)', borderRadius: 22,
-            border: '1px solid rgba(255,255,255,.1)', backdropFilter: 'blur(24px)',
-            overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,.25)',
-          }}>
-            <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(255,255,255,.07)',
-              background: 'rgba(255,255,255,.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, animation: 'pulse 2s infinite' }} />
-                <span style={{ fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,.45)', textTransform: 'uppercase', letterSpacing: '.12em' }}>Live Platform Activity</span>
+        {/* Hero content */}
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '60px 20px 80px', position: 'relative', zIndex: 2, width: '100%' }}>
+          <div className="hero-layout">
+            {/* Left column */}
+            <div>
+              <div className="hero-badge" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28,
+                padding: '6px 16px', borderRadius: 30,
+                background: 'rgba(197,150,12,.12)', border: '1px solid rgba(197,150,12,.28)',
+                maxWidth: '100%',
+              }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, flexShrink: 0, animation: 'pulse 2s infinite' }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.goldL, letterSpacing: '.04em', whiteSpace: 'normal', lineHeight: 1.4 }}>
+                  🔒 Identity-verified · Zero bots · Your data never sold
+                </span>
               </div>
-            </div>
 
-            <div style={{ padding: '22px 22px 0' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+              <h1 className="hero-h1" style={{
+                fontFamily: font, fontWeight: 700, fontSize: 58, lineHeight: 1.12,
+                color: '#fff', marginBottom: 22, letterSpacing: '-.025em',
+              }}>
+                Your Voice,{' '}
+                <span style={{ color: C.goldL, fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
+                  Verified
+                  <svg viewBox="0 0 220 14" style={{ position: 'absolute', bottom: -4, left: 0, width: '100%', height: 14, overflow: 'visible' }}>
+                    <path d="M2 9 Q55 2 110 7 Q165 12 218 5" fill="none" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" opacity=".55" />
+                  </svg>
+                </span>
+              </h1>
+
+              <p className="hero-sub" style={{
+                fontSize: 17.5, lineHeight: 1.72, color: 'rgba(255,255,255,.58)',
+                maxWidth: 520, marginBottom: 38, fontWeight: 400,
+              }}>
+                The civic polling platform where every response is identity-verified. Real citizens, real opinions, real impact on policy.
+              </p>
+
+              <div className="hero-btns hero-btns-row" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 40 }}>
+                <button className="btn-gold" onClick={() => navigate('/signup')}
+                  style={{ padding: '15px 34px', borderRadius: 12, border: 'none',
+                    background: `linear-gradient(135deg,${C.gold},${C.goldDim})`,
+                    color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '0 4px 22px rgba(197,150,12,.32)',
+                    display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Get Started Free <span style={{ fontSize: 18 }}>→</span>
+                </button>
+                <button className="btn-ghost" onClick={() => document.getElementById('live-polls')?.scrollIntoView({ behavior: 'smooth' })}
+                  style={{ padding: '15px 28px', borderRadius: 12, border: '1px solid rgba(255,255,255,.15)',
+                    background: 'rgba(255,255,255,.04)', color: 'rgba(255,255,255,.85)',
+                    fontSize: 15, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', gap: 8 }}>
+                  View Live Polls <span>↓</span>
+                </button>
+              </div>
+
+              <div className="trust-row" style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
                 {[
-                  { icon: '🔒', label: 'ID Verified',    desc: 'One person, one voice',   color: C.goldL },
-                  { icon: '🚫', label: 'No Data Sales',  desc: 'Ever. Absolute rule.',     color: C.green },
-                  { icon: '👁️', label: 'Results Only',   desc: 'Orgs see aggregates only', color: '#818cf8' },
-                  { icon: '🗑️', label: 'Delete Anytime', desc: 'Full control, always',     color: '#f472b6' },
-                ].map(s => (
-                  <div key={s.label} style={{ padding: '14px 16px', borderRadius: 14,
-                    background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)' }}>
-                    <p style={{ fontSize: 22, margin: '0 0 4px' }}>{s.icon}</p>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: s.color, margin: '0 0 2px' }}>{s.label}</p>
-                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', margin: 0 }}>{s.desc}</p>
+                  { icon: '🛡️', text: 'Identity Verified' },
+                  { icon: '👤', text: 'Real Citizens Only' },
+                  { icon: '🔒', text: 'End-to-End Encrypted' },
+                ].map(t => (
+                  <div key={t.text} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontSize: 16, opacity: .75 }}>{t.icon}</span>
+                    <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.38)', fontWeight: 500 }}>{t.text}</span>
                   </div>
                 ))}
               </div>
-
-              <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 16, paddingBottom: 8 }}>
-                <p style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 12 }}>Recent Activity</p>
-                {posts.length > 0 ? posts.slice(0, 2).map(p => (
-                  <div key={p.id} style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'flex-start' }}>
-                    <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                      background: `linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                      border: `1.5px solid rgba(197,150,12,.3)`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, fontWeight: 700, color: C.goldL }}>
-                      {initials(p.users?.full_name)}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, color: 'rgba(255,255,255,.52)', margin: '0 0 2px', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.content}</p>
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,.2)' }}>{timeAgo(p.created_at)}</span>
-                    </div>
-                  </div>
-                )) : (
-                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,.22)', fontStyle: 'italic', marginBottom: 12 }}>Community launching soon</p>
-                )}
-              </div>
             </div>
 
-            <div style={{ padding: '0 22px 22px' }}>
-              <button className="btn-gold" onClick={() => navigate('/signup')}
-                style={{ width: '100%', padding: '13px', borderRadius: 12,
-                  border: '1px solid rgba(197,150,12,.3)', background: 'rgba(197,150,12,.1)',
-                  color: C.goldL, fontSize: 13.5, fontWeight: 700, cursor: 'pointer' }}>
-                Join the Movement →
-              </button>
+            {/* Right column — dashboard card (hidden on mobile via CSS) */}
+            <div className="hero-card" style={{
+              background: 'rgba(255,255,255,.05)', borderRadius: 22,
+              border: '1px solid rgba(255,255,255,.1)', backdropFilter: 'blur(24px)',
+              overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,.25)',
+            }}>
+              <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, animation: 'pulse 2s infinite' }} />
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,.45)', textTransform: 'uppercase', letterSpacing: '.12em' }}>Live Platform Activity</span>
+                </div>
+              </div>
+
+              <div style={{ padding: '22px 22px 0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                  {[
+                    { icon: '🔒', label: 'ID Verified',    desc: 'One person, one voice',   color: C.goldL },
+                    { icon: '🚫', label: 'No Data Sales',  desc: 'Ever. Absolute rule.',     color: C.green },
+                    { icon: '👁️', label: 'Results Only',   desc: 'Orgs see aggregates only', color: '#818cf8' },
+                    { icon: '🗑️', label: 'Delete Anytime', desc: 'Full control, always',     color: '#f472b6' },
+                  ].map(s => (
+                    <div key={s.label} style={{ padding: '14px 16px', borderRadius: 14,
+                      background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)' }}>
+                      <p style={{ fontSize: 22, margin: '0 0 4px' }}>{s.icon}</p>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: s.color, margin: '0 0 2px' }}>{s.label}</p>
+                      <p style={{ fontSize: 10, color: 'rgba(255,255,255,.32)', margin: 0 }}>{s.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 16, paddingBottom: 8 }}>
+                  <p style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,.28)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 12 }}>Recent Activity</p>
+                  {posts.length > 0 ? posts.slice(0, 2).map(p => (
+                    <div key={p.id} style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'flex-start' }}>
+                      <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                        background: `linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                        border: `1.5px solid rgba(197,150,12,.3)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 700, color: C.goldL }}>
+                        {initials(p.users?.full_name)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,.52)', margin: '0 0 2px', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.content}</p>
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,.2)' }}>{timeAgo(p.created_at)}</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,.22)', fontStyle: 'italic', marginBottom: 12 }}>Community launching soon</p>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ padding: '0 22px 22px' }}>
+                <button className="btn-gold" onClick={() => navigate('/signup')}
+                  style={{ width: '100%', padding: '13px', borderRadius: 12,
+                    border: '1px solid rgba(197,150,12,.3)', background: 'rgba(197,150,12,.1)',
+                    color: C.goldL, fontSize: 13.5, fontWeight: 700, cursor: 'pointer' }}>
+                  Join the Movement →
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -430,7 +495,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ LIVE STATS TICKER ═══════════ */}
-      <div style={{ background: C.navy, borderBottom: `3px solid ${C.gold}`, overflow: 'hidden', padding: '10px 0' }}>
+      <div style={{ background: C.navy, borderBottom: `3px solid ${C.gold}`, overflow: 'hidden', padding: '10px 0', width: '100%' }}>
         <div className="ticker-inner" style={{ whiteSpace: 'nowrap' }}>
           {[...Array(2)].map((_, rep) => (
             <span key={rep} style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -457,7 +522,7 @@ export default function Landing() {
       </div>
 
       {/* ═══════════ WHY THIS MATTERS ═══════════ */}
-      <section id="how-it-works" ref={whyRef} style={{ padding: '100px 28px', background: C.warmWhite }}>
+      <section id="how-it-works" ref={whyRef} style={{ padding: '100px 20px', background: C.warmWhite, width: '100%' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64, ...fade(whyVis) }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Why This Matters</span>
@@ -467,10 +532,9 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="why-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, ...fade(whyVis, .2) }}>
-            <div style={{ padding: '40px 36px', borderRadius: 22, background: '#fff',
-              border: '1px solid rgba(220,38,38,.12)',
-              boxShadow: '0 4px 20px rgba(11,37,69,.04)' }}>
+          <div className="why-grid" style={{ ...fade(whyVis, .2) }}>
+            <div style={{ padding: '40px 30px', borderRadius: 22, background: '#fff',
+              border: '1px solid rgba(220,38,38,.12)', boxShadow: '0 4px 20px rgba(11,37,69,.04)' }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fee2e2',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, fontSize: 22 }}>✕</div>
               <h3 style={{ fontFamily: font, fontSize: 21, fontWeight: 700, color: C.navy, marginBottom: 20 }}>The Problem</h3>
@@ -489,9 +553,8 @@ export default function Landing() {
               ))}
             </div>
 
-            <div className="card-lift" style={{ padding: '40px 36px', borderRadius: 22, background: '#fff',
-              border: `1.5px solid rgba(197,150,12,.22)`,
-              boxShadow: `0 4px 28px rgba(197,150,12,.07)` }}>
+            <div className="card-lift" style={{ padding: '40px 30px', borderRadius: 22, background: '#fff',
+              border: `1.5px solid rgba(197,150,12,.22)`, boxShadow: `0 4px 28px rgba(197,150,12,.07)` }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: `rgba(197,150,12,.1)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, fontSize: 22 }}>🛡️</div>
               <h3 style={{ fontFamily: font, fontSize: 21, fontWeight: 700, color: C.navy, marginBottom: 20 }}>CivicVerify</h3>
@@ -517,12 +580,12 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ QUOTE BANNER ═══════════ */}
-      <section style={{ padding: '70px 28px', background: `linear-gradient(135deg,${C.navyDeep},${C.navyMid})`, position: 'relative', overflow: 'hidden' }}>
+      <section style={{ padding: '70px 20px', background: `linear-gradient(135deg,${C.navyDeep},${C.navyMid})`, position: 'relative', overflow: 'hidden', width: '100%' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 500, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(197,150,12,.07) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
+          background: 'radial-gradient(circle,rgba(197,150,12,.07) 0%,transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: 40, color: C.gold, opacity: .35, fontFamily: font, lineHeight: 1, marginBottom: 8 }}>"</div>
-          <p style={{ fontFamily: font, fontSize: 23, fontWeight: 400, fontStyle: 'italic',
+          <p style={{ fontFamily: font, fontSize: 22, fontWeight: 400, fontStyle: 'italic',
             color: 'rgba(255,255,255,.88)', lineHeight: 1.65, marginBottom: 14 }}>
             The strength of democracy depends on the participation of its citizens.
           </p>
@@ -537,8 +600,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ═══════════ BUILT WITH TRUST — SOCIAL PROOF ═══════════ */}
-      <section ref={trustRef} style={{ padding: '80px 28px', background: C.warmWhite, borderBottom: `1px solid ${C.border}` }}>
+      {/* ═══════════ BUILT WITH TRUST ═══════════ */}
+      <section ref={trustRef} style={{ padding: '80px 20px', background: C.warmWhite, borderBottom: `1px solid ${C.border}`, width: '100%' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
           <div style={fade(trustVis)}>
             <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Built With Trust</span>
@@ -548,19 +611,17 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Technology badges */}
-          <div className="trust-badges" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 36, ...fade(trustVis, .15) }}>
+          <div className="trust-badges" style={{ ...fade(trustVis, .15) }}>
             {[
-              { icon: '🛡️', name: 'Didit', desc: 'Identity Verification', bg: 'rgba(197,150,12,.08)', border: 'rgba(197,150,12,.2)', color: C.gold },
-              { icon: '🔒', name: 'Supabase', desc: 'Encrypted Database', bg: 'rgba(52,211,153,.06)', border: 'rgba(52,211,153,.18)', color: '#16a34a' },
-              { icon: '⚡', name: 'Vercel', desc: 'Enterprise Hosting', bg: 'rgba(96,165,250,.06)', border: 'rgba(96,165,250,.18)', color: '#2563eb' },
-              { icon: '📂', name: 'Open Source', desc: 'Code on GitHub', bg: 'rgba(11,37,69,.04)', border: 'rgba(11,37,69,.1)', color: C.navy },
+              { icon: '🛡️', name: 'Didit',       desc: 'Identity Verification', bg: 'rgba(197,150,12,.08)', border: 'rgba(197,150,12,.2)',   color: C.gold },
+              { icon: '🔒', name: 'Supabase',    desc: 'Encrypted Database',    bg: 'rgba(52,211,153,.06)', border: 'rgba(52,211,153,.18)',  color: '#16a34a' },
+              { icon: '⚡', name: 'Vercel',      desc: 'Enterprise Hosting',    bg: 'rgba(96,165,250,.06)', border: 'rgba(96,165,250,.18)',  color: '#2563eb' },
+              { icon: '📂', name: 'Open Source', desc: 'Code on GitHub',        bg: 'rgba(11,37,69,.04)',   border: 'rgba(11,37,69,.1)',     color: C.navy },
             ].map(t => (
               <div key={t.name} className="trust-badge-card" style={{
                 display: 'flex', alignItems: 'center', gap: 14,
                 padding: '18px 20px', borderRadius: 16,
-                background: t.bg, border: `1px solid ${t.border}`,
-                cursor: 'default',
+                background: t.bg, border: `1px solid ${t.border}`, cursor: 'default',
               }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -573,11 +634,7 @@ export default function Landing() {
             ))}
           </div>
 
-          {/* Security promises */}
-          <div className="trust-promises" style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 32,
-            ...fade(trustVis, .25),
-          }}>
+          <div className="trust-promises" style={{ ...fade(trustVis, .25) }}>
             {[
               { icon: '🗑️', text: 'Your ID is scanned & discarded — never stored' },
               { icon: '🚫', text: 'Zero data sold to anyone, ever' },
@@ -596,7 +653,6 @@ export default function Landing() {
             ))}
           </div>
 
-          {/* Listed on badge */}
           <div style={{ ...fade(trustVis, .35) }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12,
               padding: '12px 26px', borderRadius: 30,
@@ -611,31 +667,28 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ HOW IT WORKS ═══════════ */}
-      <section ref={howRef} style={{ padding: '100px 28px', background: C.offWhite }}>
+      <section ref={howRef} style={{ padding: '100px 20px', background: C.offWhite, width: '100%' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64, ...fade(howVis) }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>How It Works</span>
             <h2 className="section-title" style={{ fontFamily: font, fontSize: 40, fontWeight: 700, color: C.navy, lineHeight: 1.2 }}>Three Steps to Civic Impact</h2>
           </div>
 
-          <div className="steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
+          <div className="steps-grid">
             {[
-              { num: '01', icon: '🛡️', title: 'Sign Up & Verify', desc: 'Create your account and verify your identity once with a quick ID scan. Completely private.', bg: '#dbeafe', color: '#2563eb' },
+              { num: '01', icon: '🛡️', title: 'Sign Up & Verify',  desc: 'Create your account and verify your identity once with a quick ID scan. Completely private.', bg: '#dbeafe', color: '#2563eb' },
               { num: '02', icon: '✅', title: 'Vote on Live Polls', desc: 'Vote directly on civic polls matched to your community. Discuss with fellow verified citizens.', bg: '#d1fae5', color: '#16a34a' },
-              { num: '03', icon: '📊', title: 'See Real Impact',   desc: "Watch live results, see your community's voice, and track how verified opinions shape decisions.", bg: '#fef3c7', color: C.goldDim },
+              { num: '03', icon: '📊', title: 'See Real Impact',    desc: "Watch live results, see your community's voice, and track how verified opinions shape decisions.", bg: '#fef3c7', color: C.goldDim },
             ].map((step, i) => (
               <div key={step.num} className="card-lift step-card" style={{
-                background: '#fff', borderRadius: 22, padding: '38px 30px',
+                background: '#fff', borderRadius: 22, padding: '38px 28px',
                 border: `1px solid ${C.border}`, position: 'relative', overflow: 'hidden',
-                boxShadow: '0 2px 14px rgba(11,37,69,.04)', ...fade(howVis, .15 * (i + 1)),
+                boxShadow: '0 2px 14px rgba(11,37,69,.04)', ...fade(howVis, .15*(i+1)),
               }}>
                 <span className="step-num" style={{ position: 'absolute', top: 18, right: 22,
-                  fontFamily: font, fontSize: 52, fontWeight: 700, color: `rgba(11,37,69,.05)`, lineHeight: 1,
-                  transition: 'color .3s' }}>{step.num}</span>
+                  fontFamily: font, fontSize: 52, fontWeight: 700, color: `rgba(11,37,69,.05)`, lineHeight: 1, transition: 'color .3s' }}>{step.num}</span>
                 <div style={{ width: 56, height: 56, borderRadius: 16, background: step.bg,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, fontSize: 26 }}>
-                  {step.icon}
-                </div>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, fontSize: 26 }}>{step.icon}</div>
                 <div style={{ width: 36, height: 3, borderRadius: 2, background: step.color, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: font, fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 10 }}>{step.title}</h3>
                 <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.72 }}>{step.desc}</p>
@@ -646,16 +699,15 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ LIVE POLLS ═══════════ */}
-      <section id="live-polls" style={{ padding: '100px 28px', background: C.warmWhite }}>
+      <section id="live-polls" style={{ padding: '100px 20px', background: C.warmWhite, width: '100%' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Vote Now</span>
           <h2 className="section-title" style={{ fontFamily: font, fontSize: 40, fontWeight: 700, color: C.navy, marginBottom: 12, lineHeight: 1.2 }}>Live Civic Polls</h2>
           <p style={{ fontSize: 15.5, color: C.muted, marginBottom: 44, lineHeight: 1.7 }}>Vote, comment, and share — right here, right now</p>
 
-          <div style={{ background: C.offWhite, borderRadius: 24, padding: '64px 40px', border: `1px solid ${C.border}` }}>
+          <div style={{ background: C.offWhite, borderRadius: 24, padding: '64px 32px', border: `1px solid ${C.border}` }}>
             <div style={{ width: 64, height: 64, borderRadius: 18, background: `rgba(197,150,12,.1)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 20px', fontSize: 28 }}>🛡️</div>
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 28 }}>🛡️</div>
             <p style={{ fontFamily: font, fontSize: 19, fontWeight: 700, color: C.navy, marginBottom: 8 }}>No active polls right now</p>
             <p style={{ fontSize: 14, color: C.muted, marginBottom: 28 }}>Check back soon — or sign up to get notified when polls go live</p>
             <button className="btn-gold" onClick={() => navigate('/signup')}
@@ -670,7 +722,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ COMMUNITY ═══════════ */}
-      <section id="community" ref={comRef} style={{ padding: '100px 28px', background: C.offWhite }}>
+      <section id="community" ref={comRef} style={{ padding: '100px 20px', background: C.offWhite, width: '100%' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48, ...fade(comVis) }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>Community Forum</span>
@@ -679,15 +731,15 @@ export default function Landing() {
           </div>
 
           <div style={{ background: '#fff', borderRadius: 18, border: `1px solid ${C.border}`,
-            padding: '22px 26px', marginBottom: 18, boxShadow: '0 2px 12px rgba(11,37,69,.03)',
+            padding: '22px 24px', marginBottom: 18, boxShadow: '0 2px 12px rgba(11,37,69,.03)',
             ...fade(comVis, .2) }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ width: 38, height: 38, borderRadius: '50%', background: C.navy, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: font, fontSize: 12, fontWeight: 700, color: C.goldL }}>
                 {user ? initials(user?.user_metadata?.full_name) : 'K'}
               </div>
-              <div style={{ flex: 1, padding: '12px 16px', borderRadius: 14,
+              <div style={{ flex: 1, minWidth: 120, padding: '12px 16px', borderRadius: 14,
                 background: C.offWhite, border: `1px solid ${C.border}`, cursor: 'pointer' }}
                 onClick={() => navigate(user ? '/citizen/community' : '/signup')}>
                 <span style={{ fontSize: 14, color: C.muted }}>What civic issue is on your mind?</span>
@@ -705,8 +757,7 @@ export default function Landing() {
             {posts.length > 0 ? posts.map(p => (
               <div key={p.id} className="card-lift" onClick={() => navigate(user ? '/citizen/community' : '/signup')}
                 style={{ background: '#fff', borderRadius: 16, padding: '20px 24px',
-                  border: `1px solid ${C.border}`, cursor: 'pointer',
-                  boxShadow: '0 2px 10px rgba(11,37,69,.03)' }}>
+                  border: `1px solid ${C.border}`, cursor: 'pointer', boxShadow: '0 2px 10px rgba(11,37,69,.03)' }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
                     background: `linear-gradient(135deg,${C.navy},${C.navyLight})`,
@@ -716,7 +767,7 @@ export default function Landing() {
                     {initials(p.users?.full_name)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{p.users?.full_name || 'Citizen'}</span>
                       {p.users?.identity_verified && (
                         <span style={{ fontSize: 9.5, fontWeight: 700, color: C.gold,
@@ -725,7 +776,7 @@ export default function Landing() {
                       <span style={{ fontSize: 12, color: C.muted, marginLeft: 'auto' }}>{timeAgo(p.created_at)}</span>
                     </div>
                     <p style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, margin: '0 0 10px' }}>{p.content}</p>
-                    <div style={{ display: 'flex', gap: 16, fontSize: 12.5, color: C.muted }}>
+                    <div style={{ display: 'flex', gap: 16, fontSize: 12.5, color: C.muted, flexWrap: 'wrap' }}>
                       <span>👍 {p.likes_count || 0}</span>
                       <span>💬 {p.comments_count || 0}</span>
                       <span style={{ marginLeft: 'auto', color: C.gold, fontWeight: 700 }}>Join Discussion →</span>
@@ -744,9 +795,9 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ FOR ORGANIZATIONS ═══════════ */}
-      <section id="for-organizations" ref={orgRef} style={{ padding: '100px 28px', background: C.warmWhite }}>
+      <section id="for-organizations" ref={orgRef} style={{ padding: '100px 20px', background: C.warmWhite, width: '100%' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div className="org-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          <div className="org-layout">
             <div style={fade(orgVis)}>
               <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '.18em', display: 'block', marginBottom: 14 }}>For Organizations</span>
               <h2 className="section-title" style={{ fontFamily: font, fontSize: 38, fontWeight: 700, color: C.navy, marginBottom: 18, lineHeight: 1.25 }}>
@@ -758,12 +809,12 @@ export default function Landing() {
 
               <div style={{ display: 'grid', gap: 18, marginBottom: 36 }}>
                 {[
-                  { icon: '🎯', title: 'Targeted Surveys',      desc: 'Commission surveys targeted by age, location, and demographics — without ever seeing who responded' },
-                  { icon: '📊', title: 'Real-Time Results',      desc: 'View aggregated results as they come in — never individual responses or personal details' },
-                  { icon: '✅', title: 'Verified Respondents',   desc: 'Every result backed by identity-verified citizens — no bots, no duplicates, no fake accounts' },
-                  { icon: '🔒', title: 'Results Only, Always',   desc: 'You receive statistical outcomes only. Raw responses and citizen identities are never accessible to anyone' },
+                  { icon: '🎯', title: 'Targeted Surveys',     desc: 'Commission surveys targeted by age, location, and demographics — without ever seeing who responded' },
+                  { icon: '📊', title: 'Real-Time Results',     desc: 'View aggregated results as they come in — never individual responses or personal details' },
+                  { icon: '✅', title: 'Verified Respondents',  desc: 'Every result backed by identity-verified citizens — no bots, no duplicates, no fake accounts' },
+                  { icon: '🔒', title: 'Results Only, Always',  desc: 'You receive statistical outcomes only. Raw responses and citizen identities are never accessible to anyone' },
                 ].map((f, i) => (
-                  <div key={f.title} className="org-feature" style={{ display: 'flex', gap: 16, ...fade(orgVis, .1 * (i + 1)) }}>
+                  <div key={f.title} className="org-feature" style={{ display: 'flex', gap: 16, ...fade(orgVis, .1*(i+1)) }}>
                     <div className="org-icon" style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0,
                       background: `rgba(11,37,69,.06)`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -787,13 +838,11 @@ export default function Landing() {
 
             <div style={fade(orgVis, .3)}>
               <div style={{ background: `linear-gradient(145deg,${C.navyDeep},${C.navyMid})`,
-                borderRadius: 22, padding: 28, boxShadow: '0 24px 64px rgba(11,37,69,.22)',
+                borderRadius: 22, padding: 24, boxShadow: '0 24px 64px rgba(11,37,69,.22)',
                 border: '1px solid rgba(255,255,255,.05)' }}>
-
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', margin: 0 }}>Organization Dashboard</p>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: C.green,
-                    background: 'rgba(22,163,74,.12)', padding: '3px 10px', borderRadius: 10 }}>● Live</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: 'rgba(22,163,74,.12)', padding: '3px 10px', borderRadius: 10 }}>● Live</span>
                 </div>
 
                 <div style={{ marginBottom: 22 }}>
@@ -803,19 +852,19 @@ export default function Landing() {
                   </div>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'flex-end', height: 70 }}>
                     {[30,52,38,65,42,70,55,82,48,75,62,90].map((h, i) => (
-                      <div key={i} style={{ flex: 1, height: h + '%', borderRadius: '3px 3px 0 0',
+                      <div key={i} style={{ flex: 1, height: h+'%', borderRadius: '3px 3px 0 0',
                         background: `linear-gradient(to top,${C.goldDim},${C.goldL})`,
-                        opacity: .65 + i * .028 }} />
+                        opacity: .65+i*.028 }} />
                     ))}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                   {[
-                    { label: 'Verified Rate',        val: '100%', color: C.goldL },
-                    { label: 'Avg Response Time',     val: '<30s',  color: C.green },
-                    { label: 'Completion Rate',       val: '94%',  color: '#60a5fa' },
-                    { label: 'Demographics Covered',  val: '12+',  color: '#f472b6' },
+                    { label: 'Verified Rate',       val: '100%', color: C.goldL },
+                    { label: 'Avg Response Time',    val: '<30s',  color: C.green },
+                    { label: 'Completion Rate',      val: '94%',  color: '#60a5fa' },
+                    { label: 'Demographics Covered', val: '12+',  color: '#f472b6' },
                   ].map(m => (
                     <div key={m.label} style={{ padding: '14px', borderRadius: 12,
                       background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)' }}>
@@ -840,12 +889,12 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ PRIVACY PLEDGE ═══════════ */}
-      <section style={{ padding: '100px 28px', background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 60%,${C.navyMid} 100%)`, position: 'relative', overflow: 'hidden' }}>
+      <section style={{ padding: '100px 20px', background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 60%,${C.navyMid} 100%)`, position: 'relative', overflow: 'hidden', width: '100%' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', opacity: .06 }}>
-          <svg width="800" height="800" viewBox="0 0 800 800">
+          <svg width="600" height="600" viewBox="0 0 800 800">
             {[80,150,220,290,360].map((r, i) => (
               <circle key={i} cx="400" cy="400" r={r} fill="none" stroke={C.gold} strokeWidth=".8"
-                style={{ animation: `pulse ${3 + i * .8}s ease-in-out infinite`, animationDelay: i * .25 + 's' }} />
+                style={{ animation: `pulse ${3+i*.8}s ease-in-out infinite`, animationDelay: i*.25+'s' }} />
             ))}
           </svg>
         </div>
@@ -858,44 +907,23 @@ export default function Landing() {
               <span style={{ fontSize: 16 }}>🛡️</span>
               <span style={{ fontSize: 12, fontWeight: 700, color: C.goldL, textTransform: 'uppercase', letterSpacing: '.14em' }}>Our Privacy Pledge</span>
             </div>
-            <h2 style={{ fontFamily: font, fontSize: 42, fontWeight: 700, color: '#fff', lineHeight: 1.2, marginBottom: 18 }}>
+            <h2 style={{ fontFamily: font, fontSize: 38, fontWeight: 700, color: '#fff', lineHeight: 1.2, marginBottom: 18 }}>
               Your Data Belongs to You.<br />
               <span style={{ color: C.goldL, fontStyle: 'italic' }}>No Exceptions. No Compromise.</span>
             </h2>
-            <p style={{ fontSize: 17, color: 'rgba(255,255,255,.52)', maxWidth: 600, margin: '0 auto', lineHeight: 1.75 }}>
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,.52)', maxWidth: 600, margin: '0 auto', lineHeight: 1.75 }}>
               We built CivicVerify on one non-negotiable principle: citizen data is never for sale, never for access, never shared — with anyone, ever.
             </p>
           </div>
 
-          <div className="pledge-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 48 }}>
+          <div className="pledge-cards">
             {[
-              {
-                icon: '👁️',
-                title: 'No One Sees Your Data',
-                body: 'Not us. Not organisations. Not governments. Not partners. Your individual responses, identity, and participation are cryptographically isolated. Nobody can access them — not even CivicVerify staff.',
-                color: C.goldL,
-                bg: 'rgba(197,150,12,.08)',
-                border: 'rgba(197,150,12,.2)',
-              },
-              {
-                icon: '📊',
-                title: 'Organisations Get Results Only',
-                body: 'When an organisation commissions a survey, they receive one thing: statistical aggregated outcomes. Zero access to who responded, how individuals answered, or any personal information whatsoever.',
-                color: '#60a5fa',
-                bg: 'rgba(96,165,250,.06)',
-                border: 'rgba(96,165,250,.18)',
-              },
-              {
-                icon: '🔐',
-                title: 'Identity Verified, Never Stored',
-                body: "Your identity verification is used once to confirm you're a real citizen. After that, it's discarded. We don't retain ID documents. We never link your civic responses to your real-world identity.",
-                color: '#34d399',
-                bg: 'rgba(52,211,153,.06)',
-                border: 'rgba(52,211,153,.18)',
-              },
+              { icon: '👁️', title: 'No One Sees Your Data', body: 'Not us. Not organisations. Not governments. Not partners. Your individual responses, identity, and participation are cryptographically isolated.', color: C.goldL, bg: 'rgba(197,150,12,.08)', border: 'rgba(197,150,12,.2)' },
+              { icon: '📊', title: 'Organisations Get Results Only', body: 'When an organisation commissions a survey, they receive one thing: statistical aggregated outcomes. Zero access to who responded or personal information.', color: '#60a5fa', bg: 'rgba(96,165,250,.06)', border: 'rgba(96,165,250,.18)' },
+              { icon: '🔐', title: 'Identity Verified, Never Stored', body: "Your identity verification is used once to confirm you're a real citizen. After that, it's discarded. We never retain ID documents.", color: '#34d399', bg: 'rgba(52,211,153,.06)', border: 'rgba(52,211,153,.18)' },
             ].map((card, i) => (
               <div key={i} style={{
-                padding: '36px 30px', borderRadius: 22,
+                padding: '36px 28px', borderRadius: 22,
                 background: card.bg, border: `1px solid ${card.border}`,
                 backdropFilter: 'blur(12px)',
               }}>
@@ -909,11 +937,11 @@ export default function Landing() {
             ))}
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 20, padding: '32px 36px',
+          <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 20, padding: '32px 28px',
             border: '1px solid rgba(255,255,255,.08)' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase',
               letterSpacing: '.16em', marginBottom: 24, textAlign: 'center' }}>Our Absolute Commitments</p>
-            <div className="commitments-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }}>
+            <div className="commitments-grid">
               {[
                 '🚫 We will never sell citizen data to any third party, ever',
                 '🚫 Organisations cannot access individual responses — only aggregated results',
@@ -939,32 +967,24 @@ export default function Landing() {
 
       {/* ═══════════ FINAL CTA ═══════════ */}
       <section ref={ctaRef} style={{
-        padding: '110px 28px',
+        padding: '110px 20px',
         background: `linear-gradient(155deg,${C.navyDeep} 0%,${C.navy} 50%,${C.navyMid} 100%)`,
-        textAlign: 'center', position: 'relative', overflow: 'hidden',
+        textAlign: 'center', position: 'relative', overflow: 'hidden', width: '100%',
       }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          width: 600, height: 600, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(197,150,12,.07) 0%, transparent 70%)',
+          width: 500, height: 500, borderRadius: '50%',
+          background: 'radial-gradient(circle,rgba(197,150,12,.07) 0%,transparent 70%)',
           filter: 'blur(48px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: .08 }}>
-          <svg width="700" height="700" viewBox="0 0 700 700">
-            {[80,140,200,260].map((r, i) => (
-              <circle key={i} cx="350" cy="350" r={r} fill="none" stroke={C.gold} strokeWidth=".8"
-                style={{ animation: `pulse ${3+i*.8}s ease-in-out infinite`, animationDelay: i*.3+'s' }} />
-            ))}
-          </svg>
-        </div>
 
         <div style={{ maxWidth: 620, margin: '0 auto', position: 'relative', zIndex: 2, ...fade(ctaVis) }}>
           <div style={{ width: 68, height: 68, borderRadius: 18, margin: '0 auto 26px',
             background: 'rgba(197,150,12,.12)', border: '1px solid rgba(197,150,12,.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>🛡️</div>
 
-          <h2 style={{ fontFamily: font, fontSize: 40, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.25 }}>
+          <h2 style={{ fontFamily: font, fontSize: 38, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.25 }}>
             Ready to Make Your<br />Voice Count?
           </h2>
-          <p style={{ fontSize: 16.5, color: 'rgba(255,255,255,.48)', marginBottom: 40, lineHeight: 1.72 }}>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,.48)', marginBottom: 40, lineHeight: 1.72 }}>
             Join a growing community of verified citizens shaping the future of civic engagement.
           </p>
 
@@ -999,11 +1019,11 @@ export default function Landing() {
       </section>
 
       {/* ═══════════ FOOTER ═══════════ */}
-      <footer style={{ background: C.navyDeep, borderTop: '3px solid rgba(197,150,12,.2)' }}>
+      <footer style={{ background: C.navyDeep, borderTop: '3px solid rgba(197,150,12,.2)', width: '100%' }}>
         <div style={{ height: 3, background: `linear-gradient(90deg,${C.gold},${C.goldL},${C.gold})` }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 28px 40px' }}>
-          <div className="footer-cols" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40, marginBottom: 48 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 20px 40px' }}>
+          <div className="footer-cols">
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10,
@@ -1020,22 +1040,14 @@ export default function Landing() {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {['🛡️ Identity Verified Network', '🔒 Privacy by Design', '⚖️ Editorial Integrity'].map(t => (
-                  <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,.35)' }}>{t}</span>
-                  </div>
+                  <span key={t} style={{ fontSize: 13, color: 'rgba(255,255,255,.35)' }}>{t}</span>
                 ))}
               </div>
             </div>
 
             <div>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Platform</p>
-              {[
-                ['Sign Up', '/signup'],
-                ['Sign In', '/login'],
-                ['Live Polls', '#live-polls'],
-                ['Community', '#community'],
-                ['For Organizations', '/org-signup'],
-              ].map(([label, href]) => (
+              {[['Sign Up','/signup'],['Sign In','/login'],['Live Polls','#live-polls'],['Community','#community'],['For Organizations','/org-signup']].map(([label, href]) => (
                 <a key={label} href={href}
                   style={{ display: 'block', fontSize: 13.5, color: 'rgba(255,255,255,.32)', textDecoration: 'none', marginBottom: 11, transition: 'color .15s' }}
                   onMouseEnter={e => { e.target.style.color = C.goldL }}
@@ -1056,9 +1068,8 @@ export default function Landing() {
                 { label: 'Terms of Service', path: '/terms' },
                 { label: 'Contact',          path: '/contact' },
               ].map(l => (
-                <span key={l.label}
-                  onClick={() => navigate(l.path)}
-                  style={{ display: 'block', fontSize: 13.5, color: 'rgba(255,255,255,.32)', textDecoration: 'none', marginBottom: 11, transition: 'color .15s', cursor: 'pointer' }}
+                <span key={l.label} onClick={() => navigate(l.path)}
+                  style={{ display: 'block', fontSize: 13.5, color: 'rgba(255,255,255,.32)', marginBottom: 11, cursor: 'pointer', transition: 'color .15s' }}
                   onMouseEnter={e => { e.target.style.color = C.goldL }}
                   onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,.32)' }}>
                   {l.label}
@@ -1090,16 +1101,10 @@ export default function Landing() {
           <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: 24,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)' }}>© 2026 CivicVerify. All rights reserved.</span>
-            <div style={{ display: 'flex', gap: 20 }}>
-              {[
-                { label: 'Privacy', path: '/privacy' },
-                { label: 'Terms',   path: '/terms' },
-                { label: 'FAQ',     path: '/faq' },
-                { label: 'Blog',    path: '/blog' },
-              ].map(l => (
-                <span key={l.label}
-                  onClick={() => navigate(l.path)}
-                  style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)', textDecoration: 'none', transition: 'color .15s', cursor: 'pointer' }}
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+              {[{label:'Privacy',path:'/privacy'},{label:'Terms',path:'/terms'},{label:'FAQ',path:'/faq'},{label:'Blog',path:'/blog'}].map(l => (
+                <span key={l.label} onClick={() => navigate(l.path)}
+                  style={{ fontSize: 12.5, color: 'rgba(255,255,255,.18)', cursor: 'pointer', transition: 'color .15s' }}
                   onMouseEnter={e => { e.target.style.color = C.goldL }}
                   onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,.18)' }}>
                   {l.label}
