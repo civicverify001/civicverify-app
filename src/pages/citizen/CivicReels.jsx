@@ -471,7 +471,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
     chunksRef.current = [];
     // iOS Safari only supports mp4 — detect best mimeType at runtime
     var mimeType = '';
-    var candidates = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    var candidates = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4;codecs=avc1', 'video/mp4'];
     for (var i = 0; i < candidates.length; i++) {
       if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidates[i])) {
         mimeType = candidates[i]; break;
