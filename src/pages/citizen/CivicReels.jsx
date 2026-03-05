@@ -567,7 +567,6 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
         caption: caption.trim() || null,
         tags: parsedTags.length > 0 ? parsedTags : null,
         duration_seconds: duration,
-        video_width: null,   // browser doesn't expose this before upload; playback relies on objectFit
         is_portrait: videoIsPortrait,
         status: 'ready',
         is_community_post: postToCommunity,
