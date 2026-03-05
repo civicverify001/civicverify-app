@@ -441,7 +441,14 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   async function startCamera(facing) {
     try {
       if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
-      var s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: true });
+      var s = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: facing,
+          aspectRatio: { ideal: 9/16 },   // Force portrait 9:16 like TikTok
+          frameRate: { ideal: 30 },
+        },
+        audio: true
+      });
       setStream(s);
       if (videoPreviewRef.current) { videoPreviewRef.current.srcObject = s; videoPreviewRef.current.play(); }
     } catch (e) { setError('Camera access denied. Please allow camera and microphone permissions.'); }
@@ -467,14 +474,9 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
       var blob = new Blob(chunksRef.current, { type: resolvedType });
       var f = new File([blob], 'reel-' + Date.now() + '.' + ext, { type: resolvedType });
       var blobUrl = URL.createObjectURL(blob);
-      // Detect orientation from actual recorded video dimensions
-      var vCheck = document.createElement('video');
-      vCheck.preload = 'metadata';
-      vCheck.onloadedmetadata = function () {
-        setVideoIsPortrait(vCheck.videoHeight >= vCheck.videoWidth);
-        URL.revokeObjectURL(vCheck.src);
-      };
-      vCheck.src = blobUrl;
+      // We requested 9:16 portrait — mark as portrait regardless of raw pixel order
+      // (iOS may store landscape pixels with rotation metadata; treat as portrait)
+      setVideoIsPortrait(true);
       setFile(f); setPreview(blobUrl);
       stream.getTracks().forEach(function (t) { t.stop(); }); setStream(null);
     };
@@ -692,7 +694,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {/* Camera recording */}
           {mode === 'record' && !file && (
             <div>
-              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', width: '100%', height: 380 }}>
+              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', width: '100%', aspectRatio: '9/16', maxHeight: '55vh' }}>
                 <video ref={videoPreviewRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }} />
                 {recording && (
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, background: 'rgba(239,68,68,0.9)' }}>
@@ -724,16 +726,13 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {/* Preview + details */}
           {file && preview && (
             <div>
-              <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16 }}>
+              <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: videoIsPortrait ? '9/16' : '16/9', maxHeight: '50vh' }}>
                 <video src={preview} controls playsInline
                 style={{
-                  width: videoIsPortrait ? '100%' : 'auto',
-                  maxHeight: 280,
-                  height: videoIsPortrait ? 'auto' : 280,
-                  maxWidth: '100%',
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
                   display: 'block',
-                  margin: '0 auto',
                   filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none'
                 }} />
                 {textOverlays.map(function (ov) {
