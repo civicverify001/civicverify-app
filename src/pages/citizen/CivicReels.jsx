@@ -608,12 +608,21 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
                 <span style={{ fontSize: 15, fontWeight: 700, color: C.navy, display: 'block' }}>Upload from Gallery</span>
                 <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.5)' }}>MP4, MOV, WebM · Max 2 min · {MAX_FILE_MB}MB</span>
               </button>
-              <button onClick={function () { setMode('record'); startCamera('user'); }}
-                style={{ padding: '28px 20px', borderRadius: 16, border: '2px dashed rgba(22,163,74,0.3)', background: 'linear-gradient(135deg, rgba(22,163,74,0.04), rgba(22,163,74,0.08))', cursor: 'pointer', textAlign: 'center', fontFamily: sans }}>
-                <span style={{ fontSize: 36, display: 'block', marginBottom: 8 }}>🎥</span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: C.navy, display: 'block' }}>Record Video</span>
-                <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.5)' }}>Use your camera · Max 2 minutes</span>
-              </button>
+              {/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? (
+                <label style={{ padding: '28px 20px', borderRadius: 16, border: '2px dashed rgba(22,163,74,0.3)', background: 'linear-gradient(135deg, rgba(22,163,74,0.04), rgba(22,163,74,0.08))', cursor: 'pointer', textAlign: 'center', fontFamily: sans, display: 'block' }}>
+                  <span style={{ fontSize: 36, display: 'block', marginBottom: 8 }}>🎥</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: C.navy, display: 'block' }}>Record Video</span>
+                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.5)' }}>Opens native camera · Perfect portrait</span>
+                  <input type="file" accept="video/*" capture="user" onChange={handleFileSelect} style={{ display: 'none' }} />
+                </label>
+              ) : (
+                <button onClick={function () { setMode('record'); startCamera('user'); }}
+                  style={{ padding: '28px 20px', borderRadius: 16, border: '2px dashed rgba(22,163,74,0.3)', background: 'linear-gradient(135deg, rgba(22,163,74,0.04), rgba(22,163,74,0.08))', cursor: 'pointer', textAlign: 'center', fontFamily: sans, width: '100%' }}>
+                  <span style={{ fontSize: 36, display: 'block', marginBottom: 8 }}>🎥</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: C.navy, display: 'block' }}>Record Video</span>
+                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.5)' }}>Use your camera · Max 2 minutes</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -632,7 +641,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
 
           {mode === 'record' && !file && (
             <div>
-              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', aspectRatio: '9/16', maxHeight: 360 }}>
+              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', aspectRatio: '9/16', width: '100%', maxHeight: '60vh', margin: '0 auto' }}>
                 <video ref={videoPreviewRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }} />
                 {recording && (
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, background: 'rgba(239,68,68,0.9)' }}>
