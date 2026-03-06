@@ -1005,7 +1005,7 @@ export default function CivicReels() {
   );
 
   return (
-    <div className="cv-reels-container" onWheel={function(e) { if (feedRef.current) feedRef.current.scrollTop += e.deltaY; }} style={{ width: '100%', height: '100%', position: 'relative', background: '#000', overflow: 'hidden' }}>
+    <div className="cv-reels-container" onWheel={function(e) { if (feedRef.current) feedRef.current.scrollTop += e.deltaY; }} style={{ background: '#111' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes heartBurst { 0% { transform: scale(0); opacity: 1 } 50% { transform: scale(1.2); opacity: 0.8 } 100% { transform: scale(1); opacity: 0 } }
@@ -1024,24 +1024,26 @@ export default function CivicReels() {
           height: 100vh !important;
           height: 100svh !important;
           z-index: 20;
-          display: flex;
+          display: flex !important;
           align-items: center;
           justify-content: center;
           background: #111 !important;
-        }
-
-        /* On desktop: center a 9:16 column, fill remaining space with dark bg */
-        .cv-reels-inner {
-          position: relative;
-          height: 100%;
-          width: min(calc(100vh * 9 / 16), 100%);
-          max-width: 480px;
-          background: #000;
           overflow: hidden;
         }
 
+        /* On desktop: center a 9:16 column */
+        .cv-reels-inner {
+          position: relative;
+          height: 100%;
+          width: min(calc(100svh * 9 / 16), 100%);
+          max-width: 430px;
+          background: #000;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
         @media (max-width: 768px) {
-          .cv-reels-container { left: 0 !important; background: #000 !important; }
+          .cv-reels-container { left: 0 !important; }
           .cv-reels-inner { width: 100% !important; max-width: 100% !important; }
           .cv-reel-author { bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important; }
           .cv-reel-sidebar { bottom: calc(116px + env(safe-area-inset-bottom, 0px)) !important; }
