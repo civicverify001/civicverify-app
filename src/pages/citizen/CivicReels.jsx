@@ -1019,21 +1019,37 @@ export default function CivicReels() {
 
         .cv-reels-container {
           position: fixed !important;
-          top: 0; right: 0; bottom: 0;
-          left: 240px;
+          top: 0; bottom: 0;
+          left: 240px; right: 0;
           height: 100vh !important;
           height: 100svh !important;
-          border-radius: 0;
           z-index: 20;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #111 !important;
+        }
+
+        /* On desktop: center a 9:16 column, fill remaining space with dark bg */
+        .cv-reels-inner {
+          position: relative;
+          height: 100%;
+          width: min(calc(100vh * 9 / 16), 100%);
+          max-width: 480px;
+          background: #000;
+          overflow: hidden;
         }
 
         @media (max-width: 768px) {
-          .cv-reels-container { height: 100% !important; border-radius: 0 !important; }
+          .cv-reels-container { left: 0 !important; background: #000 !important; }
+          .cv-reels-inner { width: 100% !important; max-width: 100% !important; }
           .cv-reel-author { bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important; }
           .cv-reel-sidebar { bottom: calc(116px + env(safe-area-inset-bottom, 0px)) !important; }
           .cv-reel-top-overlay { padding-top: env(safe-area-inset-top, 0px) !important; }
         }
       `}</style>
+
+      <div className="cv-reels-inner">
 
       <div className="cv-reel-top-overlay" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, background: 'linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 70%, transparent 100%)', pointerEvents: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 0', pointerEvents: 'auto' }}>
@@ -1127,6 +1143,7 @@ export default function CivicReels() {
       )}
 
       {showUpload && <UploadModal currentUser={currentUser} profile={profile} onClose={function () { setShowUpload(false); }} onUploaded={handleUploaded} />}
+      </div>{/* cv-reels-inner */}
     </div>
   );
 }
