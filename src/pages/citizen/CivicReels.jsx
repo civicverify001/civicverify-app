@@ -245,7 +245,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       </div>
 
       {/* Sidebar buttons (same as your original) */}
-      <div className="cv-reel-sidebar" style={{ position: 'absolute', right: 12, bottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 30 }}>
+      <div className="cv-reel-sidebar" style={{ position: 'absolute', right: 12, bottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 40 }}>
         {/* Like */}
         <button onClick={function (e) { e.stopPropagation(); onLike(reel.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 0 }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)' }}>
@@ -1290,7 +1290,7 @@ export default function CivicReels() {
                   currentUser={currentUser}
                   onLike={handleLike}
                   onComment={function (rid) { setReels(function (prev) { return prev.map(function (r) { return r.id !== rid ? r : Object.assign({}, r, { comments_count: (r.comments_count || 0) + 1 }); }); }); }}
-                  onShare={function (r) { /* keep your share handler if needed */ }}
+                  onShare={handleShare}
                   onView={handleView}
                   onFollow={handleFollow}
                   onSave={handleSave}
