@@ -311,7 +311,7 @@ export default function CitizenLayout() {
       </aside>
 
       {/* ═══════════════ MAIN CONTENT ═══════════════ */}
-      <div style={{ flex: 1, marginLeft: 0, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: '100vh', overflowX: 'hidden', overflowY: 'auto', maxWidth: '100%' }} className="cv-main">
+      <div style={{ flex: 1, marginLeft: 0, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: '100vh', overflowX: 'hidden', maxWidth: '100%' }} className="cv-main">
 
         {!isReelsPage && (
           <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '0 14px', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(52px + env(safe-area-inset-top, 0px))', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(11,37,69,0.15)' }}>
