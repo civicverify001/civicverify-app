@@ -1017,7 +1017,15 @@ export default function CivicReels() {
         .cv-reels-feed::-webkit-scrollbar { display: none; }
         .cv-reel-card { scroll-snap-align: start; scroll-snap-stop: always; }
 
-        .cv-reels-container { height: calc(100vh - 40px); border-radius: 12px; }
+        .cv-reels-container {
+          position: fixed !important;
+          top: 0; right: 0; bottom: 0;
+          left: 240px;
+          height: 100vh !important;
+          height: 100svh !important;
+          border-radius: 0;
+          z-index: 20;
+        }
 
         @media (max-width: 768px) {
           .cv-reels-container { height: 100% !important; border-radius: 0 !important; }
@@ -1108,7 +1116,7 @@ export default function CivicReels() {
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5, overflowY: 'scroll', scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
           {reels.map(function (reel, i) {
             return (
-              <div key={reel.id} data-index={i} className="cv-reel-card" style={{ height: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
+              <div key={reel.id} data-index={i} className="cv-reel-card" style={{ height: '100svh', minHeight: '100vh', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
                 <ReelCard reel={reel} isVisible={i === visibleIndex} currentUser={currentUser}
                   onLike={handleLike} onComment={handleComment} onShare={handleShare} onView={handleView}
                   onFollow={handleFollow} onSave={handleSave} onDelete={handleDelete} index={i} />
