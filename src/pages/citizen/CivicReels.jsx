@@ -1036,7 +1036,7 @@ export default function CivicReels() {
           position: relative;
           height: 100%;
           width: min(calc(100svh * 9 / 16), 100%);
-          max-width: 430px;
+          max-width: 600px;
           background: #000;
           overflow: hidden;
           flex-shrink: 0;
