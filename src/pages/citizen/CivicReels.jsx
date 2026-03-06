@@ -162,7 +162,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Video */}
       <video
         ref={videoRef} src={videoUrl}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none', transform: reel.is_front_camera ? 'scaleX(-1)' : 'none' }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
         loop muted={false} playsInline onClick={handleTap}
       />
 
@@ -675,9 +675,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, width: '100%', maxHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ transform: isFrontCamera ? 'scaleX(-1)' : 'none', width: '100%' }}>
-                  <video src={preview} controls playsInline style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none', display: 'block' }} />
-                </div>
+                <video src={preview} controls playsInline style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none', display: 'block' }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
