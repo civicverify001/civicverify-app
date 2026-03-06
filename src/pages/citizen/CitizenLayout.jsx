@@ -205,7 +205,6 @@ export default function CitizenLayout() {
 
   useEffect(function() { if (user) fetchUnreadDMs(); }, [user]);
 
-  // Close more sheet + sidebar on navigation
   useEffect(function () { setShowMore(false); setOpen(false); }, [location.pathname]);
 
   async function fetchUnreadDMs() {
@@ -237,11 +236,11 @@ export default function CitizenLayout() {
     return location.pathname === link.to || location.pathname.startsWith(link.to + '/');
   }) || location.pathname.startsWith('/citizen/profile/');
 
-  // ── REELS: full-bleed, no header, translucent tab bar ──────────────────
   var isReelsPage = location.pathname === '/citizen/reels' || location.pathname.startsWith('/citizen/reels/');
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: sans, overflow: 'hidden', width: '100%', maxWidth: '100vw' }}>
+    // FIX: removed overflow:'hidden' from outer wrapper — it was blocking all page scrolling
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: sans, width: '100%', maxWidth: '100vw' }}>
       {open && <div onClick={function(){setOpen(false)}} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />}
 
       {/* ═══════════════ DESKTOP SIDEBAR ═══════════════ */}
@@ -312,9 +311,8 @@ export default function CitizenLayout() {
       </aside>
 
       {/* ═══════════════ MAIN CONTENT ═══════════════ */}
-      <div style={{ flex: 1, marginLeft: 0, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: '100vh', overflowX: 'hidden', maxWidth: '100%' }} className="cv-main">
+      <div style={{ flex: 1, marginLeft: 0, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: '100vh', overflowX: 'hidden', overflowY: 'auto', maxWidth: '100%' }} className="cv-main">
 
-        {/* Mobile top bar — hidden on reels page */}
         {!isReelsPage && (
           <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '0 14px', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(52px + env(safe-area-inset-top, 0px))', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(11,37,69,0.15)' }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
@@ -325,16 +323,13 @@ export default function CitizenLayout() {
           </header>
         )}
 
-        {/* Page content */}
         <div style={{ flex: 1, overflowX: 'hidden', maxWidth: '100%' }} className="cv-page-content">
           {isReelsPage ? (
-            // ── REELS: zero padding, full-bleed ──────────────────────────
             <div className="cv-content-reels">
               <PushPrompt userId={user?.id} />
               <Outlet />
             </div>
           ) : (
-            // ── NORMAL PAGES ──────────────────────────────────────────────
             <div className="cv-content-inner" style={{ padding: '28px 32px', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
               <PushPrompt userId={user?.id} />
               <Outlet />
@@ -436,7 +431,7 @@ export default function CitizenLayout() {
 
       {/* ═══════════════ RESPONSIVE STYLES ═══════════════ */}
       <style>{`
-        html, body { overflow-x: hidden !important; max-width: 100vw !important; width: 100% !important; position: relative; -webkit-overflow-scrolling: touch; }
+        html, body { overflow-x: hidden !important; max-width: 100vw !important; width: 100% !important; -webkit-overflow-scrolling: touch; }
         *, *::before, *::after { box-sizing: border-box; }
         @keyframes cvSlideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
@@ -446,7 +441,7 @@ export default function CitizenLayout() {
           .cv-mobile-header { display: none !important; }
           .cv-bottom-tabs { display: none !important; }
           .cv-more-sheet { display: none !important; }
-          .cv-content-reels { width: 100%; min-height: 1px; /* CivicReels uses position:fixed, this is just a mount point */ }
+          .cv-content-reels { width: 100%; min-height: 1px; }
           .cv-content-inner { padding: 28px 32px !important; }
         }
 
@@ -460,7 +455,6 @@ export default function CitizenLayout() {
           .cv-more-sheet { display: block !important; }
           .cv-page-content { max-width: 100vw !important; overflow-x: hidden !important; }
 
-          /* Normal pages: pad bottom so content clears tab bar + safe area */
           .cv-content-inner {
             padding: calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(72px + env(safe-area-inset-bottom, 8px)) !important;
             max-width: 100vw !important;
@@ -468,7 +462,6 @@ export default function CitizenLayout() {
             word-break: break-word !important;
           }
 
-          /* ▼ REELS FIX: truly full-screen, overlaid above tab bar */
           .cv-content-reels {
             position: fixed !important;
             top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
