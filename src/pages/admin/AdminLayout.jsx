@@ -39,15 +39,12 @@ export default function AdminLayout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
-      {/* Mobile overlay */}
       {open && <div onClick={function(){setOpen(false)}} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />}
 
-      {/* Sidebar */}
       <aside style={{
         width: 260, background: 'linear-gradient(180deg, #0B2545 0%, #0d2e55 100%)', position: 'fixed', top: 0, bottom: 0, left: open ? 0 : -260, zIndex: 50,
         display: 'flex', flexDirection: 'column', transition: 'left 0.3s ease', overflowY: 'auto'
       }} className="cv-sidebar">
-        {/* Logo */}
         <div style={{ padding: '24px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={function(){navigate('/')}}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -58,12 +55,10 @@ export default function AdminLayout() {
           <button onClick={function(){setOpen(false)}} className="cv-close-btn" style={{ display: 'none', width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 18, cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}>{'\u2715'}</button>
         </div>
 
-        {/* Admin badge */}
         <div style={{ padding: '0 20px 16px' }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: C.gold, background: C.gold + '15', padding: '4px 10px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 1.5 }}>Admin Panel</span>
         </div>
 
-        {/* Nav links */}
         <nav style={{ flex: 1, padding: '0 12px' }}>
           {links.map(function(link) {
             return (
@@ -81,7 +76,6 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        {/* User info */}
         <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile ? profile.full_name : '...'}</p>
@@ -91,9 +85,8 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
-      <div style={{ flex: 1, marginLeft: 0 }} className="cv-main">
-        {/* Mobile header */}
+      {/* Main content — overflowY: auto fixes mouse scroll on desktop */}
+      <div style={{ flex: 1, marginLeft: 0, minHeight: '100vh', overflowY: 'auto' }} className="cv-main">
         <header className="cv-mobile-header" style={{ display: 'none', position: 'sticky', top: 0, zIndex: 30, background: C.navy, padding: '12px 16px', alignItems: 'center', justifyContent: 'space-between' }}>
           <button onClick={function(){setOpen(true)}} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u2630'}</button>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: font }}>Civic<span style={{ color: C.gold }}>Verify</span></span>
@@ -105,7 +98,6 @@ export default function AdminLayout() {
         </div>
       </div>
 
-      {/* Responsive styles */}
       <style>{'\
         @media (min-width: 769px) {\
           .cv-sidebar { left: 0 !important; }\
