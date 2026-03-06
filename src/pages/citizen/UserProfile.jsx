@@ -63,7 +63,6 @@ function Avatar({ name, url, size }) {
   );
 }
 
-// ── Achievement definitions ───────────────────────────────────────────────────
 var ACHIEVEMENTS = {
   verified_citizen: { icon: '🛡️', label: 'Verified Citizen', desc: 'Completed identity verification', color: C.gold },
   first_post:       { icon: '✍️', label: 'First Post', desc: 'Published first community post', color: C.green },
@@ -86,7 +85,6 @@ var ACHIEVEMENTS = {
   civic_500:        { icon: '🏛️', label: 'Civic Legend', desc: 'Reached 500 civic score', color: C.purple },
 };
 
-// ── Rank tiers ────────────────────────────────────────────────────────────────
 function getRank(score) {
   if (score >= 500) return { name: 'Diamond', color: C.cyan, bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', icon: '💎', next: null, progress: 1 };
   if (score >= 200) return { name: 'Platinum', color: C.purple, bg: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', icon: '👑', next: 500, progress: (score - 200) / 300 };
@@ -95,7 +93,6 @@ function getRank(score) {
   return { name: 'Bronze', color: '#b45309', bg: 'linear-gradient(135deg, #d97706, #b45309)', icon: '🥉', next: 25, progress: score / 25 };
 }
 
-// ── Heatmap component ─────────────────────────────────────────────────────────
 function ActivityHeatmap({ data }) {
   var today = new Date();
   var days = [];
@@ -106,9 +103,7 @@ function ActivityHeatmap({ data }) {
     var found = data.find(function(x) { return x.activity_date === key; });
     days.push({ date: key, count: found ? found.activity_count : 0, day: d.getDay() });
   }
-
   var maxCount = Math.max(1, Math.max.apply(null, days.map(function(d) { return d.count; })));
-
   function getColor(count) {
     if (count === 0) return 'rgba(11,37,69,0.04)';
     var intensity = Math.min(count / maxCount, 1);
@@ -117,17 +112,12 @@ function ActivityHeatmap({ data }) {
     if (intensity < 0.75) return C.gold + '88';
     return C.gold;
   }
-
   var weeks = [];
   var currentWeek = [];
   days.forEach(function(d, i) {
     currentWeek.push(d);
-    if (currentWeek.length === 7 || i === days.length - 1) {
-      weeks.push(currentWeek);
-      currentWeek = [];
-    }
+    if (currentWeek.length === 7 || i === days.length - 1) { weeks.push(currentWeek); currentWeek = []; }
   });
-
   return (
     <div>
       <div style={{ display: 'flex', gap: 3, overflowX: 'auto', paddingBottom: 4 }}>
@@ -136,10 +126,7 @@ function ActivityHeatmap({ data }) {
             <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {week.map(function(d, di) {
                 return (
-                  <div key={di} title={d.date + ': ' + d.count + ' activities'} style={{
-                    width: 12, height: 12, borderRadius: 3, background: getColor(d.count),
-                    transition: 'transform 0.1s', cursor: 'default',
-                  }}
+                  <div key={di} title={d.date + ': ' + d.count + ' activities'} style={{ width: 12, height: 12, borderRadius: 3, background: getColor(d.count), transition: 'transform 0.1s', cursor: 'default' }}
                     onMouseEnter={function(e) { e.currentTarget.style.transform = 'scale(1.3)'; }}
                     onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}
                   />
@@ -161,7 +148,6 @@ function ActivityHeatmap({ data }) {
   );
 }
 
-// ── Civic Score Ring ──────────────────────────────────────────────────────────
 function ScoreRing({ score, rank }) {
   var circumference = 2 * Math.PI * 52;
   var offset = circumference - (rank.progress * circumference);
@@ -182,9 +168,6 @@ function ScoreRing({ score, rank }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 export default function UserProfile() {
   var { userId } = useParams();
   var navigate = useNavigate();
@@ -208,6 +191,8 @@ export default function UserProfile() {
   var [inviteEmail, setInviteEmail] = useState('');
   var [invites, setInvites] = useState([]);
   var [inviteSent, setInviteSent] = useState(false);
+  var [inviteError, setInviteError] = useState('');
+  var [inviteSending, setInviteSending] = useState(false);
   var [pinBusy, setPinBusy] = useState(false);
   var [editing, setEditing] = useState(false);
   var [editData, setEditData] = useState({ bio: '', occupation: '', education: '', website_url: '', civic_interests: [], social_links: {} });
@@ -348,18 +333,43 @@ export default function UserProfile() {
   }
 
   async function sendInvite() {
-    if (!inviteEmail.trim() || !user) return;
-    var { error } = await supabase.from('user_invitations').insert({
+    if (!inviteEmail.trim() || !user || inviteSending) return;
+    setInviteSending(true);
+    setInviteError('');
+
+    // Save to DB
+    var { error: dbError } = await supabase.from('user_invitations').insert({
       inviter_id: user.id, email: inviteEmail.trim(),
     });
-    if (!error) {
-      setInviteSent(true);
-      setInviteEmail('');
-      setTimeout(function() { setInviteSent(false); }, 3000);
-      var { data } = await supabase.from('user_invitations')
-        .select('*').eq('inviter_id', user.id).order('created_at', { ascending: false }).limit(10);
-      setInvites(data || []);
+    if (dbError) {
+      setInviteError('Could not save invitation. Try again.');
+      setInviteSending(false);
+      return;
     }
+
+    // Send actual email via Vercel function
+    try {
+      var resp = await fetch('/api/send-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          inviterName: profile?.full_name || 'A fellow citizen',
+        }),
+      });
+      if (!resp.ok) throw new Error('Email send failed');
+    } catch (e) {
+      // DB record saved, email failed — still show success but log
+      console.error('Invite email failed:', e);
+    }
+
+    setInviteSent(true);
+    setInviteEmail('');
+    setTimeout(function() { setInviteSent(false); }, 3000);
+    var { data } = await supabase.from('user_invitations')
+      .select('*').eq('inviter_id', user.id).order('created_at', { ascending: false }).limit(10);
+    setInvites(data || []);
+    setInviteSending(false);
   }
 
   async function saveProfileInfo() {
@@ -391,11 +401,7 @@ export default function UserProfile() {
   }
 
   function updateEditField(field, value) {
-    setEditData(function(prev) {
-      var next = Object.assign({}, prev);
-      next[field] = value;
-      return next;
-    });
+    setEditData(function(prev) { var next = Object.assign({}, prev); next[field] = value; return next; });
   }
 
   function updateSocialLink(platform, value) {
@@ -440,103 +446,53 @@ export default function UserProfile() {
         ← Back
       </button>
 
-      {/* ── Profile Header ──────────────────────────────────────────────── */}
-      <div style={{
-        background: '#fff', borderRadius: 24, border: '1px solid rgba(11,37,69,0.06)',
-        boxShadow: '0 2px 16px rgba(11,37,69,0.04)', marginBottom: 20,
-        animation: 'fadeIn 0.4s ease', position: 'relative',
-      }}>
+      {/* ── Profile Header ── */}
+      <div style={{ background: '#fff', borderRadius: 24, border: '1px solid rgba(11,37,69,0.06)', boxShadow: '0 2px 16px rgba(11,37,69,0.04)', marginBottom: 20, animation: 'fadeIn 0.4s ease', position: 'relative' }}>
         <div style={{ height: 80, background: 'linear-gradient(135deg, ' + C.navy + ' 0%, #1a3a6a 50%, ' + C.gold + '44 100%)', borderRadius: '24px 24px 0 0', position: 'relative' }}>
           <div style={{ position: 'absolute', top: 12, right: 16, background: rank.bg, padding: '5px 14px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}>
             <span style={{ fontSize: 14 }}>{rank.icon}</span>
             <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: 1 }}>{rank.name}</span>
           </div>
-          {/* Avatar sitting on banner edge */}
           <div style={{ position: 'absolute', bottom: -40, left: 28, background: '#fff', borderRadius: '50%', padding: 4, boxShadow: '0 2px 8px rgba(11,37,69,0.1)' }}>
             <Avatar name={profile.full_name} url={profile.avatar_url} size={80} />
           </div>
         </div>
 
         <div style={{ padding: '0 28px 24px' }}>
-          {/* Spacer for avatar */}
           <div style={{ height: 48 }} />
           <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <h1 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>{profile.full_name}</h1>
-                    {profile.identity_verified && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, background: C.gold + '18', border: '1px solid ' + C.gold + '44', fontSize: 10, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        ✓ Verified
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 5, flexWrap: 'wrap' }}>
-                    {profile.city && profile.state && <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.45)' }}>📍 {profile.city}, {profile.state}</span>}
-                    <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)' }}>Joined {joinDate}</span>
-                    {streak > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: C.orange }}>🔥 {streak} day streak</span>}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <h1 style={{ fontSize: 22, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>{profile.full_name}</h1>
+                  {profile.identity_verified && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, background: C.gold + '18', border: '1px solid ' + C.gold + '44', fontSize: 10, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.05em' }}>✓ Verified</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 5, flexWrap: 'wrap' }}>
+                  {profile.city && profile.state && <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.45)' }}>📍 {profile.city}, {profile.state}</span>}
+                  <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)' }}>Joined {joinDate}</span>
+                  {streak > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: C.orange }}>🔥 {streak} day streak</span>}
+                </div>
               </div>
-
-              {/* Bio */}
-              {profile.bio && (
-                <p style={{ fontSize: 14, color: C.navy, margin: '0 0 10px', lineHeight: 1.65, maxWidth: 440, opacity: 0.75 }}>{profile.bio}</p>
-              )}
-
-              {/* Info chips */}
+              {profile.bio && <p style={{ fontSize: 14, color: C.navy, margin: '0 0 10px', lineHeight: 1.65, maxWidth: 440, opacity: 0.75 }}>{profile.bio}</p>}
               {hasBio && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-                  {profile.occupation && (
-                    <span style={{ fontSize: 12, color: C.navy, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#f1f5f9', fontWeight: 500 }}>💼 {profile.occupation}</span>
-                  )}
-                  {profile.education && (
-                    <span style={{ fontSize: 12, color: C.navy, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#f1f5f9', fontWeight: 500 }}>🎓 {profile.education}</span>
-                  )}
-                  {profile.website_url && (
-                    <a href={profile.website_url.startsWith('http') ? profile.website_url : 'https://' + profile.website_url} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 12, color: C.gold, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: C.gold + '0a', textDecoration: 'none', fontWeight: 600 }}
-                      onClick={function(e) { e.stopPropagation(); }}>
-                      🔗 Website
-                    </a>
-                  )}
-                  {profile.social_links && profile.social_links.twitter && (
-                    <a href={'https://twitter.com/' + profile.social_links.twitter.replace('@', '')} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 12, color: '#0f1419', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#f7f9f9', textDecoration: 'none', fontWeight: 500 }}
-                      onClick={function(e) { e.stopPropagation(); }}>
-                      𝕏 {profile.social_links.twitter}
-                    </a>
-                  )}
-                  {profile.social_links && profile.social_links.linkedin && (
-                    <a href={profile.social_links.linkedin.startsWith('http') ? profile.social_links.linkedin : 'https://linkedin.com/in/' + profile.social_links.linkedin} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 12, color: '#0A66C2', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#0A66C208', textDecoration: 'none', fontWeight: 600 }}
-                      onClick={function(e) { e.stopPropagation(); }}>
-                      in LinkedIn
-                    </a>
-                  )}
+                  {profile.occupation && <span style={{ fontSize: 12, color: C.navy, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#f1f5f9', fontWeight: 500 }}>💼 {profile.occupation}</span>}
+                  {profile.education && <span style={{ fontSize: 12, color: C.navy, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#f1f5f9', fontWeight: 500 }}>🎓 {profile.education}</span>}
+                  {profile.website_url && <a href={profile.website_url.startsWith('http') ? profile.website_url : 'https://' + profile.website_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.gold, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: C.gold + '0a', textDecoration: 'none', fontWeight: 600 }} onClick={function(e) { e.stopPropagation(); }}>🔗 Website</a>}
+                  {profile.social_links && profile.social_links.twitter && <a href={'https://twitter.com/' + profile.social_links.twitter.replace('@', '')} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#0f1419', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#f7f9f9', textDecoration: 'none', fontWeight: 500 }} onClick={function(e) { e.stopPropagation(); }}>𝕏 {profile.social_links.twitter}</a>}
+                  {profile.social_links && profile.social_links.linkedin && <a href={profile.social_links.linkedin.startsWith('http') ? profile.social_links.linkedin : 'https://linkedin.com/in/' + profile.social_links.linkedin} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#0A66C2', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: '#0A66C208', textDecoration: 'none', fontWeight: 600 }} onClick={function(e) { e.stopPropagation(); }}>in LinkedIn</a>}
                 </div>
               )}
-
               {!isOwnProfile && user && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                  <button onClick={toggleFollow} disabled={followBusy} style={{
-                    padding: '9px 22px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
-                    background: isFollowing ? 'transparent' : C.navy, color: isFollowing ? C.navy : C.gold,
-                    border: isFollowing ? '2px solid ' + C.navy + '22' : '2px solid ' + C.navy,
-                  }}>{followBusy ? '...' : isFollowing ? '✓ Following' : '+ Follow'}</button>
-                  <button onClick={function() { navigate('/citizen/messages/' + userId); }} style={{
-                    padding: '9px 18px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    background: 'rgba(11,37,69,0.04)', color: C.navy, border: '1px solid rgba(11,37,69,0.1)',
-                  }}>✉ Message</button>
+                  <button onClick={toggleFollow} disabled={followBusy} style={{ padding: '9px 22px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', background: isFollowing ? 'transparent' : C.navy, color: isFollowing ? C.navy : C.gold, border: isFollowing ? '2px solid ' + C.navy + '22' : '2px solid ' + C.navy }}>{followBusy ? '...' : isFollowing ? '✓ Following' : '+ Follow'}</button>
+                  <button onClick={function() { navigate('/citizen/messages/' + userId); }} style={{ padding: '9px 18px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'rgba(11,37,69,0.04)', color: C.navy, border: '1px solid rgba(11,37,69,0.1)' }}>✉ Message</button>
                 </div>
               )}
-
               <div style={{ display: 'flex', gap: 24 }}>
-                {[
-                  { label: 'Posts', val: stats.posts },
-                  { label: 'Followers', val: stats.followers },
-                  { label: 'Following', val: stats.following },
-                  { label: 'Debates', val: stats.debates },
-                ].map(function(s) {
+                {[{ label: 'Posts', val: stats.posts }, { label: 'Followers', val: stats.followers }, { label: 'Following', val: stats.following }, { label: 'Debates', val: stats.debates }].map(function(s) {
                   return (
                     <div key={s.label} style={{ textAlign: 'center' }}>
                       <p style={{ fontSize: 20, fontWeight: 800, color: C.navy, margin: 0, fontFamily: font }}>{s.val}</p>
@@ -546,66 +502,40 @@ export default function UserProfile() {
                 })}
               </div>
             </div>
-
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 44 }}>
               <ScoreRing score={civicScore} rank={rank} />
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(11,37,69,0.3)', margin: '6px 0 0', textTransform: 'uppercase', letterSpacing: 1 }}>Civic Score</p>
-              {rank.next && (
-                <p style={{ fontSize: 10, color: 'rgba(11,37,69,0.25)', margin: '2px 0 0' }}>{rank.next - civicScore} pts to next rank</p>
-              )}
+              {rank.next && <p style={{ fontSize: 10, color: 'rgba(11,37,69,0.25)', margin: '2px 0 0' }}>{rank.next - civicScore} pts to next rank</p>}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: 2, marginBottom: 20, padding: 4, background: '#f8fafc', borderRadius: 14, border: '1px solid rgba(11,37,69,0.05)', overflowX: 'auto' }}>
-        {[
-          { id: 'overview', label: '🏠 Overview' },
-          { id: 'posts', label: '📝 Posts', count: stats.posts },
-          { id: 'achievements', label: '🏆 Badges', count: achievements.length },
-          { id: 'followers', label: '👥 Followers', count: stats.followers },
-          { id: 'following', label: '🤝 Following', count: stats.following },
-        ].map(function(t) {
+        {[{ id: 'overview', label: '🏠 Overview' }, { id: 'posts', label: '📝 Posts', count: stats.posts }, { id: 'achievements', label: '🏆 Badges', count: achievements.length }, { id: 'followers', label: '👥 Followers', count: stats.followers }, { id: 'following', label: '🤝 Following', count: stats.following }].map(function(t) {
           return (
-            <button key={t.id} onClick={function() { setTab(t.id); }} style={{
-              flex: 1, padding: '10px 8px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-              background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? C.navy : 'rgba(11,37,69,0.35)',
-              boxShadow: tab === t.id ? '0 1px 4px rgba(11,37,69,0.06)' : 'none', transition: 'all 0.2s', whiteSpace: 'nowrap',
-            }}>
+            <button key={t.id} onClick={function() { setTab(t.id); }} style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? C.navy : 'rgba(11,37,69,0.35)', boxShadow: tab === t.id ? '0 1px 4px rgba(11,37,69,0.06)' : 'none', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
               {t.label} {t.count !== undefined && <span style={{ fontSize: 10, fontWeight: 700, color: tab === t.id ? C.gold : 'rgba(11,37,69,0.2)', marginLeft: 3 }}>{t.count}</span>}
             </button>
           );
         })}
       </div>
 
-      {/* ═══════════ OVERVIEW TAB ════════════════════════════════════════════ */}
+      {/* ── OVERVIEW TAB ── */}
       {tab === 'overview' && (
         <div style={{ display: 'grid', gap: 16, animation: 'slideUp 0.3s ease' }}>
-
-          {/* Civic Interests — colorful pastel pills, no card wrapper */}
           {hasInterests && !editing && (
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
               {profile.civic_interests.map(function(tag) {
                 var c = getInterestColor(tag);
-                return (
-                  <span key={tag} style={{
-                    fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 20,
-                    background: c.bg, color: c.text, letterSpacing: 0.2,
-                  }}>{tag}</span>
-                );
+                return <span key={tag} style={{ fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 20, background: c.bg, color: c.text, letterSpacing: 0.2 }}>{tag}</span>;
               })}
             </div>
           )}
-
-          {/* Edit button — subtle text link */}
           {isOwnProfile && !editing && (
             <div style={{ textAlign: 'right', marginTop: -8 }}>
-              <button onClick={function() { setEditing(true); }} style={{
-                padding: '6px 16px', borderRadius: 10, border: 'none',
-                background: 'transparent', color: 'rgba(11,37,69,0.3)', fontSize: 12, fontWeight: 600,
-                cursor: 'pointer', transition: 'all 0.2s',
-              }}
+              <button onClick={function() { setEditing(true); }} style={{ padding: '6px 16px', borderRadius: 10, border: 'none', background: 'transparent', color: 'rgba(11,37,69,0.3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={function(e) { e.currentTarget.style.color = C.gold; }}
                 onMouseLeave={function(e) { e.currentTarget.style.color = 'rgba(11,37,69,0.3)'; }}>
                 ✏️ Edit Profile Info
@@ -613,104 +543,52 @@ export default function UserProfile() {
             </div>
           )}
 
-          {/* ── INLINE EDIT PANEL ──────────────────────────────────────────── */}
           {editing && isOwnProfile && (
             <div style={{ background: '#fff', borderRadius: 20, padding: '24px 28px', border: '1px solid ' + C.gold + '22', boxShadow: '0 2px 16px rgba(197,150,12,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: 0, fontFamily: font }}>Edit Profile</h3>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={function() { setEditing(false); setEditData({ bio: profile.bio || '', occupation: profile.occupation || '', education: profile.education || '', website_url: profile.website_url || '', civic_interests: profile.civic_interests || [], social_links: profile.social_links || {} }); }}
-                    style={{ padding: '7px 16px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.08)', background: '#fff', color: 'rgba(11,37,69,0.45)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={saveProfileInfo} disabled={savingProfile}
-                    style={{ padding: '7px 22px', borderRadius: 10, border: 'none', background: C.navy, color: C.gold, fontSize: 12, fontWeight: 700, cursor: savingProfile ? 'default' : 'pointer', opacity: savingProfile ? 0.6 : 1 }}>
-                    {savingProfile ? 'Saving...' : 'Save'}
-                  </button>
+                  <button onClick={function() { setEditing(false); setEditData({ bio: profile.bio || '', occupation: profile.occupation || '', education: profile.education || '', website_url: profile.website_url || '', civic_interests: profile.civic_interests || [], social_links: profile.social_links || {} }); }} style={{ padding: '7px 16px', borderRadius: 10, border: '1px solid rgba(11,37,69,0.08)', background: '#fff', color: 'rgba(11,37,69,0.45)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={saveProfileInfo} disabled={savingProfile} style={{ padding: '7px 22px', borderRadius: 10, border: 'none', background: C.navy, color: C.gold, fontSize: 12, fontWeight: 700, cursor: savingProfile ? 'default' : 'pointer', opacity: savingProfile ? 0.6 : 1 }}>{savingProfile ? 'Saving...' : 'Save'}</button>
                 </div>
               </div>
-
               <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.3)', margin: '0 0 18px' }}>All fields are optional — only fill in what you want to show.</p>
-
-              {/* Bio */}
               <div style={{ marginBottom: 18 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.45)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>About Me</label>
-                <textarea value={editData.bio} onChange={function(e) { updateEditField('bio', e.target.value); }}
-                  maxLength={160} placeholder="A short bio about yourself..."
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, resize: 'vertical', minHeight: 56, maxHeight: 100, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }}
-                  onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }}
-                  onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }}
-                />
+                <textarea value={editData.bio} onChange={function(e) { updateEditField('bio', e.target.value); }} maxLength={160} placeholder="A short bio about yourself..." style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, resize: 'vertical', minHeight: 56, maxHeight: 100, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }} onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }} />
                 <p style={{ fontSize: 10, color: 'rgba(11,37,69,0.2)', margin: '4px 0 0', textAlign: 'right' }}>{(editData.bio || '').length}/160</p>
               </div>
-
-              {/* Occupation + Education */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.45)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>💼 Occupation</label>
-                  <input value={editData.occupation} onChange={function(e) { updateEditField('occupation', e.target.value); }}
-                    placeholder="e.g. Software Engineer"
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }}
-                    onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }}
-                    onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }}
-                  />
+                  <input value={editData.occupation} onChange={function(e) { updateEditField('occupation', e.target.value); }} placeholder="e.g. Software Engineer" style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }} onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }} />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.45)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>🎓 Education</label>
-                  <input value={editData.education} onChange={function(e) { updateEditField('education', e.target.value); }}
-                    placeholder="e.g. BS Computer Science"
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }}
-                    onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }}
-                    onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }}
-                  />
+                  <input value={editData.education} onChange={function(e) { updateEditField('education', e.target.value); }} placeholder="e.g. BS Computer Science" style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }} onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }} />
                 </div>
               </div>
-
-              {/* Website + Socials */}
               <div style={{ marginBottom: 18 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.45)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>🔗 Website</label>
-                <input value={editData.website_url} onChange={function(e) { updateEditField('website_url', e.target.value); }}
-                  placeholder="https://yourwebsite.com"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }}
-                  onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }}
-                  onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }}
-                />
+                <input value={editData.website_url} onChange={function(e) { updateEditField('website_url', e.target.value); }} placeholder="https://yourwebsite.com" style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }} onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }} />
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.45)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>𝕏 Twitter / X</label>
-                  <input value={(editData.social_links || {}).twitter || ''} onChange={function(e) { updateSocialLink('twitter', e.target.value); }}
-                    placeholder="@username"
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }}
-                    onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }}
-                    onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }}
-                  />
+                  <input value={(editData.social_links || {}).twitter || ''} onChange={function(e) { updateSocialLink('twitter', e.target.value); }} placeholder="@username" style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }} onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }} />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.45)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>in LinkedIn</label>
-                  <input value={(editData.social_links || {}).linkedin || ''} onChange={function(e) { updateSocialLink('linkedin', e.target.value); }}
-                    placeholder="username or URL"
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }}
-                    onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }}
-                    onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }}
-                  />
+                  <input value={(editData.social_links || {}).linkedin || ''} onChange={function(e) { updateSocialLink('linkedin', e.target.value); }} placeholder="username or URL" style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, fontFamily: sans, color: C.navy, outline: 'none', boxSizing: 'border-box', background: '#fafbfc' }} onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }} onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }} />
                 </div>
               </div>
-
-              {/* Civic Interests */}
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.45)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 8 }}>Civic Interests</label>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {CIVIC_INTERESTS.map(function(tag) {
                     var selected = (editData.civic_interests || []).indexOf(tag) >= 0;
                     var c = getInterestColor(tag);
-                    return (
-                      <button key={tag} onClick={function() { toggleInterest(tag); }} style={{
-                        fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 20, cursor: 'pointer',
-                        transition: 'all 0.15s', border: 'none',
-                        background: selected ? c.bg : '#f1f5f9',
-                        color: selected ? c.text : 'rgba(11,37,69,0.3)',
-                      }}>{tag}</button>
-                    );
+                    return <button key={tag} onClick={function() { toggleInterest(tag); }} style={{ fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 20, cursor: 'pointer', transition: 'all 0.15s', border: 'none', background: selected ? c.bg : '#f1f5f9', color: selected ? c.text : 'rgba(11,37,69,0.3)' }}>{tag}</button>;
                   })}
                 </div>
               </div>
@@ -754,11 +632,7 @@ export default function UserProfile() {
             <div style={{ background: '#fff', borderRadius: 18, padding: '18px 22px', border: '1px solid rgba(11,37,69,0.05)' }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 14px', fontFamily: font }}>🎙️ Debate Record</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                {[
-                  { label: 'Total', val: debateRecord.total, color: C.navy },
-                  { label: 'Started', val: debateRecord.as_creator, color: C.gold },
-                  { label: 'Completed', val: debateRecord.completed, color: C.green },
-                ].map(function(s) {
+                {[{ label: 'Total', val: debateRecord.total, color: C.navy }, { label: 'Started', val: debateRecord.as_creator, color: C.gold }, { label: 'Completed', val: debateRecord.completed, color: C.green }].map(function(s) {
                   return (
                     <div key={s.label} style={{ textAlign: 'center', padding: '14px 8px', borderRadius: 14, background: s.color + '06', border: '1px solid ' + s.color + '10' }}>
                       <p style={{ fontSize: 24, fontWeight: 800, color: s.color, margin: 0, fontFamily: font }}>{s.val}</p>
@@ -780,10 +654,7 @@ export default function UserProfile() {
                 {achievements.slice(0, 6).map(function(a) {
                   var def = ACHIEVEMENTS[a.achievement_key] || { icon: '🏅', label: a.achievement_key, color: C.navy };
                   return (
-                    <div key={a.achievement_key} style={{
-                      flexShrink: 0, width: 80, textAlign: 'center', padding: '12px 8px', borderRadius: 14,
-                      background: def.color + '06', border: '1px solid ' + def.color + '12',
-                    }}>
+                    <div key={a.achievement_key} style={{ flexShrink: 0, width: 80, textAlign: 'center', padding: '12px 8px', borderRadius: 14, background: def.color + '06', border: '1px solid ' + def.color + '12' }}>
                       <span style={{ fontSize: 28, display: 'block', marginBottom: 4 }}>{def.icon}</span>
                       <p style={{ fontSize: 9, fontWeight: 700, color: def.color, margin: 0, lineHeight: 1.3 }}>{def.label}</p>
                     </div>
@@ -820,36 +691,36 @@ export default function UserProfile() {
             </div>
           )}
 
+          {/* ── Invite Citizens ── */}
           {isOwnProfile && (
             <div style={{ background: '#fff', borderRadius: 18, padding: '18px 22px', border: '1px solid rgba(11,37,69,0.05)' }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 6px', fontFamily: font }}>📨 Invite Citizens</h3>
               <p style={{ fontSize: 12, color: 'rgba(11,37,69,0.35)', margin: '0 0 14px' }}>Grow the community — earn the Recruiter badge!</p>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                <input value={inviteEmail} onChange={function(e) { setInviteEmail(e.target.value); }}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <input value={inviteEmail} onChange={function(e) { setInviteEmail(e.target.value); setInviteError(''); }}
                   onKeyDown={function(e) { if (e.key === 'Enter') sendInvite(); }}
                   placeholder="Enter email address..."
                   style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: '1.5px solid rgba(11,37,69,0.08)', fontSize: 13, outline: 'none', fontFamily: sans, color: C.navy, boxSizing: 'border-box', background: '#fafbfc' }}
                   onFocus={function(e) { e.target.style.borderColor = C.gold + '66'; e.target.style.background = '#fff'; }}
                   onBlur={function(e) { e.target.style.borderColor = 'rgba(11,37,69,0.08)'; e.target.style.background = '#fafbfc'; }}
                 />
-                <button onClick={sendInvite} disabled={!inviteEmail.trim()} style={{
-                  padding: '10px 20px', borderRadius: 12, border: 'none', fontSize: 13, fontWeight: 700, cursor: inviteEmail.trim() ? 'pointer' : 'default',
-                  background: inviteEmail.trim() ? C.navy : 'rgba(11,37,69,0.04)', color: inviteEmail.trim() ? C.gold : 'rgba(11,37,69,0.2)',
-                }}>Send</button>
+                <button onClick={sendInvite} disabled={!inviteEmail.trim() || inviteSending} style={{
+                  padding: '10px 20px', borderRadius: 12, border: 'none', fontSize: 13, fontWeight: 700,
+                  cursor: (inviteEmail.trim() && !inviteSending) ? 'pointer' : 'default',
+                  background: (inviteEmail.trim() && !inviteSending) ? C.navy : 'rgba(11,37,69,0.04)',
+                  color: (inviteEmail.trim() && !inviteSending) ? C.gold : 'rgba(11,37,69,0.2)',
+                }}>{inviteSending ? 'Sending...' : 'Send'}</button>
               </div>
               {inviteSent && <p style={{ fontSize: 12, fontWeight: 600, color: C.green, margin: '0 0 8px' }}>✓ Invitation sent!</p>}
+              {inviteError && <p style={{ fontSize: 12, fontWeight: 600, color: C.red, margin: '0 0 8px' }}>{inviteError}</p>}
               {invites.length > 0 && (
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.3)', margin: '0 0 8px', textTransform: 'uppercase' }}>Sent Invitations</p>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(11,37,69,0.3)', margin: '8px 0 8px', textTransform: 'uppercase' }}>Sent Invitations</p>
                   {invites.map(function(inv) {
                     return (
                       <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(11,37,69,0.03)' }}>
                         <span style={{ fontSize: 12, color: C.navy }}>{inv.email}</span>
-                        <span style={{
-                          fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
-                          background: inv.status === 'accepted' ? C.green + '12' : C.gold + '12',
-                          color: inv.status === 'accepted' ? C.green : C.gold,
-                        }}>{inv.status}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: inv.status === 'accepted' ? C.green + '12' : C.gold + '12', color: inv.status === 'accepted' ? C.green : C.gold }}>{inv.status}</span>
                       </div>
                     );
                   })}
@@ -860,7 +731,7 @@ export default function UserProfile() {
         </div>
       )}
 
-      {/* ═══════════ POSTS TAB ═══════════════════════════════════════════════ */}
+      {/* ── POSTS TAB ── */}
       {tab === 'posts' && (
         <div style={{ display: 'grid', gap: 12, animation: 'slideUp 0.3s ease' }}>
           {posts.length === 0 ? (
@@ -871,11 +742,7 @@ export default function UserProfile() {
           ) : posts.map(function(p) {
             var isPinned = profile?.pinned_post_id === p.id;
             return (
-              <div key={p.id} style={{
-                background: '#fff', borderRadius: 16, padding: '16px 20px',
-                border: isPinned ? '1.5px solid ' + C.gold + '25' : '1px solid rgba(11,37,69,0.05)',
-                transition: 'all 0.2s',
-              }}>
+              <div key={p.id} style={{ background: '#fff', borderRadius: 16, padding: '16px 20px', border: isPinned ? '1.5px solid ' + C.gold + '25' : '1px solid rgba(11,37,69,0.05)', transition: 'all 0.2s' }}>
                 {isPinned && <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8, fontSize: 10, fontWeight: 700, color: C.gold }}>📌 PINNED</div>}
                 {p.content && <p style={{ fontSize: 14, color: C.navy, margin: '0 0 8px', lineHeight: 1.6 }}>{p.content}</p>}
                 {p.image_url && <img src={p.image_url} alt="" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 10, marginBottom: 8, display: 'block' }} />}
@@ -883,12 +750,7 @@ export default function UserProfile() {
                   <span>❤️ {p.likes_count || 0}</span>
                   <span>💬 {p.comments_count || 0}</span>
                   <span style={{ marginLeft: 'auto' }}>{timeAgo(p.created_at)}</span>
-                  {isOwnProfile && (
-                    <button onClick={function() { pinPost(p.id); }} disabled={pinBusy}
-                      style={{ fontSize: 11, fontWeight: 600, color: isPinned ? C.gold : 'rgba(11,37,69,0.25)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                      {isPinned ? '📌 Unpin' : '📌 Pin'}
-                    </button>
-                  )}
+                  {isOwnProfile && <button onClick={function() { pinPost(p.id); }} disabled={pinBusy} style={{ fontSize: 11, fontWeight: 600, color: isPinned ? C.gold : 'rgba(11,37,69,0.25)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{isPinned ? '📌 Unpin' : '📌 Pin'}</button>}
                 </div>
               </div>
             );
@@ -896,7 +758,7 @@ export default function UserProfile() {
         </div>
       )}
 
-      {/* ═══════════ ACHIEVEMENTS TAB ════════════════════════════════════════ */}
+      {/* ── ACHIEVEMENTS TAB ── */}
       {tab === 'achievements' && (
         <div style={{ animation: 'slideUp 0.3s ease' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: '0 0 14px', fontFamily: font }}>Unlocked ({achievements.length})</h3>
@@ -909,10 +771,7 @@ export default function UserProfile() {
             ) : achievements.map(function(a) {
               var def = ACHIEVEMENTS[a.achievement_key] || { icon: '🏅', label: a.achievement_key, desc: '', color: C.navy };
               return (
-                <div key={a.achievement_key} style={{
-                  background: '#fff', borderRadius: 16, padding: '18px 14px', textAlign: 'center',
-                  border: '1px solid ' + def.color + '15', boxShadow: '0 1px 8px ' + def.color + '06',
-                }}>
+                <div key={a.achievement_key} style={{ background: '#fff', borderRadius: 16, padding: '18px 14px', textAlign: 'center', border: '1px solid ' + def.color + '15', boxShadow: '0 1px 8px ' + def.color + '06' }}>
                   <span style={{ fontSize: 36, display: 'block', marginBottom: 8 }}>{def.icon}</span>
                   <p style={{ fontSize: 12, fontWeight: 700, color: def.color, margin: '0 0 4px' }}>{def.label}</p>
                   <p style={{ fontSize: 10, color: 'rgba(11,37,69,0.35)', margin: 0, lineHeight: 1.4 }}>{def.desc}</p>
@@ -921,18 +780,12 @@ export default function UserProfile() {
               );
             })}
           </div>
-
           <h3 style={{ fontSize: 14, fontWeight: 700, color: 'rgba(11,37,69,0.3)', margin: '0 0 14px', fontFamily: font }}>Locked</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-            {Object.keys(ACHIEVEMENTS).filter(function(key) {
-              return !achievements.find(function(a) { return a.achievement_key === key; });
-            }).map(function(key) {
+            {Object.keys(ACHIEVEMENTS).filter(function(key) { return !achievements.find(function(a) { return a.achievement_key === key; }); }).map(function(key) {
               var def = ACHIEVEMENTS[key];
               return (
-                <div key={key} style={{
-                  background: '#fafbfc', borderRadius: 16, padding: '18px 14px', textAlign: 'center',
-                  border: '1px solid rgba(11,37,69,0.04)', opacity: 0.5,
-                }}>
+                <div key={key} style={{ background: '#fafbfc', borderRadius: 16, padding: '18px 14px', textAlign: 'center', border: '1px solid rgba(11,37,69,0.04)', opacity: 0.5 }}>
                   <span style={{ fontSize: 36, display: 'block', marginBottom: 8, filter: 'grayscale(1)' }}>{def.icon}</span>
                   <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(11,37,69,0.35)', margin: '0 0 4px' }}>{def.label}</p>
                   <p style={{ fontSize: 10, color: 'rgba(11,37,69,0.25)', margin: 0, lineHeight: 1.4 }}>{def.desc}</p>
@@ -943,7 +796,7 @@ export default function UserProfile() {
         </div>
       )}
 
-      {/* ═══════════ FOLLOWERS TAB ═══════════════════════════════════════════ */}
+      {/* ── FOLLOWERS TAB ── */}
       {tab === 'followers' && (
         <div style={{ display: 'grid', gap: 8, animation: 'slideUp 0.3s ease' }}>
           {followers.length === 0 ? (
@@ -969,7 +822,7 @@ export default function UserProfile() {
         </div>
       )}
 
-      {/* ═══════════ FOLLOWING TAB ══════════════════════════════════════════ */}
+      {/* ── FOLLOWING TAB ── */}
       {tab === 'following' && (
         <div style={{ display: 'grid', gap: 8, animation: 'slideUp 0.3s ease' }}>
           {following.length === 0 ? (
