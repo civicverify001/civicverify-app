@@ -162,7 +162,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Video */}
       <video
         ref={videoRef} src={videoUrl}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
+        style={{ width: '100%', height: '100%', objectFit: 'contain', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
         loop muted={false} playsInline onClick={handleTap}
       />
 
@@ -656,7 +656,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: '9/16', maxHeight: 400 }}>
-                <video src={preview} controls playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} />
+                <video src={preview} controls playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
@@ -1036,7 +1036,7 @@ export default function CivicReels() {
           position: relative;
           height: 100%;
           width: min(calc(100svh * 9 / 16), 100%);
-          max-width: 600px;
+          max-width: 430px;
           background: #000;
           overflow: hidden;
           flex-shrink: 0;
