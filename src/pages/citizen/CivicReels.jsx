@@ -162,7 +162,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Video */}
       <video
         ref={videoRef} src={videoUrl}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none', transform: reel.is_front_camera ? 'scaleX(-1)' : 'none' }}
         loop muted={false} playsInline onClick={handleTap}
       />
 
@@ -408,6 +408,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   var [recordTime, setRecordTime] = useState(0);
   var [stream, setStream] = useState(null);
   var [facingMode, setFacingMode] = useState('user');
+  var [isFrontCamera, setIsFrontCamera] = useState(false);
   var videoPreviewRef = useRef(null);
   var mediaRecorderRef = useRef(null);
   var chunksRef = useRef([]);
@@ -553,6 +554,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
         filter: selectedFilter !== 'none' ? selectedFilter : null,
         text_overlays: textOverlays.length > 0 ? textOverlays : null,
         file_size_bytes: file.size,
+        is_front_camera: isFrontCamera,
       }).select().single();
       if (reelError) throw reelError;
       if (postToCommunity) {
@@ -613,7 +615,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
                   <span style={{ fontSize: 36, display: 'block', marginBottom: 8 }}>🎥</span>
                   <span style={{ fontSize: 15, fontWeight: 700, color: C.navy, display: 'block' }}>Record Video</span>
                   <span style={{ fontSize: 12, color: 'rgba(11,37,69,0.5)' }}>Opens native camera · Perfect portrait</span>
-                  <input type="file" accept="video/*" capture="user" onChange={handleFileSelect} style={{ display: 'none' }} />
+                  <input type="file" accept="video/*" capture="user" onChange={function(e) { setIsFrontCamera(true); handleFileSelect(e); }} style={{ display: 'none' }} />
                 </label>
               ) : (
                 <button onClick={function () { setMode('record'); startCamera('user'); }}
@@ -672,8 +674,8 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
 
           {file && preview && (
             <div>
-              <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, aspectRatio: '9/16', maxHeight: 400 }}>
-                <video src={preview} controls playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none' }} />
+              <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, width: '100%', maxHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <video src={preview} controls playsInline style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none', display: 'block', transform: isFrontCamera ? 'scaleX(-1)' : 'none' }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
