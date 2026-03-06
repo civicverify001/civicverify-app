@@ -162,7 +162,7 @@ function ReelCard({ reel, isVisible, currentUser, onLike, onComment, onShare, on
       {/* Video */}
       <video
         ref={videoRef} src={videoUrl}
-        style={{ width: '100%', height: '100%', objectFit: 'contain', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: reel.filter && VIDEO_FILTERS[reel.filter] ? VIDEO_FILTERS[reel.filter].css : 'none' }}
         loop muted={false} playsInline onClick={handleTap}
       />
 
@@ -416,7 +416,15 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
   async function startCamera(facing) {
     try {
       if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
-      var s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, aspectRatio: { ideal: 9/16 } }, audio: true });
+      var s = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: facing, 
+          aspectRatio: { ideal: 9/16 },
+          width: { ideal: 1080 },
+          height: { ideal: 1920 }
+        }, 
+        audio: true 
+      });
       setStream(s);
       if (videoPreviewRef.current) { videoPreviewRef.current.srcObject = s; videoPreviewRef.current.play(); }
     } catch (e) { setError('Camera access denied. Please allow camera and microphone permissions.'); }
