@@ -675,7 +675,7 @@ function UploadModal({ currentUser, profile, onClose, onUploaded }) {
           {file && preview && (
             <div>
               <div ref={overlayContainerRef} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 16, width: '100%', maxHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <video src={preview} controls playsInline style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none', display: 'block', transform: isFrontCamera ? 'scaleX(-1)' : 'none' }} />
+                <video src={preview} controls playsInline style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', filter: VIDEO_FILTERS[selectedFilter] ? VIDEO_FILTERS[selectedFilter].css : 'none', display: 'block' }} />
                 {textOverlays.map(function (ov) {
                   return (
                     <div key={ov.id}
